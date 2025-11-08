@@ -19,19 +19,28 @@ struct StrategyBadge: View {
 extension Strategy {
     var color: Color {
         switch self {
-        // Core strategies
-        case .earningsVolatilityCrush: return .purple
-        case .gapFill: return .blue
-        case .zdteIronButterfly: return .orange
-        case .vixSpikePremiumSelling: return .red
-        case .momentumBreakout: return .green
-        case .preMarketInstitutionalFlow: return .cyan
-        case .weeklyOptionsExpiration: return .indigo
-        // Legacy strategies  
+        // v3.0: Institutional Flow (FREE) - Gold for premium status
+        case .vxxInstitutionalFlow: return .cyan
+
+        // VXX-specific strategies (5 core) - Blue family
+        case .vxxFadeSetup: return .blue
+        case .vxxPowerHour: return .purple
+        case .vxxMorningWindow: return .indigo
+        case .vxxVolumeSpike: return .teal
+        case .vxxLunchWindow: return .mint
+
+        // Additional strategies (11 more) - Various colors
+        case .consolidationBreakout: return .green
+        case .movingAverageCross: return .blue
+        case .earningsPlay: return .purple
+        case .vixSpike: return .red
+        case .zeroDTE: return .orange
+        case .momentumReversal: return .pink
         case .gapAndGo: return .blue
         case .vwapReversal: return .purple
         case .powerHour: return .orange
         case .panicReversal: return .red
+        case .weeklyOptionsExpiration: return .indigo
         }
     }
 } 
