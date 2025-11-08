@@ -69,7 +69,25 @@ extension Date {
     var isPreMarketPeakWindow: Bool {
         isInWindow("08:15", "08:45")
     }
-    
+
+    // VXX-specific trading windows from ThinkOrSwim setup
+    var isVXXMorningWindow: Bool {
+        isInWindow("09:50", "10:00")  // 5-10 minute window starting at 9:50 AM
+    }
+
+    var isVXXLunchWindow: Bool {
+        isInWindow("12:20", "12:35")  // 15 minute window starting at 12:20 PM
+    }
+
+    var isVXXPowerHourWindow: Bool {
+        isInWindow("15:10", "15:25")  // 15 minute window starting at 3:10 PM
+    }
+
+    // Check if any VXX trading window is active
+    var isVXXTradingWindow: Bool {
+        isVXXMorningWindow || isVXXLunchWindow || isVXXPowerHourWindow
+    }
+
     // Market phase determination
     var tradingPhase: MarketPhase {
         if !isWithinTradingHours() {
