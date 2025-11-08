@@ -1,27 +1,26 @@
 enum Strategy: String, CaseIterable {
-    case earningsVolatilityCrush = "Earnings Volatility Crush"
-    case gapFill = "Gap Fill Trading"
-    case zdteIronButterfly = "0DTE Iron Butterfly"
-    case vixSpikePremiumSelling = "VIX Spike Premium Selling"
-    case momentumBreakout = "Momentum Breakout"
-    case preMarketInstitutionalFlow = "Pre-Market Institutional Flow"
-    case weeklyOptionsExpiration = "Weekly Options Expiration"
-    
-    // Legacy strategies (updated with refined criteria)
+    // v3.0: Institutional Flow Edition (FREE)
+    case vxxInstitutionalFlow = "VXX Institutional Flow (3:45 PM)" // 90% reliability ⭐⭐⭐
+
+    // VXX-specific strategies (5 core VXX strategies)
+    case vxxFadeSetup = "VXX Fade Setup"
+    case vxxPowerHour = "VXX Power Hour (3:10 PM)"
+    case vxxMorningWindow = "VXX Morning Window (9:50 AM)"
+    case vxxVolumeSpike = "VXX Volume Spike"
+    case vxxLunchWindow = "VXX Lunch Window (12:20 PM)"
+
+    // Additional strategies (11 more for 16 total)
+    case consolidationBreakout = "Consolidation Breakout"
+    case movingAverageCross = "Moving Average Cross"
+    case earningsPlay = "Earnings Play"
+    case vixSpike = "VIX Spike"
+    case zeroDTE = "0DTE Options"
+    case momentumReversal = "Momentum Reversal"
     case gapAndGo = "Gap and Go"
     case vwapReversal = "VWAP Reversal"
     case powerHour = "Power Hour"
     case panicReversal = "Panic Reversal"
-
-    // VXX-specific strategies from ThinkOrSwim setup
-    case vxxFadeSetup = "VXX Fade Setup"
-    case vxxVolumeSpikePattern = "VXX Volume Spike + Pattern"
-    case vxxMorningWindow = "VXX Morning Window (9:50 AM)"
-    case vxxLunchWindow = "VXX Lunch Window (12:20 PM)"
-    case vxxPowerHourWindow = "VXX Power Hour (3:10 PM)"
-
-    // v3.0: Institutional Flow Edition
-    case vxxInstitutionalFlow = "VXX Institutional Flow (3:45 PM)" // 90% reliability ⭐⭐⭐
+    case weeklyOptionsExpiration = "Weekly Options Expiration"
     
     struct Criteria {
         let timeWindow: ClosedRange<Date>
@@ -55,48 +54,15 @@ enum Strategy: String, CaseIterable {
     
     func validateCriteria(_ data: MarketData) -> Bool {
         switch self {
-        case .earningsVolatilityCrush:
-            // IV Rank > 75%, 2-3 days before earnings
-            return data.ivRank > 75 && data.daysToEarnings <= 3
-            
-        case .gapFill:
-            // Gap size 0.5-2%, no fundamental news, volume declining
-            return abs(data.gapPercent) >= 0.5 && abs(data.gapPercent) <= 2.0 && 
-                   !data.hasFundamentalNews && data.isVolumeDecline
-            
-        case .zdteIronButterfly:
-            // Same day expiry, VIX < 25, low volatility, after 10:15 AM
-            return data.hasZDTEOptions && data.vix < 25 && 
-                   data.timestamp.timeIntervalSince1970 > data.marketOpen + (45 * 60) // After 10:15
-            
-        case .vixSpikePremiumSelling:
-            // VIX spike > 15%, VIX > 30, SPY down > 1.5%
-            return data.vixDailyChange > 15 && data.vix > 30 && data.spyDailyChange < -1.5
-            
-        case .momentumBreakout:
-            // VWAP break, volume > 2x average, RSI > 60, EMA crossover
-            return data.vwapBreakout && data.volume >= data.averageVolume * 2 && 
-                   data.rsi > 60 && data.emaBreakout
-            
-        case .preMarketInstitutionalFlow:
-            // 8:00-9:00 AM, options volume > 3x normal
-            return data.timestamp.isPreMarketInstitutionalWindow && 
-                   data.optionsVolume >= data.averageOptionsVolume * 3
-            
-        case .weeklyOptionsExpiration:
-            // Friday expiration, OTM options with < 20% probability
-            return data.isWeeklyExpiration && data.otmProbability < 0.20
-            
-        // Updated legacy strategies with refined criteria
-        case .gapAndGo:
-            return abs(data.gapPercent) >= 0.5 && abs(data.gapPercent) <= 2.0 &&
-                   data.volume >= 500_000 // Gap fill strategy criteria
-        case .vwapReversal:
-            return data.volume >= 750_000 && abs(data.vwapDeviation) >= 0.5
-        case .powerHour:
-            return data.volume >= 1_000_000 && data.consecutiveGreenBars >= 2
-        case .panicReversal:
-            return data.dropPercent >= 3.0 && data.volumeSpike >= 2_000_000
+        // v3.0: Institutional Flow (FREE strategy)
+        case .vxxInstitutionalFlow:
+            // 3:45-4:10 PM Institutional Flow Window - 90% reliability
+            // Portfolio rebalancing, mutual fund flows, index fund rebalancing
+            // Volume explosion >300% = Institutional threshold
+            return data.symbol == "VXX" &&
+                   data.timestamp.isInstitutionalFlowWindow &&
+                   data.volume >= Int(Double(data.averageVolume) * 3.0) && // 300%+ institutional threshold
+                   data.hasArrowSignal // Arrow signal confirmation required
 
         // VXX-specific strategies
         case .vxxFadeSetup:
@@ -106,12 +72,12 @@ enum Strategy: String, CaseIterable {
                    data.patternType == .bearish &&
                    data.volume >= Int(Double(data.averageVolume) * 1.5)
 
-        case .vxxVolumeSpikePattern:
-            // Volume surge (150%+) + any pattern + 3%+ move
+        case .vxxPowerHour:
+            // 3:10-3:25 PM window: Pattern + volume + reversal setup
             return data.symbol == "VXX" &&
-                   data.volume >= Int(Double(data.averageVolume) * 1.5) &&
+                   data.timestamp.isVXXPowerHourWindow &&
                    data.hasPattern &&
-                   abs(data.gapPercent) >= 3.0
+                   data.volume >= Int(Double(data.averageVolume) * 1.5)
 
         case .vxxMorningWindow:
             // 9:50-10:00 AM window: Pattern + volume confirmation
@@ -120,6 +86,12 @@ enum Strategy: String, CaseIterable {
                    data.hasPattern &&
                    data.volume >= Int(Double(data.averageVolume) * 1.5)
 
+        case .vxxVolumeSpike:
+            // Volume surge (200%+) + any pattern
+            return data.symbol == "VXX" &&
+                   data.volume >= Int(Double(data.averageVolume) * 2.0) &&
+                   data.hasPattern
+
         case .vxxLunchWindow:
             // 12:20-12:35 PM window: Pattern + volume + VIX context
             return data.symbol == "VXX" &&
@@ -127,21 +99,47 @@ enum Strategy: String, CaseIterable {
                    data.hasPattern &&
                    data.volume >= data.averageVolume
 
-        case .vxxPowerHourWindow:
-            // 3:10-3:25 PM window: Pattern + volume + reversal setup
-            return data.symbol == "VXX" &&
-                   data.timestamp.isVXXPowerHourWindow &&
-                   data.hasPattern &&
-                   data.volume >= Int(Double(data.averageVolume) * 1.5)
+        // Additional strategies
+        case .consolidationBreakout:
+            // Breakout from consolidation with volume confirmation
+            return data.volume >= Int(Double(data.averageVolume) * 2.0) &&
+                   abs(data.gapPercent) >= 1.0
 
-        case .vxxInstitutionalFlow:
-            // v3.0: 3:45-4:10 PM Institutional Flow Window - 90% reliability
-            // Portfolio rebalancing, mutual fund flows, index fund rebalancing
-            // Volume explosion >300% = Institutional threshold
-            return data.symbol == "VXX" &&
-                   data.timestamp.isInstitutionalFlowWindow &&
-                   data.volume >= Int(Double(data.averageVolume) * 3.0) && // 300%+ institutional threshold
-                   data.hasArrowSignal // Arrow signal confirmation required
+        case .movingAverageCross:
+            // Moving average crossover with momentum
+            return data.emaBreakout && data.volume >= Int(Double(data.averageVolume) * 1.5)
+
+        case .earningsPlay:
+            // Earnings play with high IV
+            return data.ivRank > 60 && data.daysToEarnings <= 5
+
+        case .vixSpike:
+            // VIX spike play
+            return data.vixDailyChange > 10 && data.vix > 25
+
+        case .zeroDTE:
+            // 0DTE options strategy
+            return data.hasZDTEOptions && data.vix < 30
+
+        case .momentumReversal:
+            // Momentum reversal setup
+            return data.rsi > 70 && data.volumeSpike >= data.averageVolume * 2
+
+        case .gapAndGo:
+            return abs(data.gapPercent) >= 0.5 && abs(data.gapPercent) <= 2.0 &&
+                   data.volume >= 500_000
+
+        case .vwapReversal:
+            return data.volume >= 750_000 && abs(data.vwapDeviation) >= 0.5
+
+        case .powerHour:
+            return data.volume >= 1_000_000 && data.consecutiveGreenBars >= 2
+
+        case .panicReversal:
+            return data.dropPercent >= 3.0 && data.volumeSpike >= 2_000_000
+
+        case .weeklyOptionsExpiration:
+            return data.isWeeklyExpiration && data.otmProbability < 0.20
         }
     }
     
@@ -187,35 +185,44 @@ enum Strategy: String, CaseIterable {
     
     private func calculateConfidence(_ data: MarketData) -> Double {
         switch self {
-        case .earningsVolatilityCrush:
+        // v3.0: Institutional Flow
+        case .vxxInstitutionalFlow:
+            // Very high confidence - 90% win rate strategy
+            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 4), 1.0)
+            let windowScore = data.timestamp.isInstitutionalFlowWindow ? 1.0 : 0.3
+            let arrowScore = data.hasArrowSignal ? 1.0 : 0.0
+            return (volumeScore + windowScore + arrowScore) / 3.0
+
+        // VXX strategies
+        case .vxxFadeSetup, .vxxPowerHour, .vxxMorningWindow, .vxxVolumeSpike, .vxxLunchWindow:
+            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
+            let patternScore = data.hasPattern ? 1.0 : 0.3
+            return (volumeScore + patternScore) / 2.0
+
+        // Additional strategies
+        case .earningsPlay:
             let ivScore = min(data.ivRank / 100.0, 1.0)
-            let timeScore = data.daysToEarnings <= 2 ? 1.0 : 0.7
+            let timeScore = data.daysToEarnings <= 3 ? 1.0 : 0.6
             return (ivScore + timeScore) / 2.0
-            
-        case .gapFill:
-            let gapScore = 1.0 - (abs(abs(data.gapPercent) - 1.25) / 1.25) // Optimal at 1.25%
-            let volumeScore = data.isVolumeDecline ? 1.0 : 0.5
-            return max(0.3, (gapScore + volumeScore) / 2.0)
-            
-        case .zdteIronButterfly:
-            let vixScore = data.vix < 20 ? 1.0 : max(0.3, 1.0 - (data.vix - 20) / 30)
-            let timeScore = data.minutesSinceMarketOpen > 45 ? 1.0 : 0.6
-            return (vixScore + timeScore) / 2.0
-            
-        case .vixSpikePremiumSelling:
-            let spikeScore = min(data.vixDailyChange / 30.0, 1.0) // Max at 30% spike
-            let levelScore = min((data.vix - 30) / 20.0, 1.0) // Max at VIX 50
+
+        case .vixSpike:
+            let spikeScore = min(data.vixDailyChange / 20.0, 1.0)
+            let levelScore = min((data.vix - 25) / 25.0, 1.0)
             return (spikeScore + levelScore) / 2.0
-            
-        case .momentumBreakout:
-            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 3), 1.0)
-            let technicalScore = (data.rsi - 60) / 40.0 // 0 at RSI 60, 1 at RSI 100
-            return (volumeScore + technicalScore) / 2.0
-            
+
+        case .zeroDTE:
+            let vixScore = data.vix < 25 ? 1.0 : max(0.3, 1.0 - (data.vix - 25) / 20)
+            return vixScore
+
+        case .momentumReversal:
+            let rsiScore = data.rsi > 70 ? 1.0 : data.rsi / 70.0
+            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
+            return (rsiScore + volumeScore) / 2.0
+
         default:
-            // Legacy confidence calculation
-            let volumeScore = min(Double(data.volume) / 1_000_000, 1.0)
-            let priceScore = min(abs(data.gapPercent) / 5.0, 1.0)
+            // General confidence calculation
+            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
+            let priceScore = min(abs(data.gapPercent) / 3.0, 1.0)
             return (volumeScore + priceScore) / 2.0
         }
     }
@@ -231,25 +238,28 @@ enum Strategy: String, CaseIterable {
     // Historical success rates from your trading document
     var historicalWinRate: Double {
         switch self {
-        case .earningsVolatilityCrush: return 0.727  // 72.7%
-        case .gapFill: return 0.78                   // 78% for small gaps
-        case .zdteIronButterfly: return 0.668        // 66.8%
-        case .vixSpikePremiumSelling: return 0.68    // 68%
-        case .momentumBreakout: return 0.65          // 65%
-        case .preMarketInstitutionalFlow: return 0.70 // Estimated
-        case .weeklyOptionsExpiration: return 0.75   // Estimated
-        case .gapAndGo: return 0.70                  // Updated
-        case .vwapReversal: return 0.68              // Updated
-        case .powerHour: return 0.65                 // Updated
-        case .panicReversal: return 0.72             // Updated
-        // VXX strategies based on ThinkOrSwim system
+        // v3.0: Institutional Flow (FREE) - The Supreme Window
+        case .vxxInstitutionalFlow: return 0.90      // 90% reliability ⭐⭐⭐
+
+        // VXX strategies (core 5)
         case .vxxFadeSetup: return 0.75              // Strong pattern-based fade
-        case .vxxVolumeSpikePattern: return 0.70     // Volume + pattern combination
-        case .vxxMorningWindow: return 0.72          // Morning setup window (85% reliability)
-        case .vxxLunchWindow: return 0.68            // Lunch window (70% reliability)
-        case .vxxPowerHourWindow: return 0.73        // Power hour window (80% reliability)
-        // v3.0: Institutional Flow Edition
-        case .vxxInstitutionalFlow: return 0.90      // Institutional flow window (90% reliability) ⭐⭐⭐
+        case .vxxPowerHour: return 0.73              // Power hour window
+        case .vxxMorningWindow: return 0.72          // Morning setup window
+        case .vxxVolumeSpike: return 0.70            // Volume + pattern combination
+        case .vxxLunchWindow: return 0.68            // Lunch window
+
+        // Additional strategies (11 more)
+        case .consolidationBreakout: return 0.68     // Consolidation breakout
+        case .movingAverageCross: return 0.65        // Moving average cross
+        case .earningsPlay: return 0.62              // Earnings play
+        case .vixSpike: return 0.60                  // VIX spike
+        case .zeroDTE: return 0.58                   // 0DTE options
+        case .momentumReversal: return 0.55          // Momentum reversal
+        case .gapAndGo: return 0.70                  // Gap and go
+        case .vwapReversal: return 0.68              // VWAP reversal
+        case .powerHour: return 0.65                 // Power hour
+        case .panicReversal: return 0.72             // Panic reversal
+        case .weeklyOptionsExpiration: return 0.75   // Weekly options expiration
         }
     }
     
