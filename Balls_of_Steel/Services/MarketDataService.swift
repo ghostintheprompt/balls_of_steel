@@ -80,4 +80,124 @@ class MarketDataService: ObservableObject {
             subscribers.removeValue(forKey: symbol)
         }
     }
+
+    // MARK: - Manual Data Entry Support
+    /// Educational mode - Updates market data from manual user input
+    /// This is the primary data source for the educational app
+    func updateWithManualEntry(_ entry: MarketDataEntry) {
+        // Convert manual entry to Quote
+        let vxxQuote = Quote(
+            symbol: "VXX",
+            price: entry.vxxPrice,
+            bid: entry.vxxPrice - 0.03,
+            ask: entry.vxxPrice + 0.03,
+            volume: Int(entry.volumePercent) * 10_000, // Approximate volume
+            averageVolume: 1_000_000, // Standard VXX average
+            change: 0, // User can add if needed
+            changePercent: 0,
+            timestamp: entry.timestamp
+        )
+
+        let vixQuote = Quote(
+            symbol: "VIX",
+            price: entry.vixLevel,
+            bid: entry.vixLevel - 0.05,
+            ask: entry.vixLevel + 0.05,
+            volume: 0,
+            averageVolume: 0,
+            change: 0,
+            changePercent: 0,
+            timestamp: entry.timestamp
+        )
+
+        // Determine VWAP based on user input
+        let vwap = entry.vwapPosition == .above ? entry.vxxPrice - 0.20 : entry.vxxPrice + 0.20
+
+        // Create MarketData with arrow signal
+        let arrowSignal: ArrowSignal? = {
+            switch entry.arrowSignal {
+            case .bullish:
+                return ArrowSignal(
+                    direction: .bullish,
+                    timestamp: entry.timestamp,
+                    volumeConfirmation: volumeConfirmation(for: entry.volumePercent),
+                    technicalConfluence: [],
+                    timeWindow: timeWindow(for: entry.timeWindow),
+                    strength: signalStrength(volume: entry.volumePercent)
+                )
+            case .bearish:
+                return ArrowSignal(
+                    direction: .bearish,
+                    timestamp: entry.timestamp,
+                    volumeConfirmation: volumeConfirmation(for: entry.volumePercent),
+                    technicalConfluence: [],
+                    timeWindow: timeWindow(for: entry.timeWindow),
+                    strength: signalStrength(volume: entry.volumePercent)
+                )
+            case .none:
+                return nil
+            }
+        }()
+
+        let marketData = MarketData(
+            symbol: "VXX",
+            price: entry.vxxPrice,
+            timestamp: entry.timestamp,
+            volume: Int(entry.volumePercent) * 10_000,
+            averageVolume: 1_000_000,
+            vwap: vwap,
+            change: 0,
+            changePercent: 0,
+            detectedArrowSignal: arrowSignal,
+            detectedPattern: nil,
+            technicalIndicators: nil
+        )
+
+        // Update cache and notify subscribers
+        quoteCache["VXX"] = vxxQuote
+        quoteCache["VIX"] = vixQuote
+        marketDataSubjects["VXX"]?.send(marketData)
+        latestQuotes["VXX"] = vxxQuote
+        latestQuotes["VIX"] = vixQuote
+    }
+
+    // Helper: Volume confirmation level
+    private func volumeConfirmation(for volumePct: Double) -> ArrowSignal.VolumeConfirmation {
+        if volumePct >= 400 {
+            return .majorInstitution
+        } else if volumePct >= 300 {
+            return .institutional
+        } else if volumePct >= 200 {
+            return .standard
+        } else {
+            return .none
+        }
+    }
+
+    // Helper: Signal strength
+    private func signalStrength(volume: Double) -> ArrowSignal.SignalStrength {
+        if volume >= 300 {
+            return .strong
+        } else if volume >= 200 {
+            return .moderate
+        } else {
+            return .weak
+        }
+    }
+
+    // Helper: Time window conversion
+    private func timeWindow(for input: TimeWindowInput) -> ArrowSignal.TimeWindow {
+        switch input {
+        case .morning:
+            return .morningFade
+        case .lunch:
+            return .lunchDrift
+        case .powerHour:
+            return .powerHour
+        case .institutional:
+            return .institutionalFlow
+        default:
+            return .other
+        }
+    }
 }
