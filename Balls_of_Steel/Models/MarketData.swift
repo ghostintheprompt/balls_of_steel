@@ -24,6 +24,10 @@ struct MarketData {
     let otmProbability: Double           // Out-of-the-money probability
     let minutesSinceMarketOpen: Int      // Minutes since market open
     let marketOpen: TimeInterval         // Market open timestamp
+
+    // Pattern recognition properties
+    let detectedPattern: CandlestickPattern?  // Detected candlestick pattern
+    let technicalIndicators: TechnicalIndicators? // Technical indicators (SMA, VWAP, etc.)
     
     // Additional computed properties needed by Strategy validation
     var symbol: String { quote.symbol }
@@ -60,6 +64,26 @@ struct MarketData {
         let historicalSpike = volume - averageVolume
         let recentSpike = volume - recentAvg
         return max(historicalSpike, recentSpike) // Use the larger spike value
+    }
+
+    // Pattern-related computed properties for VXX strategies
+    var hasPattern: Bool {
+        detectedPattern != nil
+    }
+
+    var patternType: PatternBias {
+        guard let pattern = detectedPattern else { return .neutral }
+        switch pattern.type.tradingBias {
+        case .bearish: return .bearish
+        case .bullish: return .bullish
+        case .neutral: return .neutral
+        }
+    }
+
+    enum PatternBias {
+        case bearish
+        case bullish
+        case neutral
     }
     
     // VWAP deviation check using your exact criteria
