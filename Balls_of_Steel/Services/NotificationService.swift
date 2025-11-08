@@ -1,0 +1,17 @@
+import Foundation
+import UserNotifications  // For UNMutableNotificationContent
+
+class NotificationService {
+    func alert(signal: Signal) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(signal.strategy.rawValue): \(signal.symbol)"
+        content.body = signal.reason
+        content.sound = .default
+        
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: UUID().uuidString,
+                                content: content, 
+                                trigger: nil)
+        )
+    }
+} 
