@@ -1,223 +1,206 @@
 import Foundation
 import Combine
-import WebKit
+
+// MARK: - EDUCATIONAL MODE SERVICE
+// This app is an educational tool. All data must be entered manually.
+// Connect to your own trading platform (ThinkOrSwim, Schwab, etc.) for live execution.
 
 class SchwabService: ObservableObject {
     static let shared = SchwabService()
     @Published var isConnected = false
-    private var webSocket: URLSessionWebSocketTask?
-    private var quoteSubjects: [String: PassthroughSubject<Quote, Never>] = [:]
-    
-    // Base URL for Schwab's API
-    private let baseURL = "https://api.schwab.com/v1"
-    
-    func fetchQuote(_ symbol: String) async throws -> Quote {
-        let endpoint = "\(baseURL)/markets/quotes/\(symbol)"
-        let request = authenticatedRequest(for: endpoint)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        // Check HTTP status
-        if let httpResponse = response as? HTTPURLResponse,
-           httpResponse.statusCode == 429 {
-            throw SchwabError.rateLimitExceeded
-        }
-        
-        return try handleResponse(data)
-    }
-    
-    func placeOrder(order: Order) async throws -> OrderResponse {
-        let endpoint = "\(baseURL)/trading/orders"
-        var request = authenticatedRequest(for: endpoint)
-        request.httpMethod = "POST"
-        request.httpBody = try JSONEncoder().encode(order)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        if let httpResponse = response as? HTTPURLResponse,
-           httpResponse.statusCode == 401 {
-            throw SchwabError.authenticationFailed
-        }
-        
-        return try handleResponse(data)
-    }
-    
-    private func authenticatedRequest(for endpoint: String) -> URLRequest {
-        var request = URLRequest(url: URL(string: endpoint)!)
-        request.setValue("Bearer \(AppConfig.apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        return request
-    }
-    
-    func streamQuotes(symbols: [String]) async throws {
-        guard !isConnected else { return }
-        
-        let session = URLSession(configuration: .default)
-        let wsURL = "\(AppConfig.streamURL)?symbols=\(symbols.joined(separator: ","))"
-        guard let url = URL(string: wsURL) else { throw SchwabError.invalidURL }
-        
-        webSocket = session.webSocketTask(with: url)
-        webSocket?.resume()
-        
-        // Add authentication
-        let authMessage = ["type": "auth", "token": AppConfig.apiKey]
-        try await webSocket?.send(.string(JSONEncoder().encode(authMessage).base64EncodedString()))
-        
-        // Start receiving messages
-        receiveMessages()
-        isConnected = true
-    }
-    
-    private func receiveMessages() {
-        webSocket?.receive { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    if let data = Data(base64Encoded: text),
-                       let quote = try? JSONDecoder().decode(Quote.self, from: data) {
-                        self.quoteSubjects[quote.symbol]?.send(quote)
-                        // Also cache the quote for non-streaming access
-                        MarketDataService.shared.updateQuoteCache(quote)
-                    }
-                default:
-                    break
-                }
-                // Continue receiving
-                self.receiveMessages()
-                
-            case .failure(let error):
-                print("WebSocket error: \(error)")
-                self.reconnect()
-            }
-        }
-    }
-    
-    private func reconnect() {
+
+    private init() {
+        // Educational mode - no live connections
         isConnected = false
-        // Try to reconnect after a brief delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            Task {
-                try? await self.streamQuotes(symbols: Array(self.quoteSubjects.keys))
-            }
-        }
     }
-    
-    // Subscribe to real-time quotes for a symbol
+
+    // MARK: - Educational Sample Data
+    // These methods return example data for learning the VXX system
+
+    /// Returns sample quote data for educational purposes
+    /// IMPORTANT: Enter real data manually in the VXX Dashboard
+    func fetchQuote(_ symbol: String) async throws -> Quote {
+        // Simulate network delay for realistic experience
+        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
+        return generateSampleQuote(for: symbol)
+    }
+
+    /// Educational mode - No live order execution
+    /// Execute trades manually on your own platform
+    func placeOrder(order: Order) async throws -> OrderResponse {
+        throw SchwabError.educationalModeOnly
+    }
+
+    /// Educational mode - No live streaming
+    /// Use manual data entry in the dashboard
+    func streamQuotes(symbols: [String]) async throws {
+        throw SchwabError.educationalModeOnly
+    }
+
+    /// Educational mode - No live quote subscriptions
+    /// Enter data manually to practice the system
     func subscribeToQuotes(symbol: String) -> AnyPublisher<Quote, Never> {
-        if quoteSubjects[symbol] == nil {
-            quoteSubjects[symbol] = PassthroughSubject<Quote, Never>()
-            // Add symbol to streaming if we're already connected
-            if isConnected {
-                Task {
-                    try? await streamQuotes(symbols: [symbol])
-                }
+        // Return empty publisher - use manual data entry instead
+        return Empty().eraseToAnyPublisher()
+    }
+    
+    // MARK: - Error Handling
+    enum SchwabError: Error {
+        case educationalModeOnly
+        case invalidResponse
+
+        var localizedDescription: String {
+            switch self {
+            case .educationalModeOnly:
+                return "This app is educational only. Execute trades on your own platform (ThinkOrSwim, Schwab, TD Ameritrade, etc.)"
+            case .invalidResponse:
+                return "Invalid sample data format"
             }
         }
-        return quoteSubjects[symbol]?.eraseToAnyPublisher() ?? Empty().eraseToAnyPublisher()
-    }
-    
-    // Add proper error handling
-    enum SchwabError: Error {
-        case invalidResponse
-        case authenticationFailed
-        case rateLimitExceeded
-        case invalidURL
-    }
-    
-    private func handleResponse<T: Decodable>(_ data: Data) throws -> T {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        
-        do {
-            let response = try decoder.decode(APIResponse<T>.self, from: data)
-            return response.data
-        } catch {
-            print("Decode error: \(error)")
-            throw SchwabError.invalidResponse
-        }
-    }
-    
-    // Missing method for OAuth flow
-    func exchangeCodeForToken(_ code: String) async throws -> String {
-        let endpoint = "https://api.schwab.com/oauth/token"
-        var request = URLRequest(url: URL(string: endpoint)!)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let body = "grant_type=authorization_code&code=\(code)&client_id=\(AppConfig.clientId)"
-        request.httpBody = body.data(using: .utf8)
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
-        
-        struct TokenResponse: Codable {
-            let access_token: String
-        }
-        
-        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
-        return tokenResponse.access_token
-    }
-    
-    // Missing method for streaming connection
-    func connectToStream() async throws {
-        try await streamQuotes([])
     }
 
-    // MARK: - Options Chain Data
-    /// Fetch options chain for VXX (for put/call entries)
+    // MARK: - Sample Data Generation
+    /// Generate realistic sample quote for educational purposes
+    private func generateSampleQuote(for symbol: String) -> Quote {
+        let now = Date()
+
+        switch symbol {
+        case "VXX":
+            return Quote(
+                symbol: "VXX",
+                price: 42.15,
+                bid: 42.12,
+                ask: 42.18,
+                volume: 3_400_000, // 340% of typical 1M volume
+                averageVolume: 1_000_000,
+                change: 1.25,
+                changePercent: 3.05,
+                timestamp: now
+            )
+        case "VIX":
+            return Quote(
+                symbol: "VIX",
+                price: 18.50,
+                bid: 18.45,
+                ask: 18.55,
+                volume: 0,
+                averageVolume: 0,
+                change: 2.10,
+                changePercent: 12.80,
+                timestamp: now
+            )
+        default:
+            return Quote(
+                symbol: symbol,
+                price: 100.0,
+                bid: 99.95,
+                ask: 100.05,
+                volume: 100_000,
+                averageVolume: 50_000,
+                change: 0.50,
+                changePercent: 0.50,
+                timestamp: now
+            )
+        }
+    }
+
+    // MARK: - Educational Options Data
+    /// Returns sample options chain for learning
+    /// IMPORTANT: Use real options data from your platform
     func fetchOptionsChain(symbol: String, daysToExpiration: Int = 4) async throws -> OptionsChain {
-        let endpoint = "\(baseURL)/markets/options/\(symbol)?daysToExpiration=\(daysToExpiration)"
-        let request = authenticatedRequest(for: endpoint)
+        try await Task.sleep(nanoseconds: 500_000_000)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        if let httpResponse = response as? HTTPURLResponse,
-           httpResponse.statusCode == 429 {
-            throw SchwabError.rateLimitExceeded
-        }
-
-        return try handleResponse(data)
+        return OptionsChain(
+            symbol: symbol,
+            calls: generateSampleOptions(type: .call, underlying: 42.15),
+            puts: generateSampleOptions(type: .put, underlying: 42.15),
+            underlyingPrice: 42.15
+        )
     }
 
-    /// Fetch implied volatility for a symbol
+    /// Returns sample IV data for learning
     func fetchImpliedVolatility(symbol: String) async throws -> ImpliedVolatilityData {
-        let endpoint = "\(baseURL)/markets/\(symbol)/iv"
-        let request = authenticatedRequest(for: endpoint)
+        try await Task.sleep(nanoseconds: 500_000_000)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        if let httpResponse = response as? HTTPURLResponse,
-           httpResponse.statusCode == 429 {
-            throw SchwabError.rateLimitExceeded
-        }
-
-        return try handleResponse(data)
+        return ImpliedVolatilityData(
+            symbol: symbol,
+            iv: 85.5,
+            ivRank: 72.0,
+            ivPercentile: 68.0,
+            timestamp: Date()
+        )
     }
 
-    /// Get VXX and VIX data for ratio monitoring
+    /// Returns sample VXX/VIX data for learning
     func fetchVXXVIXData() async throws -> (vxx: Quote, vix: Quote) {
-        async let vxxQuote = fetchQuote("VXX")
-        async let vixQuote = fetchQuote("VIX")
+        try await Task.sleep(nanoseconds: 500_000_000)
 
-        return try await (vxx: vxxQuote, vix: vixQuote)
+        return (
+            vxx: generateSampleQuote(for: "VXX"),
+            vix: generateSampleQuote(for: "VIX")
+        )
     }
 
-    /// Fetch historical candles for pattern recognition and indicators
+    /// Returns sample candles for learning pattern recognition
     func fetchHistoricalCandles(symbol: String, period: CandlePeriod = .fiveMinutes, days: Int = 5) async throws -> [Candle] {
-        let endpoint = "\(baseURL)/markets/\(symbol)/candles?period=\(period.rawValue)&days=\(days)"
-        let request = authenticatedRequest(for: endpoint)
+        try await Task.sleep(nanoseconds: 500_000_000)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        return generateSampleCandles(symbol: symbol, count: 50)
+    }
 
-        if let httpResponse = response as? HTTPURLResponse,
-           httpResponse.statusCode == 429 {
-            throw SchwabError.rateLimitExceeded
+    // MARK: - Helper Methods
+    private func generateSampleOptions(type: OptionType, underlying: Double) -> [OptionContract] {
+        let strikes = stride(from: underlying - 5, through: underlying + 5, by: 1.0)
+        let expiration = Calendar.current.date(byAdding: .day, value: 3, to: Date())!
+
+        return strikes.map { strike in
+            let distance = abs(strike - underlying)
+            let premium = max(0.1, 2.0 - distance * 0.3)
+
+            return OptionContract(
+                strike: strike,
+                expiration: expiration,
+                bid: premium - 0.05,
+                ask: premium + 0.05,
+                last: premium,
+                volume: Int.random(in: 100...1000),
+                openInterest: Int.random(in: 500...5000),
+                delta: type == .call ? 0.5 : -0.5,
+                gamma: 0.05,
+                theta: -0.08,
+                vega: 0.12,
+                impliedVolatility: 85.5
+            )
+        }
+    }
+
+    private func generateSampleCandles(symbol: String, count: Int) -> [Candle] {
+        var candles: [Candle] = []
+        var currentPrice = 42.0
+        let now = Date()
+
+        for i in 0..<count {
+            let change = Double.random(in: -0.3...0.3)
+            currentPrice += change
+
+            let high = currentPrice + Double.random(in: 0...0.2)
+            let low = currentPrice - Double.random(in: 0...0.2)
+            let open = currentPrice - change / 2
+            let close = currentPrice
+
+            let candle = Candle(
+                timestamp: now.addingTimeInterval(TimeInterval(-count + i) * 300), // 5 min intervals
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: Int.random(in: 50_000...150_000)
+            )
+            candles.append(candle)
         }
 
-        let response: CandlesResponse = try handleResponse(data)
-        return response.candles
+        return candles
     }
 
     enum CandlePeriod: String {
@@ -227,6 +210,10 @@ class SchwabService: ObservableObject {
         case thirtyMinutes = "30m"
         case oneHour = "1h"
         case daily = "1d"
+    }
+
+    enum OptionType {
+        case call, put
     }
 }
 
