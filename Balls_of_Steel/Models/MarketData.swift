@@ -28,6 +28,9 @@ struct MarketData {
     // Pattern recognition properties
     let detectedPattern: CandlestickPattern?  // Detected candlestick pattern
     let technicalIndicators: TechnicalIndicators? // Technical indicators (SMA, VWAP, etc.)
+
+    // v3.0: Arrow Signal System
+    let detectedArrowSignal: ArrowSignal? // Arrow signal with volume validation
     
     // Additional computed properties needed by Strategy validation
     var symbol: String { quote.symbol }
@@ -84,6 +87,16 @@ struct MarketData {
         case bearish
         case bullish
         case neutral
+    }
+
+    // v3.0: Arrow Signal validation
+    var hasArrowSignal: Bool {
+        guard let arrow = detectedArrowSignal else { return false }
+        return arrow.isValid // Must have volume confirmation
+    }
+
+    var arrowDirection: ArrowSignal.Direction? {
+        detectedArrowSignal?.direction
     }
     
     // VWAP deviation check using your exact criteria
