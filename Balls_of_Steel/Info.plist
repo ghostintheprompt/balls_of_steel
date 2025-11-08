@@ -1,0 +1,39 @@
+<key>UIBackgroundModes</key>
+<array>
+    <string>audio</string>
+    <string>fetch</string>
+    <string>processing</string>
+</array>
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>com.ballsofsteel.signalrefresh</string>
+</array>
+<key>NSExtension</key>
+<dict>
+    <key>NSExtensionPointIdentifier</key>
+    <string>com.apple.widgetkit-extension</string>
+</dict>
+
+<key>NSUserNotificationAlertStyle</key>
+<string>alert</string>
+
+<key>LSApplicationCategoryType</key>
+<string>public.app-category.finance</string>
+
+<key>NSNotificationsUsageDescription</key>
+<string>We need to send you alerts when trading signals are detected.</string>
+
+<key>NSAppleEventsUsageDescription</key>
+<string>Required for system notifications on macOS.</string>
+
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>ballsofsteel</string>
+        </array>
+        <key>CFBundleURLName</key>
+        <string>com.ballsofsteel.trading</string>
+    </dict>
+</array> 
