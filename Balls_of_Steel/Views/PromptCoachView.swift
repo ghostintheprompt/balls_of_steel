@@ -406,11 +406,15 @@ class PromptCoachViewModel: ObservableObject {
     @Published var todayPrompts: [TradingPrompt] = []
     @Published var conditionalPrompts: [TradingPrompt] = []
     @Published var promptHistory: [PromptHistoryRecord] = []
+    @Published var manualDataEntry: MarketDataEntry?
 
     private let promptLibrary = PromptLibrary.shared
     private var monitoringTask: Task<Void, Never>?
-    private var marketData: MarketData?
-    private var tradingStats: TradingStats?
+
+    init() {
+        // Load last manual entry for prompt generation
+        loadManualDataEntry()
+    }
 
     func startMonitoring() async {
         loadTodayPrompts()
@@ -419,6 +423,7 @@ class PromptCoachViewModel: ObservableObject {
             while !Task.isCancelled {
                 checkActivePrompt()
                 checkConditionalPrompts()
+                loadManualDataEntry() // Refresh manual entry
                 try? await Task.sleep(nanoseconds: 60_000_000_000) // Check every minute
             }
         }
@@ -433,9 +438,9 @@ class PromptCoachViewModel: ObservableObject {
     }
 
     func checkConditionalPrompts() {
-        // Check VIX level and losing streak
-        let vix = marketData?.vix ?? 0
-        let losingStreak = tradingStats?.losingStreak ?? 0
+        // Check VIX level from manual entry
+        let vix = manualDataEntry?.vixLevel ?? 0
+        let losingStreak = 0 // User can track manually
 
         conditionalPrompts = promptLibrary.checkConditionalPrompts(
             vix: vix,
@@ -443,12 +448,79 @@ class PromptCoachViewModel: ObservableObject {
         )
     }
 
+    func loadManualDataEntry() {
+        // Load from UserDefaults
+        if let data = UserDefaults.standard.data(forKey: "lastMarketDataEntry"),
+           let entry = try? JSONDecoder().decode(MarketDataEntry.self, from: data) {
+            manualDataEntry = entry
+        }
+    }
+
     func isActive(_ prompt: TradingPrompt) -> Bool {
         activePrompt?.id == prompt.id
     }
 
     func generatePromptWithLiveData(_ prompt: TradingPrompt) -> String {
-        prompt.generateWithLiveData(marketData: marketData, tradingStats: tradingStats)
+        // Use manual entry data to pre-fill prompt
+        guard let entry = manualDataEntry else {
+            return prompt.template + "\n\n⚠️ No manual data entered. Go to Manual Data Entry to input current market conditions."
+        }
+
+        return generatePromptWithManualData(prompt, entry: entry)
+    }
+
+    private func generatePromptWithManualData(_ prompt: TradingPrompt, entry: MarketDataEntry) -> String {
+        var filledPrompt = prompt.template
+
+        // Replace placeholders with manual entry data
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[VXX_PRICE]", with: String(format: "$%.2f", entry.vxxPrice))
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[VIX_LEVEL]", with: String(format: "%.2f", entry.vixLevel))
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[VOLUME_PCT]", with: String(format: "%.0f%%", entry.volumePercent))
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[VWAP_POSITION]", with: entry.vwapPosition.displayName)
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[ARROW_SIGNAL]", with: entry.arrowSignal.displayName)
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[TIME_WINDOW]", with: entry.timeWindow.displayName)
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[ENTRY_TIME]", with: formatTime(entry.timestamp))
+
+        // Add volume classification
+        let volumeLevel = volumeClassification(entry.volumePercent)
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[VOLUME_LEVEL]", with: volumeLevel)
+
+        // Add data freshness indicator
+        let freshness = dataFreshness(entry.timestamp)
+        filledPrompt += "\n\n📊 Data entered: \(freshness)"
+        filledPrompt += "\n\n⚠️ Educational Tool: Analyze this setup and execute trades manually on your platform."
+
+        return filledPrompt
+    }
+
+    private func volumeClassification(_ volumePct: Double) -> String {
+        if volumePct >= 400 {
+            return "MAJOR INSTITUTION (400%+)"
+        } else if volumePct >= 300 {
+            return "INSTITUTIONAL FLOW (300%+)"
+        } else if volumePct >= 200 {
+            return "Standard Entry OK (200%+)"
+        } else {
+            return "BELOW THRESHOLD - SKIP"
+        }
+    }
+
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
+    private func dataFreshness(_ date: Date) -> String {
+        let minutes = Int(Date().timeIntervalSince(date) / 60)
+        if minutes < 1 {
+            return "just now"
+        } else if minutes < 60 {
+            return "\(minutes) minute\(minutes == 1 ? "" : "s") ago"
+        } else {
+            let hours = minutes / 60
+            return "\(hours) hour\(hours == 1 ? "" : "s") ago"
+        }
     }
 
     func copyPrompt(_ prompt: TradingPrompt) {
