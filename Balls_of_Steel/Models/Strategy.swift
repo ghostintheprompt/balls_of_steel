@@ -12,6 +12,13 @@ enum Strategy: String, CaseIterable {
     case vwapReversal = "VWAP Reversal"
     case powerHour = "Power Hour"
     case panicReversal = "Panic Reversal"
+
+    // VXX-specific strategies from ThinkOrSwim setup
+    case vxxFadeSetup = "VXX Fade Setup"
+    case vxxVolumeSpikePattern = "VXX Volume Spike + Pattern"
+    case vxxMorningWindow = "VXX Morning Window (9:50 AM)"
+    case vxxLunchWindow = "VXX Lunch Window (12:20 PM)"
+    case vxxPowerHourWindow = "VXX Power Hour (3:10 PM)"
     
     struct Criteria {
         let timeWindow: ClosedRange<Date>
@@ -79,7 +86,7 @@ enum Strategy: String, CaseIterable {
             
         // Updated legacy strategies with refined criteria
         case .gapAndGo:
-            return abs(data.gapPercent) >= 0.5 && abs(data.gapPercent) <= 2.0 && 
+            return abs(data.gapPercent) >= 0.5 && abs(data.gapPercent) <= 2.0 &&
                    data.volume >= 500_000 // Gap fill strategy criteria
         case .vwapReversal:
             return data.volume >= 750_000 && abs(data.vwapDeviation) >= 0.5
@@ -87,6 +94,42 @@ enum Strategy: String, CaseIterable {
             return data.volume >= 1_000_000 && data.consecutiveGreenBars >= 2
         case .panicReversal:
             return data.dropPercent >= 3.0 && data.volumeSpike >= 2_000_000
+
+        // VXX-specific strategies
+        case .vxxFadeSetup:
+            // VXX fade: Above resistance, bearish pattern (Shooting Star/Hanging Man), volume 150%+
+            return data.symbol == "VXX" &&
+                   data.hasPattern &&
+                   data.patternType == .bearish &&
+                   data.volume >= Int(Double(data.averageVolume) * 1.5)
+
+        case .vxxVolumeSpikePattern:
+            // Volume surge (150%+) + any pattern + 3%+ move
+            return data.symbol == "VXX" &&
+                   data.volume >= Int(Double(data.averageVolume) * 1.5) &&
+                   data.hasPattern &&
+                   abs(data.gapPercent) >= 3.0
+
+        case .vxxMorningWindow:
+            // 9:50-10:00 AM window: Pattern + volume confirmation
+            return data.symbol == "VXX" &&
+                   data.timestamp.isVXXMorningWindow &&
+                   data.hasPattern &&
+                   data.volume >= Int(Double(data.averageVolume) * 1.5)
+
+        case .vxxLunchWindow:
+            // 12:20-12:35 PM window: Pattern + volume + VIX context
+            return data.symbol == "VXX" &&
+                   data.timestamp.isVXXLunchWindow &&
+                   data.hasPattern &&
+                   data.volume >= data.averageVolume
+
+        case .vxxPowerHourWindow:
+            // 3:10-3:25 PM window: Pattern + volume + reversal setup
+            return data.symbol == "VXX" &&
+                   data.timestamp.isVXXPowerHourWindow &&
+                   data.hasPattern &&
+                   data.volume >= Int(Double(data.averageVolume) * 1.5)
         }
     }
     
@@ -184,9 +227,15 @@ enum Strategy: String, CaseIterable {
         case .preMarketInstitutionalFlow: return 0.70 // Estimated
         case .weeklyOptionsExpiration: return 0.75   // Estimated
         case .gapAndGo: return 0.70                  // Updated
-        case .vwapReversal: return 0.68              // Updated  
+        case .vwapReversal: return 0.68              // Updated
         case .powerHour: return 0.65                 // Updated
         case .panicReversal: return 0.72             // Updated
+        // VXX strategies based on ThinkOrSwim system
+        case .vxxFadeSetup: return 0.75              // Strong pattern-based fade
+        case .vxxVolumeSpikePattern: return 0.70     // Volume + pattern combination
+        case .vxxMorningWindow: return 0.72          // Morning setup window
+        case .vxxLunchWindow: return 0.68            // Lunch window
+        case .vxxPowerHourWindow: return 0.73        // Power hour window
         }
     }
     

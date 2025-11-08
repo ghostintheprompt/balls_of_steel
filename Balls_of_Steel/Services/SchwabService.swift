@@ -164,4 +164,104 @@ class SchwabService: ObservableObject {
     func connectToStream() async throws {
         try await streamQuotes([])
     }
+
+    // MARK: - Options Chain Data
+    /// Fetch options chain for VXX (for put/call entries)
+    func fetchOptionsChain(symbol: String, daysToExpiration: Int = 4) async throws -> OptionsChain {
+        let endpoint = "\(baseURL)/markets/options/\(symbol)?daysToExpiration=\(daysToExpiration)"
+        let request = authenticatedRequest(for: endpoint)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 429 {
+            throw SchwabError.rateLimitExceeded
+        }
+
+        return try handleResponse(data)
+    }
+
+    /// Fetch implied volatility for a symbol
+    func fetchImpliedVolatility(symbol: String) async throws -> ImpliedVolatilityData {
+        let endpoint = "\(baseURL)/markets/\(symbol)/iv"
+        let request = authenticatedRequest(for: endpoint)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 429 {
+            throw SchwabError.rateLimitExceeded
+        }
+
+        return try handleResponse(data)
+    }
+
+    /// Get VXX and VIX data for ratio monitoring
+    func fetchVXXVIXData() async throws -> (vxx: Quote, vix: Quote) {
+        async let vxxQuote = fetchQuote("VXX")
+        async let vixQuote = fetchQuote("VIX")
+
+        return try await (vxx: vxxQuote, vix: vixQuote)
+    }
+
+    /// Fetch historical candles for pattern recognition and indicators
+    func fetchHistoricalCandles(symbol: String, period: CandlePeriod = .fiveMinutes, days: Int = 5) async throws -> [Candle] {
+        let endpoint = "\(baseURL)/markets/\(symbol)/candles?period=\(period.rawValue)&days=\(days)"
+        let request = authenticatedRequest(for: endpoint)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 429 {
+            throw SchwabError.rateLimitExceeded
+        }
+
+        let response: CandlesResponse = try handleResponse(data)
+        return response.candles
+    }
+
+    enum CandlePeriod: String {
+        case oneMinute = "1m"
+        case fiveMinutes = "5m"
+        case fifteenMinutes = "15m"
+        case thirtyMinutes = "30m"
+        case oneHour = "1h"
+        case daily = "1d"
+    }
+}
+
+// MARK: - Supporting Data Structures
+struct OptionsChain: Codable {
+    let symbol: String
+    let calls: [OptionContract]
+    let puts: [OptionContract]
+    let underlyingPrice: Double
+}
+
+struct OptionContract: Codable {
+    let strike: Double
+    let expiration: Date
+    let bid: Double
+    let ask: Double
+    let last: Double
+    let volume: Int
+    let openInterest: Int
+    let delta: Double
+    let gamma: Double
+    let theta: Double
+    let vega: Double
+    let impliedVolatility: Double
+}
+
+struct ImpliedVolatilityData: Codable {
+    let symbol: String
+    let iv: Double
+    let ivRank: Double
+    let ivPercentile: Double
+    let timestamp: Date
+}
+
+struct CandlesResponse: Codable {
+    let symbol: String
+    let candles: [Candle]
 } 
