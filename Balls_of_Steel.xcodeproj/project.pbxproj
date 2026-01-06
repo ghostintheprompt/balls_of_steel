@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		1A000001000000000000001A /* MainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000002000000000000001A /* MainApp.swift */; };
-		1A000003000000000000001A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000004000000000000001A /* ContentView.swift */; };
 		1A000005000000000000001A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A000006000000000000001A /* Assets.xcassets */; };
 		1A000007000000000000001A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000008000000000000001A /* AppDelegate.swift */; };
 		1A000009000000000000001A /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00000A000000000000001A /* Settings.swift */; };
@@ -27,8 +26,6 @@
 		1A000023000000000000001A /* StrategyParams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000024000000000000001A /* StrategyParams.swift */; };
 		1A000025000000000000001A /* Trade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000026000000000000001A /* Trade.swift */; };
 		1A000027000000000000001A /* TradingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000028000000000000001A /* TradingCriteria.swift */; };
-		1A000029000000000000001A /* TradingTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00002A000000000000001A /* TradingTypes.swift */; };
-		1A00002B000000000000001A /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00002C000000000000001A /* Types.swift */; };
 		1A00002D000000000000001A /* ValidationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00002E000000000000001A /* ValidationModels.swift */; };
 		1A00002F000000000000001A /* ExitSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000030000000000000001A /* ExitSignalService.swift */; };
 		1A000031000000000000001A /* MarketDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000032000000000000001A /* MarketDataService.swift */; };
@@ -55,10 +52,7 @@
 		1A00005B000000000000001B /* WidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00005C000000000000001B /* WidgetEntry.swift */; };
 		1A00005D000000000000001B /* WidgetError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00005E000000000000001B /* WidgetError.swift */; };
 		1A00005F000000000000001B /* WidgetLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000060000000000000001B /* WidgetLifecycle.swift */; };
-		1A000061000000000000001B /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000062000000000000001B /* ErrorView.swift */; };
 		1A000063000000000000001B /* MarketPhaseIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000064000000000000001B /* MarketPhaseIndicator.swift */; };
-		1A000065000000000000001B /* MarketStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000066000000000000001B /* MarketStatusBar.swift */; };
-		1A000067000000000000001B /* SignalRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000068000000000000001B /* SignalRowView.swift */; };
 		1A000069000000000000001B /* WidgetComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00006A000000000000001B /* WidgetComponents.swift */; };
 		1A00006B000000000000001B /* WidgetPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00006C000000000000001B /* WidgetPreviews.swift */; };
 		1A00006D000000000000001B /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00006E000000000000001B /* WidgetViews.swift */; };
@@ -67,7 +61,6 @@
 /* Begin PBXFileReference section */
 		1A000001000000000000001B /* Balls_of_Steel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Balls_of_Steel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000002000000000000001A /* MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainApp.swift; sourceTree = "<group>"; };
-		1A000004000000000000001A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A000006000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A000008000000000000001A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A00000A000000000000001A /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
@@ -86,8 +79,6 @@
 		1A000024000000000000001A /* StrategyParams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyParams.swift; sourceTree = "<group>"; };
 		1A000026000000000000001A /* Trade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Trade.swift; sourceTree = "<group>"; };
 		1A000028000000000000001A /* TradingCriteria.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradingCriteria.swift; sourceTree = "<group>"; };
-		1A00002A000000000000001A /* TradingTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradingTypes.swift; sourceTree = "<group>"; };
-		1A00002C000000000000001A /* Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
 		1A00002E000000000000001A /* ValidationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationModels.swift; sourceTree = "<group>"; };
 		1A000030000000000000001A /* ExitSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitSignalService.swift; sourceTree = "<group>"; };
 		1A000032000000000000001A /* MarketDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketDataService.swift; sourceTree = "<group>"; };
@@ -116,10 +107,7 @@
 		1A00005C000000000000001B /* WidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetEntry.swift; sourceTree = "<group>"; };
 		1A00005E000000000000001B /* WidgetError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetError.swift; sourceTree = "<group>"; };
 		1A000060000000000000001B /* WidgetLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetLifecycle.swift; sourceTree = "<group>"; };
-		1A000062000000000000001B /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 		1A000064000000000000001B /* MarketPhaseIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketPhaseIndicator.swift; sourceTree = "<group>"; };
-		1A000066000000000000001B /* MarketStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketStatusBar.swift; sourceTree = "<group>"; };
-		1A000068000000000000001B /* SignalRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalRowView.swift; sourceTree = "<group>"; };
 		1A00006A000000000000001B /* WidgetComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetComponents.swift; sourceTree = "<group>"; };
 		1A00006C000000000000001B /* WidgetPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPreviews.swift; sourceTree = "<group>"; };
 		1A00006E000000000000001B /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
@@ -212,8 +200,6 @@
 				1A000024000000000000001A /* StrategyParams.swift */,
 				1A000026000000000000001A /* Trade.swift */,
 				1A000028000000000000001A /* TradingCriteria.swift */,
-				1A00002A000000000000001A /* TradingTypes.swift */,
-				1A00002C000000000000001A /* Types.swift */,
 				1A00002E000000000000001A /* ValidationModels.swift */,
 			);
 			path = Models;
@@ -243,7 +229,6 @@
 			children = (
 				1A000048000000000000001A /* ActiveTradesView.swift */,
 				1A00004A000000000000001A /* AlertView.swift */,
-				1A000004000000000000001A /* ContentView.swift */,
 				1A00004C000000000000001A /* MainView.swift */,
 				1A00004E000000000000001A /* SettingsView.swift */,
 				1A000050000000000000001A /* TradingDashboard.swift */,
@@ -285,10 +270,7 @@
 		1A000070000000000000001B /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				1A000062000000000000001B /* ErrorView.swift */,
 				1A000064000000000000001B /* MarketPhaseIndicator.swift */,
-				1A000066000000000000001B /* MarketStatusBar.swift */,
-				1A000068000000000000001B /* SignalRowView.swift */,
 				1A00006A000000000000001B /* WidgetComponents.swift */,
 				1A00006C000000000000001B /* WidgetPreviews.swift */,
 				1A00006E000000000000001B /* WidgetViews.swift */,
@@ -367,7 +349,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A000001000000000000001A /* MainApp.swift in Sources */,
-				1A000003000000000000001A /* ContentView.swift in Sources */,
 				1A000007000000000000001A /* AppDelegate.swift in Sources */,
 				1A000009000000000000001A /* Settings.swift in Sources */,
 				1A00000B000000000000001A /* AppConfig.swift in Sources */,
@@ -385,8 +366,6 @@
 				1A000023000000000000001A /* StrategyParams.swift in Sources */,
 				1A000025000000000000001A /* Trade.swift in Sources */,
 				1A000027000000000000001A /* TradingCriteria.swift in Sources */,
-				1A000029000000000000001A /* TradingTypes.swift in Sources */,
-				1A00002B000000000000001A /* Types.swift in Sources */,
 				1A00002D000000000000001A /* ValidationModels.swift in Sources */,
 				1A00002F000000000000001A /* ExitSignalService.swift in Sources */,
 				1A000031000000000000001A /* MarketDataService.swift in Sources */,
@@ -412,10 +391,7 @@
 				1A00005B000000000000001B /* WidgetEntry.swift in Sources */,
 				1A00005D000000000000001B /* WidgetError.swift in Sources */,
 				1A00005F000000000000001B /* WidgetLifecycle.swift in Sources */,
-				1A000061000000000000001B /* ErrorView.swift in Sources */,
 				1A000063000000000000001B /* MarketPhaseIndicator.swift in Sources */,
-				1A000065000000000000001B /* MarketStatusBar.swift in Sources */,
-				1A000067000000000000001B /* SignalRowView.swift in Sources */,
 				1A000069000000000000001B /* WidgetComponents.swift in Sources */,
 				1A00006B000000000000001B /* WidgetPreviews.swift in Sources */,
 				1A00006D000000000000001B /* WidgetViews.swift in Sources */,
