@@ -62,8 +62,37 @@ struct Candle: Codable, Identifiable {
     let close: Double
     let volume: Int
     let timestamp: Date
-    
+
     private enum CodingKeys: CodingKey {
         case open, high, low, close, volume, timestamp
+    }
+
+    // Technical metrics
+    var bodySize: Double {
+        abs(close - open)
+    }
+
+    var upperShadow: Double {
+        high - max(open, close)
+    }
+
+    var lowerShadow: Double {
+        min(open, close) - low
+    }
+
+    var totalRange: Double {
+        high - low
+    }
+
+    var bodyPercent: Double {
+        totalRange > 0 ? bodySize / totalRange : 0
+    }
+
+    var isBullish: Bool {
+        close > open
+    }
+
+    var isBearish: Bool {
+        close < open
     }
 }

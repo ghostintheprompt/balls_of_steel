@@ -25,7 +25,7 @@ struct Signal {
             quote: marketData,
             strategy: strategy,
             volumeProfile: VolumeProfile(
-                averageVolume: Double(marketData.volume),
+                avgVolume: Double(marketData.volume),
                 currentVolume: Double(marketData.volume)
             )
         )
@@ -50,20 +50,17 @@ struct Signal {
 
 extension Strategy {
     var criteria: TradeCriteria {
-        let tm = TimeManager.shared
-        
+        // Default criteria - customize for each strategy
         switch self {
         case .gapAndGo:
             return .init(
-                timeWindow: tm.gapAndGoWindow,
                 volumeThreshold: 500_000,
-                priceAction: .gapUp(percent: 2.0),
+                priceAction: .gapUp(2.0),
                 stopLoss: 0.5,
                 target: 2.0
             )
         case .vwapReversal:
             return .init(
-                timeWindow: tm.vwapReversalWindow,
                 volumeThreshold: 750_000,
                 priceAction: .vwapCross,
                 stopLoss: 0.75,
@@ -71,19 +68,24 @@ extension Strategy {
             )
         case .powerHour:
             return .init(
-                timeWindow: tm.powerHourWindow,
                 volumeThreshold: 750_000,
-                priceAction: .vwapCross,
+                priceAction: .momentum,
                 stopLoss: 0.75,
                 target: 1.5
             )
         case .panicReversal:
             return .init(
-                timeWindow: tm.marketOpen...tm.marketClose,
                 volumeThreshold: 2_000_000,
                 priceAction: .panicDrop,
                 stopLoss: 1.0,
                 target: 3.0
+            )
+        default:
+            return .init(
+                volumeThreshold: 500_000,
+                priceAction: .momentum,
+                stopLoss: 0.5,
+                target: 1.5
             )
         }
     }
@@ -108,9 +110,12 @@ extension Strategy {
                 entry: data.quote.price,
                 stop: data.quote.price * (1 - AppConfig.Thresholds.gapAndGo.stopLoss/100),
                 target: data.quote.price * (1 + AppConfig.Thresholds.gapAndGo.target/100),
-                timestamp: data.quote.timestamp
+                timestamp: data.quote.timestamp,
+                confidence: 0.75,
+                setupQuality: .good,
+                positionSizePercent: 2.0
             )
-            
+
         case .vwapReversal:
             guard data.quote.timestamp.isVWAPWindow,
                   data.hasVWAPDeviation,
@@ -124,9 +129,12 @@ extension Strategy {
                 entry: data.quote.price,
                 stop: data.quote.price * (1 - AppConfig.Thresholds.vwapReversal.stopLoss/100),
                 target: data.quote.price * (1 + AppConfig.Thresholds.vwapReversal.target/100),
-                timestamp: data.quote.timestamp
+                timestamp: data.quote.timestamp,
+                confidence: 0.70,
+                setupQuality: .good,
+                positionSizePercent: 2.0
             )
-            
+
         case .powerHour:
             guard data.quote.timestamp.isPowerHourWindow,
                   data.quote.hasMomentum,
@@ -140,9 +148,12 @@ extension Strategy {
                 entry: data.quote.price,
                 stop: data.quote.price * (1 - AppConfig.Thresholds.powerHour.stopLoss/100),
                 target: data.quote.price * (1 + AppConfig.Thresholds.powerHour.target/100),
-                timestamp: data.quote.timestamp
+                timestamp: data.quote.timestamp,
+                confidence: 0.80,
+                setupQuality: .perfect,
+                positionSizePercent: 2.5
             )
-            
+
         case .panicReversal:
             // Panic plays can happen anytime during market hours
             guard data.quote.timestamp.isWithinTradingHours(),
@@ -157,8 +168,14 @@ extension Strategy {
                 entry: data.quote.price,
                 stop: data.quote.price * (1 - AppConfig.Thresholds.panicReversal.stopLoss/100),
                 target: data.quote.price * (1 + AppConfig.Thresholds.panicReversal.target/100),
-                timestamp: data.quote.timestamp
+                timestamp: data.quote.timestamp,
+                confidence: 0.65,
+                setupQuality: .good,
+                positionSizePercent: 1.5
             )
+        default:
+            // Handle all other strategies with default values
+            return nil
         }
     }
 }

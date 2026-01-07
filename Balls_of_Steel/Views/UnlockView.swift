@@ -263,7 +263,7 @@ struct UnlockView: View {
             .font(.subheadline)
             .foregroundColor(.blue)
         }
-        .disabled(case .restoring = storeKit.purchaseState)
+        .disabled(storeKit.purchaseState == .restoring)
     }
 
     // MARK: - Fine Print

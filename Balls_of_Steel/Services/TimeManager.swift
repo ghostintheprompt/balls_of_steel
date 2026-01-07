@@ -40,10 +40,10 @@ class TimeManager: ObservableObject {
         return calendar.date(from: components) ?? Date()
     }
     
-    func currentPhase() -> MarketPhase {
+    func calculateCurrentPhase() -> MarketPhase {
         let now = Date()
         let timeStr = formatter.string(from: now)
-        
+
         switch timeStr {
         case ..<"09:30": return .preMarket
         case "09:30"..."10:00": return .opening
@@ -53,10 +53,10 @@ class TimeManager: ObservableObject {
         default: return .regular
         }
     }
-    
+
     // Missing method for MarketData validation
     func isMarketHours() -> Bool {
-        let phase = currentPhase()
+        let phase = calculateCurrentPhase()
         return ![.preMarket, .afterHours].contains(phase)
     }
     

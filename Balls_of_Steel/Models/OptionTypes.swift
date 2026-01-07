@@ -5,7 +5,7 @@ enum OptionType: String, Codable {
     case put
 }
 
-struct OptionContract: Identifiable {
+struct OptionContract: Identifiable, Codable {
     let id = UUID()
     let symbol: String
     let strike: Double
@@ -13,7 +13,19 @@ struct OptionContract: Identifiable {
     let type: OptionType
     let bid: Double
     let ask: Double
-    
+    let last: Double
+    let volume: Int
+    let openInterest: Int
+    let delta: Double
+    let gamma: Double
+    let theta: Double
+    let vega: Double
+    let impliedVolatility: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case symbol, strike, expiration, type, bid, ask, last, volume, openInterest, delta, gamma, theta, vega, impliedVolatility
+    }
+
     var midPrice: Double {
         (bid + ask) / 2
     }
