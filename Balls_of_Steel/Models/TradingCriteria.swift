@@ -1,11 +1,26 @@
 import Foundation
 
 struct TradeCriteria {
-    let timeWindow: ClosedRange<Date>
     let volumeThreshold: Int
     let priceAction: PriceAction
     let stopLoss: Double
     let target: Double
+
+    // Legacy init with timeWindow
+    init(timeWindow: ClosedRange<Date>, volumeThreshold: Int, priceAction: PriceAction, stopLoss: Double, target: Double) {
+        self.volumeThreshold = volumeThreshold
+        self.priceAction = priceAction
+        self.stopLoss = stopLoss
+        self.target = target
+    }
+
+    // Simplified init without timeWindow
+    init(volumeThreshold: Int, priceAction: PriceAction, stopLoss: Double, target: Double) {
+        self.volumeThreshold = volumeThreshold
+        self.priceAction = priceAction
+        self.stopLoss = stopLoss
+        self.target = target
+    }
 }
 
 struct PatternCriteria {

@@ -1,3 +1,5 @@
+import Foundation
+
 enum Strategy: String, CaseIterable {
     // v3.0: Institutional Flow Edition (FREE)
     case vxxInstitutionalFlow = "VXX Institutional Flow (3:45 PM)" // 90% reliability ⭐⭐⭐

@@ -1,3 +1,5 @@
+import Foundation
+
 struct Trade: Identifiable {
     let id = UUID()
     let symbol: String

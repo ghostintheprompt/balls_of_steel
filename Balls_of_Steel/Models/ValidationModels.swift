@@ -54,12 +54,29 @@ enum SignalStrength {
     case strong
     case medium
     case weak
-    
+
     var color: Color {
         switch self {
         case .strong: return .green
         case .medium: return .yellow
         case .weak: return .red
         }
+    }
+}
+
+struct VolumeProfile {
+    let avgVolume: Double
+    let currentVolume: Double
+
+    var volumeRatio: Double {
+        avgVolume > 0 ? currentVolume / avgVolume : 0
+    }
+
+    var isAboveAverage: Bool {
+        currentVolume > avgVolume
+    }
+
+    var isHighVolume: Bool {
+        volumeRatio >= 1.5  // 50% above average
     }
 } 

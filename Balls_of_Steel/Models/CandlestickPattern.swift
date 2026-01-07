@@ -54,45 +54,6 @@ struct CandlestickPattern {
     }
 }
 
-// MARK: - Candle Structure
-struct Candle: Codable {
-    let timestamp: Date
-    let open: Double
-    let high: Double
-    let low: Double
-    let close: Double
-    let volume: Int
-
-    // Technical metrics
-    var bodySize: Double {
-        abs(close - open)
-    }
-
-    var upperShadow: Double {
-        high - max(open, close)
-    }
-
-    var lowerShadow: Double {
-        min(open, close) - low
-    }
-
-    var totalRange: Double {
-        high - low
-    }
-
-    var bodyPercent: Double {
-        totalRange > 0 ? bodySize / totalRange : 0
-    }
-
-    var isBullish: Bool {
-        close > open
-    }
-
-    var isBearish: Bool {
-        close < open
-    }
-}
-
 // MARK: - Pattern Recognition Engine
 class PatternRecognizer {
 

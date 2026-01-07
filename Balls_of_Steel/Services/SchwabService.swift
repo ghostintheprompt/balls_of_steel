@@ -44,7 +44,13 @@ class SchwabService: ObservableObject {
         // Return empty publisher - use manual data entry instead
         return Empty().eraseToAnyPublisher()
     }
-    
+
+    /// Educational mode - OAuth not required
+    /// This app is for manual data entry only
+    func exchangeCodeForToken(_ code: String) async throws -> String {
+        throw SchwabError.educationalModeOnly
+    }
+
     // MARK: - Error Handling
     enum SchwabError: Error {
         case educationalModeOnly
@@ -223,21 +229,6 @@ struct OptionsChain: Codable {
     let calls: [OptionContract]
     let puts: [OptionContract]
     let underlyingPrice: Double
-}
-
-struct OptionContract: Codable {
-    let strike: Double
-    let expiration: Date
-    let bid: Double
-    let ask: Double
-    let last: Double
-    let volume: Int
-    let openInterest: Int
-    let delta: Double
-    let gamma: Double
-    let theta: Double
-    let vega: Double
-    let impliedVolatility: Double
 }
 
 struct ImpliedVolatilityData: Codable {

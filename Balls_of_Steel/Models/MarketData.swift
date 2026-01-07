@@ -51,12 +51,8 @@ struct MarketData {
         guard let high = quote.recentCandles.last?.high else { return 0 }
         return ((high - quote.price) / high) * 100
     }
-    var volumeSpike: Int {
-        // Primary volume spike calculation using historical average
-        volume - averageVolume
-    }
     var isVolumeDecline: Bool {
-        volume < averageVolume * 0.8  // Volume 20% below average indicates decline
+        Double(volume) < averageVolume * 0.8  // Volume 20% below average indicates decline
     }
     var timestamp: Date {
         quote.timestamp

@@ -1,7 +1,8 @@
 import WidgetKit
 import SwiftUI
 
-@main
+// Note: Widget extensions need their own target. This is currently disabled.
+// @main
 struct TradingWidgets: WidgetBundle {
     var body: some Widget {
         TradingWidget()
