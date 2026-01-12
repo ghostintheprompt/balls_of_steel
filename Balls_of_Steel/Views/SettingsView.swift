@@ -17,7 +17,7 @@ struct SettingsView: View {
                         if connectionManager.isConnected {
                             // Disconnect logic
                         } else {
-                            try? await connectionManager.streamQuotes([])
+                            try? await connectionManager.streamQuotes(symbols: [])
                         }
                     }
                 }

@@ -29,7 +29,17 @@ struct TradeDetailCard: View {
                     StrategyBadge(strategy: trade.strategy)
                 }
                 Spacer()
-                ProfitLossView(entry: trade.entry, current: trade.currentPrice)
+                // P&L Display
+                VStack(alignment: .trailing) {
+                    let pnl = trade.currentPrice - trade.entry
+                    let pnlPercent = (pnl / trade.entry) * 100
+                    Text(String(format: "$%.2f", pnl))
+                        .font(.title3)
+                        .foregroundColor(pnl >= 0 ? .green : .red)
+                    Text(String(format: "%.2f%%", pnlPercent))
+                        .font(.caption)
+                        .foregroundColor(pnl >= 0 ? .green : .red)
+                }
             }
             
             // Chart
@@ -43,11 +53,31 @@ struct TradeDetailCard: View {
             
             // Risk Management
             HStack {
-                RiskLabel("Stop", price: trade.stop, isStop: true)
+                // Stop
+                VStack {
+                    Text("Stop")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(String(format: "$%.2f", trade.stop))
+                        .foregroundColor(.red)
+                }
                 Spacer()
-                RiskLabel("Entry", price: trade.entry)
+                // Entry
+                VStack {
+                    Text("Entry")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(String(format: "$%.2f", trade.entry))
+                }
                 Spacer()
-                RiskLabel("Target", price: trade.target)
+                // Target
+                VStack {
+                    Text("Target")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(String(format: "$%.2f", trade.target))
+                        .foregroundColor(.green)
+                }
             }
             
             // Actions
@@ -64,7 +94,7 @@ struct TradeDetailCard: View {
             }
         }
         .padding()
-        .background(Color(uiColor: .secondarySystemBackground))
+        .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(12)
         .padding(.horizontal)
     }

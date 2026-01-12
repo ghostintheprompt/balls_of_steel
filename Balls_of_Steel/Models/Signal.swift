@@ -1,6 +1,6 @@
 import Foundation
 
-struct Signal {
+struct Signal: Identifiable {
     let id = UUID()
     let symbol: String
     let strategy: Strategy
@@ -15,23 +15,9 @@ struct Signal {
     var winRate: Double {
         strategy.historicalWinRate
     }
-    
-    var isValid: Bool {
-        guard let marketData = try? MarketDataService.shared.latestQuote(symbol: symbol) else {
-            return false
-        }
-        
-        let validation = ValidationResult.validate(
-            quote: marketData,
-            strategy: strategy,
-            volumeProfile: VolumeProfile(
-                avgVolume: Double(marketData.volume),
-                currentVolume: Double(marketData.volume)
-            )
-        )
-        
-        return validation.isValid
-    }
+
+    // Note: isValid removed due to main actor isolation issues
+    // Use SignalMonitor to validate signals instead
     
     // Risk-reward ratio
     var riskRewardRatio: Double {
@@ -192,12 +178,35 @@ enum Pattern {
         case .gapAndGo:
             return .init(
                 timeWindow: "9:30-10:00",
-                volumeThreshold: 500_000,  // Your exact volume requirement
-                priceAction: .gapUp(2.0),  // Your exact gap % requirement
-                stopLevel: 0.5,            // Your exact stop
-                targetLevel: 2.0           // Your exact target
+                volumeThreshold: 500_000,
+                priceAction: .gapUp(2.0),
+                stopLevel: 0.5,
+                targetLevel: 2.0
             )
-        // Other patterns with your exact numbers
+        case .vwapReversal:
+            return .init(
+                timeWindow: "11:30-13:30",
+                volumeThreshold: 750_000,
+                priceAction: .vwapCross,
+                stopLevel: 1.0,
+                targetLevel: 2.0
+            )
+        case .powerHour:
+            return .init(
+                timeWindow: "15:00-16:00",
+                volumeThreshold: 1_000_000,
+                priceAction: .momentum,
+                stopLevel: 0.75,
+                targetLevel: 1.5
+            )
+        case .panicReversal:
+            return .init(
+                timeWindow: "Any",
+                volumeThreshold: 2_000_000,
+                priceAction: .panicDrop,
+                stopLevel: 1.0,
+                targetLevel: 3.0
+            )
         }
     }
 } 

@@ -1,4 +1,5 @@
-# Balls of Steel Trading Algorithm v3.0
+# Balls of Steel v3.0 - VXX Trading System
+**Institutional Flow Edition**
 
 > **Your phone beeps. VXX institutional flow. 300% volume. Arrow confirmed. You make the trade.**
 
@@ -6,13 +7,13 @@
 ![Swift](https://img.shields.io/badge/swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-0D96F6?style=for-the-badge&logo=swift&logoColor=white)
 
-Professional VXX trading system for traders who are too busy to watch charts all day. Real-time signal validation, institutional flow tracking, AI prompt coach. Not automated—but close.
+**Educational VXX trading system** for traders who are too busy to watch charts all day. Real-time signal validation, institutional flow tracking, AI prompt coach. Not automated—but close.
+
+**⚠️ EDUCATIONAL MODE:** Manual data entry only. You enter VXX/VIX prices, the system validates signals. Execute trades on your own platform (ThinkOrSwim, Schwab, TD Ameritrade, etc.).
 
 ---
 
 ## 🎯 What This Does
-
-You're walking into a meeting. Your phone vibrates. Glance at the notification:
 
 ```
 ⭐ INSTITUTIONAL FLOW ⭐
@@ -22,36 +23,32 @@ Arrow Signal CONFIRMED
 Entry: Buy $41 puts
 ```
 
-30 seconds. You execute the trade. Back to your meeting. That's it.
-
 **This system tells you:**
-- WHAT to trade (VXX - the one instrument you master)
-- WHEN to trade (5 time windows, 70-90% reliability)
-- HOW MUCH volume confirms it (200%+ required, 300%+ institutional)
-- WHETHER to take it (Arrow signal validation, Strong/Moderate/Weak)
+- **WHAT to trade:** VXX (master one instrument)
+- **WHEN to trade:** 5 time windows (70-90% reliability)
+- **HOW MUCH volume:** 200%+ required, 300%+ institutional
+- **WHETHER to take it:** Arrow signal validation (Strong/Moderate/Weak)
 
 **You decide. You execute. You profit.**
 
 ---
 
-## 🚀 v3.0: Institutional Flow Edition
+## 🚀 v3.0 Features
 
 ### Arrow Signal System ⭐⭐⭐
-
 **Volume is the gate keeper.** Arrow without volume? Ignore completely.
 
 - **200%+ volume** = Required for any entry
-- **300%+ volume** = Institutional threshold (follow the money)
+- **300%+ volume** = Institutional threshold
 - **400%+ volume** = Major institution (highest conviction)
 
-Signal strength tells you position size:
-- **STRONG**: Full position (1 contract max)
-- **MODERATE**: Half position (0.5 contract)
-- **WEAK**: Skip entirely
+Signal strength determines position size:
+- **STRONG:** Full position
+- **MODERATE:** Half position
+- **WEAK:** Skip entirely
 
-### Institutional Flow Window (3:45-4:10 PM) 90% Reliability
-
-**The supreme window.** Portfolio rebalancing. Mutual fund flows. Index rebalancing. Real money, real conviction.
+### Institutional Flow Window (3:45-4:10 PM)
+**90% reliability.** Portfolio rebalancing. Mutual fund flows. Index rebalancing.
 
 When you see:
 - Volume explosion >300%
@@ -61,7 +58,6 @@ When you see:
 **Join the flow. Don't fade institutional money.**
 
 ### Prompt Coach 🧠
-
 Your personal AI analyst. No subscriptions. No APIs. Just smart.
 
 **How it works:**
@@ -77,157 +73,104 @@ Your personal AI analyst. No subscriptions. No APIs. Just smart.
 - 9:45 AM: Morning window check
 - 12:15 PM: Lunch window assessment
 - 3:05 PM: Power hour prep
-- 3:40 PM: **Institutional flow alert**
+- **3:40 PM: Institutional flow alert** ⭐
 - 3:55 PM: Post-trade review
-
-No guesswork. No emotion. Just systematic edge.
 
 ---
 
-## 📊 Win Rates (Updated v3.0)
+## 📊 Win Rates
 
-| Strategy/Window | Win Rate | Reliability | When to Trade |
-|-----------------|----------|-------------|---------------|
-| **Institutional Flow (3:45-4:10 PM)** | **90%** | **90%** | **Priority #1** ⭐⭐⭐ |
-| Morning Fade (9:50-10:15 AM) | 72% | 85% | Priority #2 |
-| Power Hour (3:10-3:25 PM) | 73% | 80% | Priority #3 |
-| Lunch Drift (12:20-12:40 PM) | 68% | 70% | Priority #4 |
-| VXX Fade Setup | 75% | - | Pattern-based |
-| VXX Volume Spike | 70% | - | Volume surge |
+| Strategy/Window | Win Rate | When to Trade |
+|-----------------|----------|---------------|
+| **Institutional Flow (3:45-4:10 PM)** | **90%** | **Priority #1** ⭐⭐⭐ |
+| Morning Fade (9:50-10:15 AM) | 72% | Priority #2 |
+| Power Hour (3:10-3:25 PM) | 73% | Priority #3 |
+| Lunch Drift (12:20-12:40 PM) | 68% | Priority #4 |
+| VXX Fade Setup | 75% | Pattern-based |
+| VXX Volume Spike | 70% | Volume surge |
 
-**Overall edge**: 70-90% win rate with proper signal validation.
+**Overall edge:** 70-90% win rate with proper signal validation.
 
 ---
 
 ## 🏗 Architecture
 
-Built for speed. Built for reliability. Built for traders who don't have time for bullshit.
-
-### Core Systems
-
-**Signal Scanner** - 30-second scans during market hours
-- Detects arrow signals with volume confirmation
-- Validates technical confluence (MA cross, VWAP break, patterns)
-- Calculates signal strength (Strong/Moderate/Weak)
-- Filters out noise (arrow without volume = ignore)
-
-**Institutional Flow Tracker** - Real-time volume monitoring
-- Identifies 300%+ volume explosions
-- Detects portfolio rebalancing flows
-- Tracks mutual fund and index fund activity
-- Alerts you at 3:45 PM window
-
-**Event Day Manager** - FOMC/Fed/CPI detection
-- Automatically adjusts position sizing (50% on event days)
-- Exits positions 15 minutes before announcements
-- Identifies post-event fade opportunities
-- Monitors IV levels for quick-scalp adjustments
-
-**Prompt Coach** - Smart scheduling engine
-- Delivers right prompt at right time
-- Pre-fills live market data automatically
-- One-tap copy to clipboard
-- Works with ChatGPT, Claude, any AI
-
-**Dynamic Position Sizer** - Volume/IV-based sizing
-- Institutional flow (300%+ volume) = higher conviction
-- High IV (>85%) = reduce by 50%, quick scalp
-- Event days = 50% normal size
-- **Greed control: 1 contract maximum enforced**
-
 ### VXX-Specific Strategies
+All strategies focus on **one instrument:** VXX. Master one, not many.
 
-All strategies focus on **one instrument**: VXX. Master one, not many.
+1. **VXX Institutional Flow** (90%) - 3:45-4:10 PM window FREE ⭐
+2. **VXX Fade Setup** (75%) - Pattern-based reversals 🔒
+3. **VXX Power Hour** (73%) - End-of-day mean reversion 🔒
+4. **VXX Morning Window** (72%) - Early fade opportunities 🔒
+5. **VXX Volume Spike** (70%) - Spike exhaustion plays 🔒
+6. **VXX Lunch Drift** (68%) - Midday weakness 🔒
 
-1. **VXX Institutional Flow** (90% win rate) - 3:45-4:10 PM window
-2. **VXX Fade Setup** (75%) - Pattern-based reversals at resistance
-3. **VXX Power Hour** (73%) - End-of-day mean reversion
-4. **VXX Morning Window** (72%) - Early fade opportunities
-5. **VXX Volume Spike** (70%) - Spike exhaustion plays
-6. **VXX Lunch Drift** (68%) - Midday weakness
-
-**Plus:** 11 additional strategies for broader opportunities (earnings, 0DTE, VIX spikes, momentum, etc.)
+**Plus:** 10 additional strategies (earnings, 0DTE, VIX spikes, momentum, etc.) 🔒
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
+- macOS 13.0+ (Ventura) or iOS 16+
+- Xcode 15.0+ (for building from source)
+- Swift 5.9+
+- Trading platform (ThinkOrSwim, Schwab, TD Ameritrade, etc.)
 
-- macOS 13.0+ (Ventura)
-- Xcode 14.0+
-- Swift 5.7+
-- Schwab account with options approval
-- Charles Schwab API access
+### Quick Start
 
-### Installation
-
+1. **Clone & Build**
 ```bash
-# Clone
 git clone <repository-url>
 cd balls_of_steel
-
-# Open in Xcode
 open Balls_of_Steel.xcodeproj
 
-# Configure Schwab API
-# Update SchwabService.swift with your credentials
-# Set redirect URI: ballsofsteel://api.schwab.com
-
-# Build and run
-Cmd + R
+# Build
+xcodebuild -scheme Balls_of_Steel -configuration Release build
 ```
 
-### First Day Setup
+2. **First Launch**
+- Review onboarding (explains educational mode)
+- Accept disclaimer
+- Enable notifications for time window alerts
 
-1. **Open the app** - TradingDashboard shows market status
-2. **Check VXXTradingDashboard** - See VXX/VIX prices, patterns, indicators
-3. **Enable notifications** - Get alerted for high-quality setups
-4. **Watch 3:40 PM** - Institutional flow window alert
-5. **Use Prompt Coach** - Copy pre-market analysis to ChatGPT
+3. **Manual Data Entry**
+- Enter VXX price (from your platform)
+- Enter VIX level
+- Enter volume (as % of average)
+- Select arrow signal (Yes/No, direction)
+- System validates and shows signal strength
 
-That's it. You're trading systematically.
+4. **Use Prompt Coach**
+- Wait for scheduled prompt (or browse library)
+- Tap "Copy" to copy pre-filled prompt
+- Paste into ChatGPT/Claude
+- Get systematic analysis
+
+5. **Execute Trades**
+- Use signals to execute on your own platform
+- Track trades in journal (manual)
 
 ---
 
-## 🎓 Daily Workflow (Wall Street Style)
+## 🎓 Daily Workflow
 
 ### 8:30 AM - Pre-Market
-Your phone beeps. Prompt Coach ready.
-- Tap "Copy" → Paste in ChatGPT
+- Copy pre-market prompt → Paste in ChatGPT
 - Get day setup, window assessment, position sizing
-- 2 minutes. Done.
+- **2 minutes. Done.**
 
 ### 9:45 AM - Morning Window Prep
-5 minutes before 9:50 AM window opens.
+- Enter current VXX data
 - Check arrow signal + volume
 - If STRONG → Copy morning prompt → Analyze
-- Window opens at 9:50 AM
-- You execute or skip
-
-### 12:15 PM - Lunch Assessment
-Lunch window check. Usually skip—save capital for power hour.
-- Lower reliability (70%)
-- Better opportunities coming
-
-### 3:05 PM - Power Hour Prep
-Second-best window (80% reliability).
-- Copy power hour prompt
-- Get systematic analysis
-- Ready to execute at 3:10 PM
+- Execute at 9:50 AM or skip
 
 ### 3:40 PM - **CRITICAL ALERT** ⭐⭐⭐
-**Institutional Flow Window in 5 minutes.**
+- Institutional Flow Window in 5 minutes
 - Watch for volume explosion >300%
-- Arrow signal confirmation
 - This is your 90% reliability window
 - Join institutional money flows
-
-### 3:55 PM - Post-Trade Review
-Market closed. Copy post-trade prompt.
-- Extract learning
-- Track wins/losses
-- Plan tomorrow
 
 **Total time commitment: ~15 minutes spread across the day.**
 
@@ -242,157 +185,73 @@ Entry Checklist:
 ✅ Arrow signal present?
 ✅ Volume >200% of average? (>300% for institutional)
 ✅ Proper time window? (70%+ reliability)
-✅ Technical confluence? (MA cross, VWAP, pattern, S/R)
+✅ Technical confluence? (MA cross, VWAP, pattern)
 ✅ No major news disruption?
-✅ Event day considerations? (reduce size if FOMC/CPI/NFP)
 ✅ Signal strength = STRONG or MODERATE?
 ```
 
 **If ALL YES → Take the trade.**
-
 **If ANY NO → Skip. Wait for next setup.**
 
 Arrow without volume = **IGNORE COMPLETELY.**
 
 ---
 
-## 📱 User Interface
-
-### VXXTradingDashboard
-- Real-time VXX/VIX prices
-- Arrow signal badges with strength indicators
-- Technical indicators (20/50 SMA, VWAP, Volume, IV)
-- Pattern detection (Shooting Star, Doji, Hammer, Hanging Man)
-- VXX/VIX ratio monitoring (overextended/oversold signals)
-- Options chain quick view (0-4 DTE)
-- Institutional flow window countdown
-
-### PromptCoachView
-- Active prompt display with live data pre-filled
-- Today's prompt schedule
-- Conditional alerts (VIX >30, losing streak >3)
-- One-tap copy to clipboard
-- Prompt history tracking
-
-### ArrowSignalViews
-- Signal validation matrix
-- Volume confirmation display
-- Technical confluence tracking
-- Dynamic position sizing calculator
-- Event day alerts
-
-**Clean. Fast. Professional.**
-
----
-
 ## 🔒 Risk Management
 
-### Position Sizing Matrix
-
-**Volume-Based:**
-- Standard (200%): 1.0 contract
-- Institutional (300%): 1.0 contract (higher conviction)
-- Major (400%): 1.0 contract (maximum confidence)
-
-**IV-Adjusted:**
-- 60-80% IV: Standard sizing
-- 80-85% IV: Reduce by 25%, faster exits
-- 85%+ IV: Reduce by 50%, quick scalp only
-
-**Event Days:**
-- Pre-event: 50% normal size
-- Exit 15 minutes before announcement
-- Post-event: Standard if IV normalizes
-
-**Greed Control (NEVER BREAK):**
-- **1 contract maximum (no exceptions)**
-- Remove 50% of monthly profits from account
-- After 3+ wins, take 24-hour break
+### Position Sizing
+- **Standard (200% volume):** 1.0 contract
+- **Institutional (300%+):** 1.0 contract (higher conviction)
+- **Event days:** 50% normal size
 
 ### Stop Loss Rules
-
 **Always 50% of premium paid.**
 
 Example:
 - Entry: $0.80 premium
 - Stop Loss: $1.20 (50% loss)
-- Profit Target: $0.40 (50% gain) or hold for bigger gain
+- Profit Target: $0.40 (50% gain)
 
 No exceptions.
 
 ---
 
-## 🎯 Optimization Discussion
+## 💰 Pricing
 
-### What's Already Optimized
-
-✅ **Single instrument focus** - VXX mastery, not diversification chaos
-✅ **Time windows** - 5 specific windows, not all-day monitoring
-✅ **Volume validation** - Simple gate keeper, filters 80% of noise
-✅ **Signal strength** - Clear Strong/Moderate/Weak classification
-✅ **Prompt Coach** - Right analysis, right time, no paid APIs
-✅ **Institutional following** - 3:45 PM window = 90% edge
-
-### What NOT to Add (Keeps It Simple)
-
-❌ More strategies - You have 16, focus on the top 6 VXX strategies
-❌ More indicators - Arrow + Volume + MA + VWAP is enough
-❌ Automated execution - You want control, not a black box
-❌ Complex ML models - Volume + patterns = proven edge
-❌ Multiple instruments - Master VXX, not 50 tickers
-
-### What COULD Be Optimized (If Needed)
-
-**Performance:**
-- Background scanning could be lighter (currently 30s intervals)
-- Widget refresh could be smarter (only during windows)
-- Historical data caching for faster indicator calculations
-
-**UX:**
-- One-tap trade execution to Schwab (vs manual entry)
-- Voice alerts for critical signals ("Institutional flow now")
-- Apple Watch complications for glanceable signals
-
-**Intelligence:**
-- Pattern strength scoring based on recent accuracy
-- Institutional flow pattern recognition (volume signatures)
-- Time-of-day volume baseline adjustments
-
-**What do you want to focus on?**
-1. Performance (faster, lighter)
-2. UX (quicker execution flow)
-3. Intelligence (better signal filtering)
-4. Something else?
+- **FREE:** Institutional Flow strategy (90% win rate)
+- **UNLOCK:** $69.69 one-time (all 16 strategies, full Prompt Coach)
 
 ---
 
-## 📞 Support
+## 📞 Documentation
 
-### Documentation
-
-- [v3.0 Institutional Flow Edition](./Balls_of_Steel/Documentation/V3_INSTITUTIONAL_FLOW_EDITION.md)
-- [VXX Strategy Lessons](./Balls_of_Steel/Documentation/VXX_STRATEGY_LESSONS.md)
-- [Strategy Implementation Status](./STRATEGY_IMPLEMENTATION_STATUS.md)
-
-### Issues
-
-Found a bug? Create a GitHub issue.
+- [Launch Readiness Checklist](./APP_STORE_RELEASE_CHECKLIST.md)
+- [Next Steps](./TODO.md)
+- [LLM Code Audit Report](./LLM_CODE_AUDIT_REPORT.md)
 
 ---
 
 ## ⚖️ Disclaimer
 
-**Risk Warning**: Trading involves substantial risk of loss. Past performance does not guarantee future results. You are responsible for your own trading decisions and risk management.
+**EDUCATIONAL TOOL ONLY.** This software provides signals and analysis for educational purposes. You are responsible for all trading decisions and risk management. Past performance does not guarantee future results. Trading involves substantial risk of loss.
 
-This software provides signals and analysis. **You make the final decision. You execute the trade.**
+**This is NOT:**
+- Financial advice
+- Automated trading
+- A guaranteed profit system
+- Live market data feed
+
+**This IS:**
+- Educational signal validation tool
+- Manual data entry system
+- Prompt generation system
+- Strategy learning platform
 
 ---
 
 ## 🏆 Bottom Line
 
 **This system removes the noise.**
-
-You're not watching 50 tickers. You're not analyzing 100 indicators. You're not gambling on random setups.
 
 You master **one instrument** (VXX). You trade **5 time windows** (70-90% reliability). You follow **institutional money** (3:45 PM = 90% edge). You use **systematic analysis** (Prompt Coach = no emotion).
 
@@ -402,4 +261,25 @@ Your phone beeps. You glance. You decide. You execute.
 
 ---
 
-*v3.0 Institutional Flow Edition | Built for traders who are too busy for bullshit*
+## 🛠 Current Status
+
+**Version:** 3.0 (Educational Mode)
+**Code Quality:** ✅ All LLM-generated code issues fixed
+**Build Status:** ✅ **BUILD SUCCEEDED** - Ready for testing
+**Widgets:** Temporarily removed for v3.0 (preserved in `_widget_backup/` for v3.1)
+**App Store Readiness:** 90% (need assets: icon, screenshots, privacy policy)
+
+**What Works:**
+- ✅ Core signal detection & validation
+- ✅ Manual VXX/VIX data entry
+- ✅ All 16 trading strategies
+- ✅ Prompt Coach (scheduled + on-demand)
+- ✅ Signal strength calculation
+- ✅ Strategy library & lessons
+- ✅ Freemium unlock system
+
+**Next Steps:** See [TODO.md](./TODO.md) for App Store preparation checklist
+
+---
+
+*v3.0 Institutional Flow Edition | Educational Mode | Built for traders who are too busy for bullshit*

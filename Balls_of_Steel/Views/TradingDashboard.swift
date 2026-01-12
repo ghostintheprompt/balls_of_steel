@@ -70,7 +70,7 @@ struct MarketStatusView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(Color(.windowBackgroundColor))
                 .shadow(radius: 2)
         )
         .padding()

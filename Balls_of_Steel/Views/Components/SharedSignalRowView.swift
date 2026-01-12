@@ -76,7 +76,7 @@ struct SharedSignalRowView_Previews: PreviewProvider {
             target: 454.0,
             timestamp: Date(),
             confidence: 0.85,
-            setupQuality: .high,
+            setupQuality: .perfect,
             positionSizePercent: 2.0
         ))
         .padding()

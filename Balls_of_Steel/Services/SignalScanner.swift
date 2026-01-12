@@ -145,7 +145,7 @@ class SignalScanner: ObservableObject {
     }
 
     deinit {
-        stopScanning()
+        // Cleanup happens automatically via cancellables
     }
 }
 

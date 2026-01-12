@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 import AppKit  // For macOS
 
 @MainActor
@@ -7,23 +8,19 @@ class SignalMonitor: ObservableObject {
     static let shared = SignalMonitor()
     @Published var activeSignals: [Signal] = []
     @Published var activeTrades: [Trade] = []
+    @Published var highlightedSignalID: UUID?
     private var cancellables = Set<AnyCancellable>()
     
     private let scanner = SignalScanner()
     private let exitService = ExitSignalService()
     private let notificationService = NotificationService()
-    private let widgetLifecycle = WidgetLifecycle.shared
-    
+
     init() {
         setupWidgetUpdates()
     }
-    
+
     private func setupWidgetUpdates() {
-        // Start widget updates during market hours
-        if TimeManager.shared.currentPhase() != .afterHours {
-            widgetLifecycle.startUpdates()
-        }
-        
+        // Widget updates removed for v3.0 - will add back in v3.1
         // Listen for market phase changes
         NotificationCenter.default.publisher(for: .marketPhaseChanged)
             .sink { [weak self] notification in
@@ -33,13 +30,9 @@ class SignalMonitor: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     private func handleMarketPhaseChange(_ phase: MarketPhase) {
-        if phase == .afterHours {
-            widgetLifecycle.stopUpdates()
-        } else {
-            widgetLifecycle.startUpdates()
-        }
+        // Widget lifecycle removed for v3.0
     }
     
     func startBackgroundMonitoring() {
@@ -54,7 +47,7 @@ class SignalMonitor: ObservableObject {
     private func refreshSignals() {
         Task {
             // Check for new signals
-            scanner.signals()
+            scanner.signalPublisher
                 .sink { [weak self] signal in
                     self?.handleNewSignal(signal)
                 }
@@ -71,11 +64,8 @@ class SignalMonitor: ObservableObject {
         activeSignals.append(signal)
         SignalNotification.shared.signalDetected(signal)
         
-        // Update widget
-        Task { @MainActor in
-            WidgetCenter.shared.reloadAllTimelines()
-        }
-        
+        // Widgets removed for v3.0
+
         // Update UI
         withAnimation {
             // Highlight the new signal in TradingDashboard
@@ -92,5 +82,23 @@ class SignalMonitor: ObservableObject {
     
     func scrollToSignal(_ id: UUID) {
         highlightedSignalID = id
+    }
+
+    func stopBackgroundMonitoring() {
+        cancellables.removeAll()
+    }
+
+    func startTrade(_ signal: Signal) {
+        let trade = Trade(
+            symbol: signal.symbol,
+            strategy: signal.strategy,
+            entry: signal.entry,
+            stop: signal.stop,
+            target: signal.target,
+            timestamp: Date(),
+            currentPrice: signal.entry,
+            priceHistory: [PricePoint(price: signal.entry, timestamp: Date())]
+        )
+        activeTrades.append(trade)
     }
 } 

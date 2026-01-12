@@ -102,7 +102,7 @@ struct VXXTradingDashboard: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(uiColor: .systemBackground))
+                    .fill(Color(.windowBackgroundColor))
                     .shadow(radius: 2)
             )
 
@@ -126,7 +126,7 @@ struct VXXTradingDashboard: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(uiColor: .systemBackground))
+                    .fill(Color(.windowBackgroundColor))
                     .shadow(radius: 2)
             )
         }
@@ -251,7 +251,7 @@ struct PatternCard: View {
         .frame(width: 200)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(Color(.windowBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(patternColor.opacity(0.3), lineWidth: 2)
@@ -326,7 +326,7 @@ struct OptionsChainQuickView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(Color(.windowBackgroundColor))
                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         )
     }

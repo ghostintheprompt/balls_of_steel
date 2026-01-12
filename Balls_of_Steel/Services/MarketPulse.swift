@@ -24,6 +24,6 @@ class MarketPulse: ObservableObject {
     }
     
     private func updatePhase() {
-        currentPhase = TimeManager.shared.currentPhase()
+        currentPhase = TimeManager.shared.calculateCurrentPhase()
     }
 } 

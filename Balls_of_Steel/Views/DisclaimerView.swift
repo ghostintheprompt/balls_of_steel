@@ -36,7 +36,6 @@ struct FirstLaunchDisclaimerView: View {
                 .padding()
             }
             .navigationTitle("Important Disclaimer")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .interactiveDismissDisabled(true) // Must accept to proceed
     }
@@ -568,7 +567,6 @@ struct TermsOfServiceView: View {
             .padding()
         }
         .navigationTitle("Terms of Service")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -805,7 +803,6 @@ struct PrivacyPolicyView: View {
             .padding()
         }
         .navigationTitle("Privacy Policy")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -858,7 +855,6 @@ struct RiskDisclaimerView: View {
             .padding()
         }
         .navigationTitle("Risk Disclaimer")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
