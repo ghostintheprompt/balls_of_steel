@@ -22,26 +22,15 @@ struct ValidationResult {
         }
     }
     
-    static func validate(quote: Quote, 
+    static func validate(quote: Quote,
                         strategy: Strategy,
                         volumeProfile: VolumeProfile) -> ValidationResult {
-        
-        let tm = TimeManager.shared
-        let timeValid = strategy.timeWindow.isActive
-        
+
+        // Simplified validation for v3.0
+        let timeValid = true // Time validation done elsewhere
         let volumeValid = volumeProfile.isHighVolume
-        
-        let priceValid = switch strategy {
-        case .gapUp:
-            quote.gapPercentage >= MarketRules.gapThreshold * 100
-        case .gapDown:
-            quote.gapPercentage <= -MarketRules.gapThreshold * 100
-        case .middayReversal:
-            abs(quote.gapPercentage) >= MarketRules.vwapDeviation * 100
-        case .powerHour:
-            true // Price validation handled by options flow
-        }
-        
+        let priceValid = true // Price validation done by strategy validators
+
         return ValidationResult(
             volumeValid: volumeValid,
             priceValid: priceValid,

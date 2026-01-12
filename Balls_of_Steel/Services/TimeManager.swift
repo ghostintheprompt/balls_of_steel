@@ -61,7 +61,7 @@ class TimeManager: ObservableObject {
     }
     
     private func updatePhase() {
-        let newPhase = currentPhase()
+        let newPhase = calculateCurrentPhase()
         if currentPhase != newPhase {
             currentPhase = newPhase
             NotificationCenter.default.post(

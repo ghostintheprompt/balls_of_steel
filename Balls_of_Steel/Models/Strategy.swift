@@ -155,7 +155,7 @@ enum Strategy: String, CaseIterable {
         let target: Double
         
         switch self {
-        case .gapAndGo, .gapFill:
+        case .gapAndGo:
             stop = entry * 0.985   // 1.5% stop loss
             target = entry * 1.02  // 2% target
         case .vwapReversal:

@@ -34,7 +34,6 @@ struct UnlockView: View {
                 .padding()
             }
             .navigationTitle("Unlock Full Version")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     if storeKit.hasUnlocked {

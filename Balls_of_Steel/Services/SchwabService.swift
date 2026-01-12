@@ -76,37 +76,31 @@ class SchwabService: ObservableObject {
             return Quote(
                 symbol: "VXX",
                 price: 42.15,
-                bid: 42.12,
-                ask: 42.18,
                 volume: 3_400_000, // 340% of typical 1M volume
-                averageVolume: 1_000_000,
-                change: 1.25,
-                changePercent: 3.05,
-                timestamp: now
+                vwap: 41.80,
+                previousClose: 40.90,
+                timestamp: now,
+                recentCandles: []
             )
         case "VIX":
             return Quote(
                 symbol: "VIX",
                 price: 18.50,
-                bid: 18.45,
-                ask: 18.55,
                 volume: 0,
-                averageVolume: 0,
-                change: 2.10,
-                changePercent: 12.80,
-                timestamp: now
+                vwap: 18.40,
+                previousClose: 16.40,
+                timestamp: now,
+                recentCandles: []
             )
         default:
             return Quote(
                 symbol: symbol,
                 price: 100.0,
-                bid: 99.95,
-                ask: 100.05,
                 volume: 100_000,
-                averageVolume: 50_000,
-                change: 0.50,
-                changePercent: 0.50,
-                timestamp: now
+                vwap: 99.50,
+                previousClose: 99.50,
+                timestamp: now,
+                recentCandles: []
             )
         }
     }
@@ -119,8 +113,8 @@ class SchwabService: ObservableObject {
 
         return OptionsChain(
             symbol: symbol,
-            calls: generateSampleOptions(type: .call, underlying: 42.15),
-            puts: generateSampleOptions(type: .put, underlying: 42.15),
+            calls: generateSampleOptions(symbol: symbol, type: .call, underlying: 42.15),
+            puts: generateSampleOptions(symbol: symbol, type: .put, underlying: 42.15),
             underlyingPrice: 42.15
         )
     }
@@ -156,7 +150,7 @@ class SchwabService: ObservableObject {
     }
 
     // MARK: - Helper Methods
-    private func generateSampleOptions(type: OptionType, underlying: Double) -> [OptionContract] {
+    private func generateSampleOptions(symbol: String, type: OptionType, underlying: Double) -> [OptionContract] {
         let strikes = stride(from: underlying - 5, through: underlying + 5, by: 1.0)
         let expiration = Calendar.current.date(byAdding: .day, value: 3, to: Date())!
 
@@ -165,8 +159,10 @@ class SchwabService: ObservableObject {
             let premium = max(0.1, 2.0 - distance * 0.3)
 
             return OptionContract(
+                symbol: "\(symbol)\(type == .call ? "C" : "P")\(Int(strike))",
                 strike: strike,
                 expiration: expiration,
+                type: type,
                 bid: premium - 0.05,
                 ask: premium + 0.05,
                 last: premium,
@@ -196,12 +192,12 @@ class SchwabService: ObservableObject {
             let close = currentPrice
 
             let candle = Candle(
-                timestamp: now.addingTimeInterval(TimeInterval(-count + i) * 300), // 5 min intervals
                 open: open,
                 high: high,
                 low: low,
                 close: close,
-                volume: Int.random(in: 50_000...150_000)
+                volume: Int.random(in: 50_000...150_000),
+                timestamp: now.addingTimeInterval(TimeInterval(-count + i) * 300) // 5 min intervals
             )
             candles.append(candle)
         }
@@ -218,9 +214,6 @@ class SchwabService: ObservableObject {
         case daily = "1d"
     }
 
-    enum OptionType {
-        case call, put
-    }
 }
 
 // MARK: - Supporting Data Structures

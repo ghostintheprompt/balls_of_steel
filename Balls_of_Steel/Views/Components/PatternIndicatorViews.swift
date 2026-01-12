@@ -201,7 +201,7 @@ struct TechnicalIndicatorsCard: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(Color(NSColor.windowBackgroundColor))
                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         )
     }
@@ -321,7 +321,7 @@ struct VXXVIXRatioView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(Color(NSColor.windowBackgroundColor))
                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         )
     }
@@ -484,7 +484,7 @@ struct EnhancedSignalRowView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(Color(NSColor.windowBackgroundColor))
                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         )
     }

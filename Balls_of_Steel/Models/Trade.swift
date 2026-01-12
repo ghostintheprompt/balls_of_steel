@@ -10,6 +10,10 @@ struct Trade: Identifiable {
     let timestamp: Date
     var currentPrice: Double
     var priceHistory: [PricePoint]
+
+    var unrealizedPnL: Double {
+        (currentPrice - entry) * 100  // Simple P&L calculation (assumes 100 shares/contracts)
+    }
 }
 
 struct PricePoint: Identifiable {

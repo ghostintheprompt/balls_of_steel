@@ -316,7 +316,8 @@ struct DynamicPositionSizer {
         case .institutional:
             adjustedSize = min(adjustedSize, 1.0)
         case .standard:
-            adjustedSize = adjustedSize
+            // No adjustment needed for standard confirmation
+            break
         case .none:
             adjustedSize = 0 // Skip trade
         }
@@ -381,7 +382,7 @@ struct DynamicPositionSizer {
             } else if size >= 0.5 {
                 return "0.5 contract (Half)"
             } else if size > 0 {
-                return "\(size, specifier: "%.2f") contract"
+                return "\(String(format: "%.2f", size)) contract"
             } else {
                 return "Skip trade"
             }

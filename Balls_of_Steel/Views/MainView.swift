@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainView: View {
-    @StateObject private var signalMonitor = SignalMonitor()
+    @StateObject private var signalMonitor = SignalMonitor.shared
     @StateObject private var marketState = MarketPulse.shared
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     

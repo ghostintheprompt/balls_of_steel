@@ -53,7 +53,7 @@ struct InfoCard<Content: View>: View {
     var body: some View {
         content
             .padding(DesignSystem.spacing)
-            .background(Color(uiColor: .secondarySystemBackground))
+            .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(DesignSystem.cornerRadius)
             .shadow(color: DesignSystem.cardShadow, radius: DesignSystem.shadowRadius)
     }

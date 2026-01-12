@@ -23,7 +23,7 @@ class StoreKitService: ObservableObject {
     // Transaction listener
     private var transactionListener: Task<Void, Never>?
 
-    enum PurchaseState {
+    enum PurchaseState: Equatable {
         case idle
         case loading
         case purchasing
@@ -32,7 +32,7 @@ class StoreKitService: ObservableObject {
         case failed(StoreKitError)
     }
 
-    enum StoreKitError: LocalizedError {
+    enum StoreKitError: LocalizedError, Equatable {
         case productNotFound
         case purchaseFailed(String)
         case purchaseCancelled
@@ -184,10 +184,11 @@ class StoreKitService: ObservableObject {
     // MARK: - Transaction Listener
     /// Listen for transactions (e.g., from other devices, ask to buy)
     private func listenForTransactions() -> Task<Void, Never> {
-        return Task.detached {
+        return Task.detached { [weak self] in
+            guard let self = self else { return }
             for await result in Transaction.updates {
                 do {
-                    let transaction = try self.checkVerified(result)
+                    let transaction = try await self.checkVerified(result)
 
                     if transaction.productID == self.productID {
                         await self.unlockFullVersion()

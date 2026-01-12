@@ -88,7 +88,6 @@ struct ManualDataEntryView: View {
                     .foregroundColor(.primary)
                 TextField("e.g., 42.15", text: $viewModel.vxxPrice)
                     .textFieldStyle(.roundedBorder)
-                    .keyboardType(.decimalPad)
                 if let error = viewModel.vxxPriceError {
                     Text(error)
                         .font(.caption)
@@ -103,7 +102,6 @@ struct ManualDataEntryView: View {
                     .foregroundColor(.primary)
                 TextField("e.g., 18.50", text: $viewModel.vixLevel)
                     .textFieldStyle(.roundedBorder)
-                    .keyboardType(.decimalPad)
                 if let error = viewModel.vixLevelError {
                     Text(error)
                         .font(.caption)
@@ -119,7 +117,6 @@ struct ManualDataEntryView: View {
                 HStack {
                     TextField("e.g., 340", text: $viewModel.volumePercent)
                         .textFieldStyle(.roundedBorder)
-                        .keyboardType(.numberPad)
                     Text("%")
                         .foregroundColor(.secondary)
                 }
@@ -181,7 +178,7 @@ struct ManualDataEntryView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
+                .fill(Color(NSColor.windowBackgroundColor))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         )
     }

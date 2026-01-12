@@ -6,8 +6,8 @@ extension Date {
     }
     
     func isWithinTradingHours() -> Bool {
-        let tm = TimeManager.shared
-        return self >= tm.marketOpen && self <= tm.marketClose
+        // Check if time is within 9:30 AM - 4:00 PM ET
+        return isInWindow("09:30", "16:00")
     }
     
     // Helper for checking specific trading windows
@@ -91,7 +91,12 @@ extension Date {
     // Market phase determination
     var tradingPhase: MarketPhase {
         if !isWithinTradingHours() {
-            return self < TimeManager.shared.marketOpen ? .preMarket : .afterHours
+            // Check if before 9:30 AM or after 4:00 PM ET
+            let calendar = Calendar.current
+            let easternTimeZone = TimeZone(identifier: "America/New_York")!
+            let components = calendar.dateComponents(in: easternTimeZone, from: self)
+            guard let hour = components.hour else { return .afterHours }
+            return hour < 9 || (hour == 9 && (components.minute ?? 0) < 30) ? .preMarket : .afterHours
         }
         
         switch self {

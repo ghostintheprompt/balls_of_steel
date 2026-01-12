@@ -35,8 +35,6 @@ struct OnboardingView: View {
                 platformSelectionPage
                     .tag(3)
             }
-            .tabViewStyle(.page(indexDisplayMode: .always))
-            .indexViewStyle(.page(backgroundDisplayMode: .always))
 
             // Skip button (only on first 3 pages)
             if currentPage < 3 {
@@ -314,7 +312,7 @@ struct FeatureHighlight: View {
             Spacer()
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(12)
     }
 }
@@ -399,7 +397,7 @@ struct PlatformButton: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.green.opacity(0.1) : Color(.systemBackground))
+                    .fill(isSelected ? Color.green.opacity(0.1) : Color(NSColor.windowBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(isSelected ? Color.green : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)

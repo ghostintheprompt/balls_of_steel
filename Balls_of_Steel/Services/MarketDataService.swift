@@ -24,7 +24,7 @@ class MarketDataService: ObservableObject {
             subscribers[symbol, default: 0] += 1
             
             // Subscribe to real-time quotes
-            marketService.subscribeToQuotes(symbol)
+            marketService.subscribeToQuotes(symbol: symbol)
                 .sink { [weak self] quote in
                     self?.handleQuoteUpdate(symbol: symbol, quote: quote)
                 }
@@ -41,7 +41,27 @@ class MarketDataService: ObservableObject {
             quote: quote,
             vwap: vwap,
             volume: quote.volume,
-            trades: quote.lastSize
+            trades: quote.lastSize,
+            ivRank: 0.0,
+            daysToEarnings: 30,
+            hasFundamentalNews: false,
+            vix: 15.0,
+            vixDailyChange: 0.0,
+            spyDailyChange: 0.0,
+            hasZDTEOptions: false,
+            averageVolume: quote.volume,
+            averageOptionsVolume: 0,
+            optionsVolume: 0,
+            rsi: 50.0,
+            emaBreakout: false,
+            vwapBreakout: false,
+            isWeeklyExpiration: false,
+            otmProbability: 0.5,
+            minutesSinceMarketOpen: 30,
+            marketOpen: Date().addingTimeInterval(-30*60).timeIntervalSince1970,
+            detectedPattern: nil,
+            technicalIndicators: nil,
+            detectedArrowSignal: nil
         )
         
         marketDataSubjects[symbol]?.send(marketData)
@@ -86,32 +106,26 @@ class MarketDataService: ObservableObject {
     /// This is the primary data source for the educational app
     func updateWithManualEntry(_ entry: MarketDataEntry) {
         // Convert manual entry to Quote
+        let vwap = entry.vwapPosition == .above ? entry.vxxPrice - 0.20 : entry.vxxPrice + 0.20
         let vxxQuote = Quote(
             symbol: "VXX",
             price: entry.vxxPrice,
-            bid: entry.vxxPrice - 0.03,
-            ask: entry.vxxPrice + 0.03,
             volume: Int(entry.volumePercent) * 10_000, // Approximate volume
-            averageVolume: 1_000_000, // Standard VXX average
-            change: 0, // User can add if needed
-            changePercent: 0,
-            timestamp: entry.timestamp
+            vwap: vwap,
+            previousClose: entry.vxxPrice * 0.98, // Approximate
+            timestamp: entry.timestamp,
+            recentCandles: [] // Manual entry doesn't provide candles
         )
 
         let vixQuote = Quote(
             symbol: "VIX",
             price: entry.vixLevel,
-            bid: entry.vixLevel - 0.05,
-            ask: entry.vixLevel + 0.05,
             volume: 0,
-            averageVolume: 0,
-            change: 0,
-            changePercent: 0,
-            timestamp: entry.timestamp
+            vwap: entry.vixLevel,
+            previousClose: entry.vixLevel * 0.98,
+            timestamp: entry.timestamp,
+            recentCandles: []
         )
-
-        // Determine VWAP based on user input
-        let vwap = entry.vwapPosition == .above ? entry.vxxPrice - 0.20 : entry.vxxPrice + 0.20
 
         // Create MarketData with arrow signal
         let arrowSignal: ArrowSignal? = {
@@ -140,17 +154,30 @@ class MarketDataService: ObservableObject {
         }()
 
         let marketData = MarketData(
-            symbol: "VXX",
-            price: entry.vxxPrice,
-            timestamp: entry.timestamp,
-            volume: Int(entry.volumePercent) * 10_000,
-            averageVolume: 1_000_000,
+            quote: vxxQuote,
             vwap: vwap,
-            change: 0,
-            changePercent: 0,
-            detectedArrowSignal: arrowSignal,
+            volume: Int(entry.volumePercent) * 10_000,
+            trades: 0,
+            ivRank: 0.0,
+            daysToEarnings: 30,
+            hasFundamentalNews: false,
+            vix: entry.vixLevel,
+            vixDailyChange: 0.0,
+            spyDailyChange: 0.0,
+            hasZDTEOptions: false,
+            averageVolume: 1_000_000,
+            averageOptionsVolume: 0,
+            optionsVolume: 0,
+            rsi: 50.0,
+            emaBreakout: false,
+            vwapBreakout: false,
+            isWeeklyExpiration: false,
+            otmProbability: 0.5,
+            minutesSinceMarketOpen: 30,
+            marketOpen: Date().addingTimeInterval(-30*60).timeIntervalSince1970,
             detectedPattern: nil,
-            technicalIndicators: nil
+            technicalIndicators: nil,
+            detectedArrowSignal: arrowSignal
         )
 
         // Update cache and notify subscribers
@@ -193,7 +220,7 @@ class MarketDataService: ObservableObject {
         case .lunch:
             return .lunchDrift
         case .powerHour:
-            return .powerHour
+            return .institutionalFlow // Map to closest available
         case .institutional:
             return .institutionalFlow
         default:

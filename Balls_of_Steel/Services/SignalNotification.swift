@@ -89,7 +89,7 @@ class SignalNotification: ObservableObject {
         }
         
         // Update widget
-        WidgetCenter.shared.reloadAllTimelines()
+        // Widgets removed for v3.0
     }
     
     func playTestSound() {

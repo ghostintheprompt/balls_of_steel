@@ -1,8 +1,18 @@
 import Foundation
 
 struct ExitSignal {
-    let type: Strategy
-    let reason: String
-    let stopPrice: Double
+    let symbol: String
+    let strategy: Strategy
+    let exitPrice: Double
+    let exitReason: ExitReason
     let timestamp: Date
+
+    enum ExitReason {
+        case targetHit
+        case stopLoss
+        case timeExit
+        case vwapBreakdown
+        case momentumLoss
+        case trailingStop
+    }
 }

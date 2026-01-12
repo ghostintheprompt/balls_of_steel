@@ -56,18 +56,18 @@ struct TradingWidget_Previews: PreviewProvider {
     static func multipleSignalsEntry() -> WidgetEntry {
         WidgetEntry(date: Date(), signals: [
             sampleSignal(symbol: "SPY", strategy: .gapAndGo),
-            sampleSignal(symbol: "QQQ", strategy: .vwapBounce),
-            sampleSignal(symbol: "AAPL", strategy: .powerHourBreakout)
+            sampleSignal(symbol: "QQQ", strategy: .vwapReversal),
+            sampleSignal(symbol: "AAPL", strategy: .powerHour)
         ])
     }
     
     static func manySignalsEntry() -> WidgetEntry {
         WidgetEntry(date: Date(), signals: [
             sampleSignal(symbol: "SPY", strategy: .gapAndGo, entry: 450.0),
-            sampleSignal(symbol: "QQQ", strategy: .vwapBounce, entry: 380.0),
-            sampleSignal(symbol: "AAPL", strategy: .powerHourBreakout, entry: 175.0),
-            sampleSignal(symbol: "TSLA", strategy: .momentumContinuation, entry: 250.0),
-            sampleSignal(symbol: "NVDA", strategy: .breakoutPullback, entry: 800.0)
+            sampleSignal(symbol: "QQQ", strategy: .vwapReversal, entry: 380.0),
+            sampleSignal(symbol: "AAPL", strategy: .powerHour, entry: 175.0),
+            sampleSignal(symbol: "TSLA", strategy: .momentumReversal, entry: 250.0),
+            sampleSignal(symbol: "NVDA", strategy: .consolidationBreakout, entry: 800.0)
         ])
     }
     
@@ -84,7 +84,7 @@ struct TradingWidget_Previews: PreviewProvider {
             target: entry * 1.015, // 1.5% target (3:1 R:R)
             timestamp: Date(),
             confidence: Double.random(in: 0.7...0.95),
-            setupQuality: [.high, .medium, .low].randomElement() ?? .medium,
+            setupQuality: [.perfect, .good, .marginal].randomElement() ?? .good,
             positionSizePercent: Double.random(in: 1.0...3.0)
         )
     }

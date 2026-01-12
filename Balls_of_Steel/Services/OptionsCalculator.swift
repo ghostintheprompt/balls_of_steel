@@ -30,6 +30,7 @@ class OptionsCalculator {
         case .vwapReversal: return .call // VWAP bounce = calls
         case .powerHour: return .call    // Power hour momentum = calls
         case .panicReversal: return .put // Panic = puts
+        default: return .call // Default for other strategies
         }
     }
     
@@ -49,6 +50,7 @@ class OptionsCalculator {
         case .vwapReversal: return AppConfig.Thresholds.vwapReversal
         case .powerHour: return AppConfig.Thresholds.powerHour
         case .panicReversal: return AppConfig.Thresholds.panicReversal
+        default: return AppConfig.Thresholds.gapAndGo // Default fallback
         }
     }
     

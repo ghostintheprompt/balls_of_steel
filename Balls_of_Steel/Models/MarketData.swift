@@ -35,7 +35,7 @@ struct MarketData {
     // Additional computed properties needed by Strategy validation
     var symbol: String { quote.symbol }
     var currentPrice: Double { quote.price }
-    var isMarketHours: Bool { TimeManager.shared.isMarketHours() }
+    var isMarketHours: Bool { quote.timestamp.isWithinTradingHours() }
     var gapPercent: Double { 
         ((quote.price - quote.previousClose) / quote.previousClose) * 100 
     }
@@ -52,7 +52,7 @@ struct MarketData {
         return ((high - quote.price) / high) * 100
     }
     var isVolumeDecline: Bool {
-        Double(volume) < averageVolume * 0.8  // Volume 20% below average indicates decline
+        Double(volume) < Double(averageVolume) * 0.8  // Volume 20% below average indicates decline
     }
     var timestamp: Date {
         quote.timestamp
@@ -118,9 +118,10 @@ struct MarketData {
         case .opening: AppConfig.Thresholds.gapAndGo.minVolume
         case .midday: AppConfig.Thresholds.vwapReversal.minVolume
         case .powerHour: AppConfig.Thresholds.powerHour.minVolume
+        case .regular: AppConfig.Thresholds.gapAndGo.minVolume // Default to gap threshold
         case .preMarket, .afterHours: Int.max // Prevent trading outside hours
         }
-        
+
         return volume >= threshold
     }
 }
@@ -128,6 +129,6 @@ struct MarketData {
 // Helper for market phase determination
 private extension Date {
     var marketPhase: MarketPhase {
-        TimeManager.shared.currentPhase()
+        self.tradingPhase
     }
 }

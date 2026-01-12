@@ -62,8 +62,9 @@ class WidgetLifecycle: ObservableObject {
     }
     
     private func updateWidgetsIfNeeded() {
-        let currentPhase = TimeManager.shared.currentPhase()
-        
+        // Use Date extension to avoid actor isolation
+        let currentPhase = Date().tradingPhase
+
         // Don't update during off-hours unless there's an important change
         guard shouldUpdateForPhase(currentPhase) else { return }
         
