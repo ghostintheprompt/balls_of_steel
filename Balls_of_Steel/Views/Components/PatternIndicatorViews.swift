@@ -304,11 +304,11 @@ struct VXXVIXRatioView: View {
             }
 
             // Visual indicator
-            if ratio.signal != .neutral {
+            if ratio.signal != .noTrade {
                 HStack(spacing: 4) {
-                    Image(systemName: ratio.isOverextended ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                    Image(systemName: ratio.signal == .fadeSetup ? "arrow.down.circle.fill" : "exclamationmark.triangle.fill")
                         .foregroundColor(signalColor)
-                    Text(ratio.isOverextended ? "Fade Setup" : "Reversal Setup")
+                    Text(ratio.signal.displayName)
                         .font(.caption)
                         .foregroundColor(signalColor)
                 }
@@ -339,11 +339,11 @@ struct VXXVIXRatioView: View {
     private var signalColor: Color {
         switch ratio.signal {
         case .fadeSetup:
-            return .red
-        case .reversalSetup:
-            return .green
-        case .neutral:
-            return .gray
+            return .green  // Fade setup = puts = profitable = green
+        case .cautionFade:
+            return .orange // Caution = borderline
+        case .noTrade:
+            return .red    // No trade = skip
         }
     }
 }

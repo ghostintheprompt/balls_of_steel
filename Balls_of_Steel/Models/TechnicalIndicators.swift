@@ -309,6 +309,7 @@ struct SupportResistance {
 }
 
 // MARK: - VXX/VIX Ratio Monitor
+// Updated with 2026 strategy thresholds (1.35-1.60 range)
 struct VXXVIXRatio {
     let vxx: Double
     let vix: Double
@@ -322,35 +323,129 @@ struct VXXVIXRatio {
         self.timestamp = Date()
     }
 
-    // From ThinkOrSwim thinkScript: ratio monitoring
+    // Strategy thresholds from VXX Trading System 2026
+    var tier: RatioTier {
+        if ratio >= 1.60 {
+            return .premiumFade
+        } else if ratio >= 1.55 {
+            return .strongFade
+        } else if ratio >= 1.45 {
+            return .normalFade
+        } else if ratio >= 1.35 {
+            return .weakFade
+        } else {
+            return .noFade
+        }
+    }
+
+    var isPremiumFade: Bool {
+        ratio >= 1.60
+    }
+
+    var isStrongFade: Bool {
+        ratio >= 1.55 && ratio < 1.60
+    }
+
+    var isNormalFade: Bool {
+        ratio >= 1.45 && ratio < 1.55
+    }
+
+    var isWeakFade: Bool {
+        ratio >= 1.35 && ratio < 1.45
+    }
+
+    var isTooCheap: Bool {
+        ratio < 1.35
+    }
+
+    var shouldTrade: Bool {
+        ratio >= 1.45 // Minimum threshold for puts
+    }
+
+    // Legacy compatibility
     var isOverextended: Bool {
-        ratio > 3.5 // VXX overextended relative to VIX - fade opportunity
+        ratio >= 1.60 // Premium fade zone
     }
 
     var isOversold: Bool {
-        ratio < 2.5 // VXX oversold relative to VIX - potential reversal
+        ratio < 1.35 // Too cheap to fade
     }
 
     var signal: RatioSignal {
-        if isOverextended {
-            return .fadeSetup // Put entry opportunity
-        } else if isOversold {
-            return .reversalSetup // Potential call entry
-        } else {
-            return .neutral
+        switch tier {
+        case .premiumFade, .strongFade, .normalFade:
+            return .fadeSetup
+        case .weakFade:
+            return .cautionFade
+        case .noFade:
+            return .noTrade
+        }
+    }
+
+    // Position size recommendation based on ratio
+    var recommendedPositionSize: Double {
+        switch tier {
+        case .premiumFade:
+            return 500.0 // Max position
+        case .strongFade:
+            return 450.0
+        case .normalFade:
+            return 350.0
+        case .weakFade:
+            return 200.0
+        case .noFade:
+            return 0.0 // Skip trade
+        }
+    }
+
+    enum RatioTier {
+        case premiumFade    // >1.60 - Max aggression
+        case strongFade     // 1.55-1.60 - Full position
+        case normalFade     // 1.45-1.55 - Standard position
+        case weakFade       // 1.35-1.45 - Half size or skip
+        case noFade         // <1.35 - Don't trade puts
+
+        var displayName: String {
+            switch self {
+            case .premiumFade: return "Premium Fade ⭐⭐⭐"
+            case .strongFade: return "Strong Fade ⭐⭐"
+            case .normalFade: return "Normal Fade ⭐"
+            case .weakFade: return "Weak Fade (Caution)"
+            case .noFade: return "No Fade ❌"
+            }
+        }
+
+        var color: String {
+            switch self {
+            case .premiumFade: return "green"
+            case .strongFade: return "yellow"
+            case .normalFade: return "cyan"
+            case .weakFade: return "orange"
+            case .noFade: return "red"
+            }
+        }
+
+        var thresholdRange: String {
+            switch self {
+            case .premiumFade: return ">1.60"
+            case .strongFade: return "1.55-1.60"
+            case .normalFade: return "1.45-1.55"
+            case .weakFade: return "1.35-1.45"
+            case .noFade: return "<1.35"
+            }
         }
     }
 
     enum RatioSignal {
-        case fadeSetup      // VXX overextended - put entries
-        case reversalSetup  // VXX oversold - call entries
-        case neutral        // No clear setup
+        case fadeSetup      // VXX overpriced - put entries
+        case cautionFade    // Borderline - small position only
+        case noTrade        // VXX too cheap - skip puts
 
         var displayName: String {
             switch self {
             case .fadeSetup: return "Fade Setup (Puts)"
-            case .reversalSetup: return "Reversal Setup (Calls)"
-            case .neutral: return "Neutral"
+            case .cautionFade: return "Caution (Small Size)"
+            case .noTrade: return "No Trade (Too Cheap)"
             }
         }
     }

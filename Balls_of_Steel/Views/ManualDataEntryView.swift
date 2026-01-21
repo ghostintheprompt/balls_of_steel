@@ -133,6 +133,17 @@ struct ManualDataEntryView: View {
 
             Divider()
 
+            // VXX/VIX RATIO - THE VALUE FILTER ⭐
+            if let ratio = viewModel.calculatedRatio {
+                ratioIndicator(ratio)
+            } else if !viewModel.vxxPrice.isEmpty && !viewModel.vixLevel.isEmpty {
+                Text("Invalid VXX or VIX values")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+            }
+
+            Divider()
+
             // VWAP Position
             VStack(alignment: .leading, spacing: 8) {
                 Label("Price vs VWAP", systemImage: "arrow.up.arrow.down")
@@ -216,6 +227,191 @@ struct ManualDataEntryView: View {
         }
     }
 
+    // MARK: - VXX/VIX Ratio Indicator (The Value Filter)
+    private func ratioIndicator(_ ratioData: VXXVIXRatio) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Label("VXX/VIX Ratio", systemImage: "chart.bar.fill")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                // Current ratio value
+                Text(String(format: "%.2f", ratioData.ratio))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(ratioColor(for: ratioData.tier))
+            }
+
+            // Tier indicator
+            HStack(spacing: 12) {
+                Image(systemName: ratioIcon(for: ratioData.tier))
+                    .font(.title3)
+                    .foregroundColor(ratioColor(for: ratioData.tier))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ratioData.tier.displayName)
+                        .font(.headline)
+                        .foregroundColor(ratioColor(for: ratioData.tier))
+
+                    Text("Range: \(ratioData.tier.thresholdRange)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                // Position size recommendation
+                if ratioData.recommendedPositionSize > 0 {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Position")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("$\(Int(ratioData.recommendedPositionSize))")
+                            .font(.headline)
+                            .foregroundColor(ratioColor(for: ratioData.tier))
+                    }
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(ratioColor(for: ratioData.tier).opacity(0.1))
+            )
+
+            // Visual threshold guide
+            ratioThresholdGuide(currentRatio: ratioData.ratio)
+
+            // Trade recommendation
+            HStack {
+                Image(systemName: ratioData.shouldTrade ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundColor(ratioData.shouldTrade ? .green : .red)
+
+                Text(ratioData.shouldTrade ? "TRADE ELIGIBLE (Ratio ≥1.45)" : "SKIP TRADE (Ratio <1.45)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(ratioData.shouldTrade ? .green : .red)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.blue.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                )
+        )
+    }
+
+    // MARK: - Ratio Threshold Visual Guide
+    private func ratioThresholdGuide(currentRatio: Double) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Thresholds:")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 0) {
+                // Below 1.35 - Red zone
+                Rectangle()
+                    .fill(Color.red.opacity(0.3))
+                    .frame(height: 8)
+                    .overlay(
+                        Text("1.35")
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                            .offset(x: -15, y: -10)
+                    )
+
+                // 1.35-1.45 - Orange zone
+                Rectangle()
+                    .fill(Color.orange.opacity(0.3))
+                    .frame(height: 8)
+                    .overlay(
+                        Text("1.45")
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                            .offset(x: -15, y: -10)
+                    )
+
+                // 1.45-1.55 - Cyan zone
+                Rectangle()
+                    .fill(Color.cyan.opacity(0.3))
+                    .frame(height: 8)
+                    .overlay(
+                        Text("1.55")
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                            .offset(x: -15, y: -10)
+                    )
+
+                // 1.55-1.60 - Yellow zone
+                Rectangle()
+                    .fill(Color.yellow.opacity(0.5))
+                    .frame(height: 8)
+                    .overlay(
+                        Text("1.60")
+                            .font(.system(size: 8))
+                            .foregroundColor(.black)
+                            .offset(x: -15, y: -10)
+                    )
+
+                // Above 1.60 - Green zone
+                Rectangle()
+                    .fill(Color.green.opacity(0.4))
+                    .frame(height: 8)
+            }
+            .cornerRadius(4)
+            .overlay(
+                // Current position indicator
+                GeometryReader { geometry in
+                    let position = ratioToPosition(ratio: currentRatio, width: geometry.size.width)
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 12, height: 12)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black, lineWidth: 2)
+                        )
+                        .position(x: position, y: 4)
+                }
+            )
+        }
+    }
+
+    // Convert ratio value to position on the guide
+    private func ratioToPosition(ratio: Double, width: CGFloat) -> CGFloat {
+        let minRatio = 1.25
+        let maxRatio = 1.70
+        let clampedRatio = min(max(ratio, minRatio), maxRatio)
+        let normalizedPosition = (clampedRatio - minRatio) / (maxRatio - minRatio)
+        return CGFloat(normalizedPosition) * width
+    }
+
+    // Helper functions for ratio display
+    private func ratioColor(for tier: VXXVIXRatio.RatioTier) -> Color {
+        switch tier {
+        case .premiumFade: return .green
+        case .strongFade: return .yellow
+        case .normalFade: return .cyan
+        case .weakFade: return .orange
+        case .noFade: return .red
+        }
+    }
+
+    private func ratioIcon(for tier: VXXVIXRatio.RatioTier) -> String {
+        switch tier {
+        case .premiumFade: return "star.fill"
+        case .strongFade: return "star.leadinghalf.filled"
+        case .normalFade: return "star"
+        case .weakFade: return "exclamationmark.triangle.fill"
+        case .noFade: return "xmark.octagon.fill"
+        }
+    }
+
     // MARK: - Quick Fill Section
     private var quickFillSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -282,6 +478,8 @@ struct ManualDataEntryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("VXX: $\(entry.vxxPrice, specifier: "%.2f")")
                     Text("VIX: \(entry.vixLevel, specifier: "%.2f")")
+                    Text("Ratio: \(entry.ratio, specifier: "%.2f")")
+                        .fontWeight(.semibold)
                     Text("Volume: \(Int(entry.volumePercent))%")
                 }
                 .font(.subheadline)
@@ -289,6 +487,10 @@ struct ManualDataEntryView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
+                    Text(entry.ratioTier)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(entry.ratio >= 1.60 ? .green : entry.ratio >= 1.45 ? .cyan : .orange)
                     Text(entry.arrowSignal.displayName)
                         .font(.caption)
                         .foregroundColor(entry.arrowSignal.color)
@@ -324,6 +526,17 @@ class ManualDataEntryViewModel: ObservableObject {
     @Published var volumePercentError: String?
 
     @Published var lastEntry: MarketDataEntry?
+
+    // VXX/VIX Ratio calculation
+    var calculatedRatio: VXXVIXRatio? {
+        guard let vxxValue = Double(vxxPrice),
+              let vixValue = Double(vixLevel),
+              vxxValue > 0,
+              vixValue > 0 else {
+            return nil
+        }
+        return VXXVIXRatio(vxx: vxxValue, vix: vixValue)
+    }
 
     var isValidEntry: Bool {
         validateFields()
@@ -444,6 +657,25 @@ struct MarketDataEntry: Codable {
     let arrowSignal: ArrowSignalInput
     let timeWindow: TimeWindowInput
     let timestamp: Date
+
+    // Computed ratio
+    var ratio: Double {
+        vixLevel > 0 ? vxxPrice / vixLevel : 0
+    }
+
+    var ratioTier: String {
+        if ratio >= 1.60 {
+            return "Premium Fade ⭐⭐⭐"
+        } else if ratio >= 1.55 {
+            return "Strong Fade ⭐⭐"
+        } else if ratio >= 1.45 {
+            return "Normal Fade ⭐"
+        } else if ratio >= 1.35 {
+            return "Weak Fade"
+        } else {
+            return "No Fade ❌"
+        }
+    }
 }
 
 enum VWAPPosition: String, Codable, CaseIterable {
