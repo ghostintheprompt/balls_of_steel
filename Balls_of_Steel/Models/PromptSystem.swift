@@ -12,15 +12,17 @@ struct TradingPrompt {
     let dataFields: [DataField]
 
     enum PromptType {
-        case preMarketAnalysis   // 8:30-9:25 AM
-        case morningWindow       // 9:45 AM
-        case lunchWindow         // 12:15 PM
-        case powerHourAnalysis   // 3:05 PM
-        case postTradeAnalysis   // 3:55 PM
-        case weeklyReview        // Friday evening
-        case monthlyReview       // Last trading day
-        case crisisMode          // VIX >30
-        case losingStreak        // 3+ losses
+        case preMarketAnalysis      // 8:30-9:25 AM
+        case morningWindow          // 9:45 AM
+        case lunchWindow            // 12:15 PM
+        case powerHourAnalysis      // 3:05 PM
+        case institutionalFlowAlert // 3:40 PM ⭐ NEW
+        case exitReminder           // 3:50 PM (5 min warning)
+        case postTradeAnalysis      // 3:55 PM
+        case weeklyReview           // Friday evening
+        case monthlyReview          // Last trading day
+        case crisisMode             // VIX >30
+        case losingStreak           // 3+ losses
 
         var displayName: String {
             switch self {
@@ -28,6 +30,8 @@ struct TradingPrompt {
             case .morningWindow: return "Morning Window Check"
             case .lunchWindow: return "Lunch Window Check"
             case .powerHourAnalysis: return "Power Hour Analysis"
+            case .institutionalFlowAlert: return "Institutional Flow Alert ⭐"
+            case .exitReminder: return "Exit Time Reminder"
             case .postTradeAnalysis: return "Post-Trade Review"
             case .weeklyReview: return "Weekly Review"
             case .monthlyReview: return "Monthly Review"
@@ -42,6 +46,8 @@ struct TradingPrompt {
             case .morningWindow: return "clock.fill"
             case .lunchWindow: return "fork.knife"
             case .powerHourAnalysis: return "bolt.fill"
+            case .institutionalFlowAlert: return "star.circle.fill"
+            case .exitReminder: return "clock.badge.exclamationmark"
             case .postTradeAnalysis: return "checkmark.circle.fill"
             case .weeklyReview: return "calendar"
             case .monthlyReview: return "calendar.badge.clock"
@@ -52,15 +58,17 @@ struct TradingPrompt {
 
         var priority: Int {
             switch self {
-            case .crisisMode: return 1            // Highest priority
+            case .crisisMode: return 1               // Highest priority
             case .losingStreak: return 2
-            case .powerHourAnalysis: return 3
-            case .morningWindow: return 4
-            case .lunchWindow: return 5
-            case .preMarketAnalysis: return 6
-            case .postTradeAnalysis: return 7
-            case .weeklyReview: return 8
-            case .monthlyReview: return 9
+            case .institutionalFlowAlert: return 3   // 90% reliability window ⭐
+            case .exitReminder: return 4             // Critical for discipline
+            case .powerHourAnalysis: return 5
+            case .morningWindow: return 6
+            case .lunchWindow: return 7
+            case .preMarketAnalysis: return 8
+            case .postTradeAnalysis: return 9
+            case .weeklyReview: return 10
+            case .monthlyReview: return 11
             }
         }
     }
@@ -239,22 +247,31 @@ class PromptLibrary {
 
             LIVE DATA:
             - VXX current: $[VXX_PRICE]
+            - VIX current: [VIX_LEVEL]
+            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX] (Need >1.45 minimum, >1.60 premium)
             - Volume vs average: [VOLUME_PCT]
             - VXX vs VWAP: [VXX_VS_VWAP]
             - 20 SMA: [SMA20_POS]
             - 50 SMA: [SMA50_POS]
 
+            RATIO VALUE FILTER ⭐:
+            - >1.60 = Premium fade (max position $500)
+            - 1.55-1.60 = Strong fade ($450)
+            - 1.45-1.55 = Normal fade ($350)
+            - <1.45 = SKIP OR SMALL SIZE ONLY
+
             QUICK ASSESSMENT:
             1. Is the morning spike/weakness setting up for a fade?
             2. Volume confirmation present (>200% average)? Currently: [VOLUME_PCT]
-            3. Technical pattern emerging (shooting star, doji, rejection)?
-            4. Any news disruption in the last 30 minutes?
+            3. VXX/VIX Ratio check: Is VXX expensive enough (>1.45)?
+            4. Technical pattern emerging (shooting star, doji, rejection)?
+            5. Any news disruption in the last 30 minutes?
 
             GO/NO-GO DECISION:
             Give me clear entry criteria for the 9:50-10:15 AM window or recommend waiting for better setup.
-            Remember: 85% reliability window, arrow signal + volume >200% required.
+            Remember: 85% reliability window, arrow signal + volume >200% + ratio >1.45 required.
             """,
-            dataFields: [.vxxPrice, .volumeVsAverage, .vxxVsVWAP, .sma20Position, .sma50Position]
+            dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage, .vxxVsVWAP, .sma20Position, .sma50Position]
         ),
 
         // Lunch Window (12:15 PM)
@@ -266,6 +283,8 @@ class PromptLibrary {
 
             CURRENT STATUS:
             - VXX price: $[VXX_PRICE]
+            - VIX level: [VIX_LEVEL]
+            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX] (Need >1.45 to trade)
             - Morning trade result: [WIN/LOSS/NO TRADE]
             - Volume environment: [VOLUME_PCT]% of average
             - VXX vs VWAP: [VXX_VS_VWAP]
@@ -273,13 +292,14 @@ class PromptLibrary {
             LUNCH ANALYSIS:
             1. Is VXX showing typical lunch hour weakness/drift?
             2. Volume sufficient for reliable patterns (>150% average)? Currently: [VOLUME_PCT]
-            3. Any technical setups worth pursuing?
-            4. Risk/reward favorable for smaller lunch scalp?
+            3. VXX/VIX Ratio: Is fade worth taking (>1.45)?
+            4. Any technical setups worth pursuing?
+            5. Risk/reward favorable for smaller lunch scalp?
 
             RECOMMENDATION:
             Should I take the 12:20-12:40 PM window (70% reliability) or preserve capital for power hour (80% reliability)?
             """,
-            dataFields: [.vxxPrice, .volumeVsAverage, .vxxVsVWAP]
+            dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage, .vxxVsVWAP]
         ),
 
         // Power Hour Analysis (3:05 PM)
@@ -304,18 +324,27 @@ class PromptLibrary {
             CURRENT LEVELS:
             - VXX current price: $[VXX_PRICE]
             - VIX current level: $[VIX_LEVEL]
+            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX]
             - Current volume vs average: [VOLUME_PCT]%
+
+            VXX/VIX RATIO ASSESSMENT ⭐:
+            - >1.60 = Premium fade (max position $500)
+            - 1.55-1.60 = Strong fade ($450)
+            - 1.45-1.55 = Normal fade ($350)
+            - <1.45 = SKIP (VXX too cheap)
 
             PLEASE ANALYZE:
             1. ENTRY SIGNAL ASSESSMENT: Do I have a clear VXX pattern? Volume confirmation? SMA positioning?
-            2. MARKET CONTEXT CHECK: SPY stability? VIX behavior supporting thesis? Late-day news?
-            3. RISK/REWARD ANALYSIS: Success probability? Entry levels? Profit targets and stops?
-            4. EXECUTION DECISION: Clear GO/NO-GO with specific entry price, volume threshold, targets, stops, exit deadline (3:50 PM max)
+            2. RATIO VALUE CHECK: Is VXX expensive enough to fade (>1.45)? What position size?
+            3. MARKET CONTEXT CHECK: SPY stability? VIX behavior supporting thesis? Late-day news?
+            4. RISK/REWARD ANALYSIS: Success probability? Entry levels? Profit targets and stops?
+            5. EXECUTION DECISION: Clear GO/NO-GO with specific entry price, volume threshold, targets, stops, exit deadline (3:55 PM max)
 
             MY ENTRY CHECKLIST (confirm all are met):
             - [ ] Correct time window (3:10-3:25 PM)
             - [ ] Clear technical pattern or arrow signal
             - [ ] Volume >200% average (Currently: [VOLUME_PCT]%)
+            - [ ] VXX/VIX Ratio >1.45 (Value filter)
             - [ ] No major news disruption
             - [ ] Market context supportive
 
@@ -324,6 +353,113 @@ class PromptLibrary {
             Help me make a disciplined, systematic decision based on our established strategy and current market conditions.
             """,
             dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage, .vxxVsVWAP, .sma20Position, .sma50Position, .currentDate]
+        ),
+
+        // Institutional Flow Alert (3:40 PM) ⭐⭐⭐
+        TradingPrompt(
+            type: .institutionalFlowAlert,
+            scheduledTime: .time(hour: 15, minute: 40),
+            template: """
+            🚨 INSTITUTIONAL FLOW WINDOW IN 5 MINUTES 🚨
+            3:45-4:10 PM | 90% RELIABILITY | SUPREME SETUP
+
+            This is your highest probability window. Portfolio rebalancing. Mutual fund NAV. Index rebalancing. Real institutional money flows.
+
+            CURRENT DATA:
+            - VXX: $[VXX_PRICE]
+            - VIX: [VIX_LEVEL]
+            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX]
+            - Current volume: [VOLUME_PCT]%
+
+            INSTITUTIONAL FLOW CRITERIA (ALL REQUIRED):
+            [ ] Time: 3:45-4:10 PM window (5 minutes away)
+            [ ] Volume: >300% average (institutional threshold)
+            [ ] VXX/VIX Ratio: >1.45 (minimum), >1.60 (premium)
+            [ ] Arrow signal or clean technical setup
+            [ ] Direction conviction (institutions are decisive)
+
+            WHAT TO WATCH FOR:
+            1. Volume explosion at 3:45 PM (>300% = institutional money)
+            2. Clean directional move (institutions don't hesitate)
+            3. Moving average confirmation
+            4. Ratio in fade zone (>1.45)
+
+            POSITION SIZING FOR THIS WINDOW:
+            - Ratio >1.60 + Volume >300% = MAX position ($500)
+            - Ratio 1.55-1.60 + Volume >300% = Full position ($450)
+            - Ratio 1.45-1.55 + Volume >300% = Standard ($350)
+            - Ratio <1.45 = SKIP (institutions may be covering)
+
+            IF ALREADY IN POWER HOUR POSITION:
+            - Ratio >1.55 + Volume >300% at 3:45 = HOLD to 4:05 PM
+            - Ratio <1.50 or volume fading = EXIT NOW
+            - Hit profit target = TAKE IT
+
+            EXIT DISCIPLINE:
+            - If entering 3:45-4:00 PM: Exit by 4:05 PM MAX
+            - If holding from earlier: Exit by 3:55 PM (use exit reminder)
+            - NO OVERNIGHT HOLDS (non-negotiable)
+
+            ACTION PLAN:
+            1. Update VXX/VIX/Volume data at 3:44 PM
+            2. Check ratio tier and volume threshold
+            3. Watch for institutional volume surge at 3:45 PM
+            4. Execute ONLY if ALL criteria met
+            5. Set 4:05 PM hard exit if entering
+
+            This window = Join institutional money. Don't fade it. Flow with it.
+
+            Ready to execute?
+            """,
+            dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage]
+        ),
+
+        // Exit Reminder (3:50 PM)
+        TradingPrompt(
+            type: .exitReminder,
+            scheduledTime: .time(hour: 15, minute: 50),
+            template: """
+            ⏰ EXIT TIME REMINDER ⏰
+
+            5 MINUTES TO HARD EXIT (3:55 PM)
+
+            Current positions: [DESCRIBE OR "NONE"]
+
+            DISCIPLINE CHECKPOINT:
+            [ ] 3:55 PM = EXIT ALL POSITIONS (unless institutional flow window)
+            [ ] No "just 5 more minutes"
+            [ ] No "I'll see what happens at close"
+            [ ] No overnight holds under ANY circumstances
+
+            EXCEPTION:
+            If you entered during 3:45-4:00 PM institutional flow window:
+            - You have until 4:05 PM MAX
+            - Set alarm for 4:00 PM (5-minute warning)
+            - Exit by 4:05 PM sharp
+
+            WHY 3:55 PM EXIT IS SACRED:
+            1. Prevents emotional attachment
+            2. Prevents "hope trading"
+            3. Preserves capital for tomorrow
+            4. System integrity depends on it
+
+            IF YOU'RE WINNING:
+            - Take the profit, don't get greedy
+            - Tomorrow has more setups
+
+            IF YOU'RE LOSING:
+            - Take the loss, preserve capital
+            - System works over 20+ trades, not 1
+
+            IF YOU'RE BREAKING EVEN:
+            - Close it, no drama
+            - Clean slate for tomorrow
+
+            Set your exit order NOW if you haven't already.
+
+            3:55 PM = Hard exit. No exceptions.
+            """,
+            dataFields: []
         ),
 
         // Post-Trade Analysis (3:55 PM)
