@@ -438,7 +438,9 @@ class VXXDashboardViewModel: ObservableObject {
 
             vxxVixRatio = VXXVIXRatio(vxx: vxxPrice, vix: vixLevel)
         } catch {
+            #if DEBUG
             print("Error fetching VXX/VIX data: \(error)")
+            #endif
         }
     }
 
@@ -454,7 +456,9 @@ class VXXDashboardViewModel: ObservableObject {
                 impliedVolatility: ivData.iv
             )
         } catch {
+            #if DEBUG
             print("Error fetching technical indicators: \(error)")
+            #endif
         }
     }
 
@@ -465,7 +469,9 @@ class VXXDashboardViewModel: ObservableObject {
             let volumeAvg = Int(IndicatorCalculator.calculateVolumeAverage(candles: candles, period: 30))
             detectedPatterns = patternRecognizer.detectPatterns(candles: candles, averageVolume: volumeAvg)
         } catch {
+            #if DEBUG
             print("Error detecting patterns: \(error)")
+            #endif
         }
     }
 
@@ -501,7 +507,9 @@ class VXXDashboardViewModel: ObservableObject {
         do {
             optionsChain = try await schwabService.fetchOptionsChain(symbol: "VXX", daysToExpiration: 4)
         } catch {
+            #if DEBUG
             print("Error fetching options chain: \(error)")
+            #endif
         }
     }
 

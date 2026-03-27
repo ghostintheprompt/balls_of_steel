@@ -43,7 +43,9 @@ class ArcadeEnergyService: ObservableObject {
             generator.notificationOccurred(.success)
         }
         #endif
+        #if DEBUG
         print("🔔 INSTITUTIONAL FLOW ALERT")
+        #endif
     }
 
     /// Strong signal validated (Arrow + Volume 200%+ + Time Window + Confluence)
@@ -54,7 +56,9 @@ class ArcadeEnergyService: ObservableObject {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         #endif
+        #if DEBUG
         print("✅ STRONG SIGNAL")
+        #endif
     }
 
     /// Volume hits institutional threshold (300%+)
@@ -65,7 +69,9 @@ class ArcadeEnergyService: ObservableObject {
         let generator = UIImpactFeedbackGenerator(style: .heavy)
         generator.impactOccurred()
         #endif
+        #if DEBUG
         print("💰 INSTITUTIONAL VOLUME")
+        #endif
     }
 
     /// Manual data entry saved
@@ -76,7 +82,9 @@ class ArcadeEnergyService: ObservableObject {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         #endif
+        #if DEBUG
         print("💾 DATA SAVED")
+        #endif
     }
 
     /// Unlock successful
@@ -87,7 +95,9 @@ class ArcadeEnergyService: ObservableObject {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
         #endif
+        #if DEBUG
         print("🎉 UNLOCKED")
+        #endif
     }
 
     /// Purchase started
@@ -118,7 +128,9 @@ class ArcadeEnergyService: ObservableObject {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         #endif
+        #if DEBUG
         print("⏰ WINDOW OPENING: \(window)")
+        #endif
     }
 
     /// Error occurred

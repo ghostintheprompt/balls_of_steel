@@ -195,7 +195,9 @@ class StoreKitService: ObservableObject {
                         await transaction.finish()
                     }
                 } catch {
+                    #if DEBUG
                     print("Transaction verification failed: \(error)")
+                    #endif
                 }
             }
         }
@@ -206,7 +208,9 @@ class StoreKitService: ObservableObject {
     private func unlockFullVersion() {
         hasUnlocked = true
         UserDefaults.standard.set(true, forKey: unlockKey)
+        #if DEBUG
         print("✅ Full version unlocked!")
+        #endif
     }
 
     // MARK: - Feature Access

@@ -45,6 +45,10 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# Backups
+*.backup
+*.bak
+
 # User-specific files
 *.swp
 *.swo

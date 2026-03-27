@@ -17,7 +17,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let code = components.queryItems?.first(where: { $0.name == "code" })?.value
         else {
+            #if DEBUG
             print("Invalid callback URL")
+            #endif
             return
         }
 
@@ -31,7 +33,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     object: nil
                 )
             } catch {
+                #if DEBUG
                 print("Auth error: \(error)")
+                #endif
             }
         }
     }
