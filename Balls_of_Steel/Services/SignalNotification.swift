@@ -23,7 +23,9 @@ class SignalNotification: ObservableObject {
             isPermissionGranted = try await center.requestAuthorization(options: [.alert, .sound])
         } catch {
             lastError = .permissionDenied
+            #if DEBUG
             print("Notification permission error: \(error)")
+            #endif
         }
     }
     
@@ -34,9 +36,13 @@ class SignalNotification: ObservableObject {
         do {
             try playAlertSound()
         } catch NotificationError.soundFileNotFound {
+            #if DEBUG
             print("Alert sound file not found")
+            #endif
         } catch {
+            #if DEBUG
             print("Sound playback error: \(error)")
+            #endif
         }
         
         // Show notification
@@ -84,7 +90,9 @@ class SignalNotification: ObservableObject {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
+                #if DEBUG
                 print("Notification scheduling error: \(error)")
+                #endif
             }
         }
         
@@ -96,7 +104,9 @@ class SignalNotification: ObservableObject {
         do {
             try playAlertSound()
         } catch {
+            #if DEBUG
             print("Test sound error: \(error)")
+            #endif
         }
     }
 } 

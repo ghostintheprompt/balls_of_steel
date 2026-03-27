@@ -33,7 +33,9 @@ class SignalScanner: ObservableObject {
     func startScanning() {
         // Educational mode - no live scanning
         isScanning = false
+        #if DEBUG
         print("Educational Mode: Use Manual Data Entry to generate signals")
+        #endif
     }
 
     func stopScanning() {
