@@ -7,37 +7,26 @@ struct TradingDashboard: View {
     
     var body: some View {
         NavigationView {
-            List {
-                TestSessionBanner()
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
+            ZStack {
+                TradingBackdrop()
 
-                // Market Status Card
-                MarketStatusView(phase: marketPulse.currentPhase)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                
-                // Active Signals Section
-                Section("Active Signals") {
-                    ForEach(signalMonitor.activeSignals) { signal in
-                        SharedSignalRowView(signal: signal)
-                            .swipeActions {
-                                Button("Trade") {
-                                    signalMonitor.startTrade(signal)
-                                }
-                                .tint(.green)
-                            }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        TestSessionBanner()
+                        MarketStatusView(phase: marketPulse.currentPhase)
+                        DashboardPulseStrip(
+                            signalCount: signalMonitor.activeSignals.count,
+                            tradeCount: signalMonitor.activeTrades.count,
+                            phase: marketPulse.currentPhase
+                        )
+
+                        activeSignalsSection
+                        activeTradesSection
                     }
-                }
-                
-                // Active Trades Section
-                Section("Active Trades") {
-                    ForEach(signalMonitor.activeTrades) { trade in
-                        TradeRowView(trade: trade)
-                    }
+                    .padding(20)
                 }
             }
-            .navigationTitle("Trading Dashboard")
+            .navigationTitle("Balls of Steel")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -46,7 +35,52 @@ struct TradingDashboard: View {
                         Button("Clear All") { }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .foregroundColor(DesignSystem.primaryColor)
                     }
+                }
+            }
+        }
+    }
+
+    private var activeSignalsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DeskSectionHeader(title: "Signals Live", systemImage: "bolt.fill", accent: DesignSystem.warningColor)
+
+            if signalMonitor.activeSignals.isEmpty {
+                InfoCard {
+                    Text("Nothing clean yet. Good. Manufactured entries are how people donate.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else {
+                ForEach(signalMonitor.activeSignals) { signal in
+                    SharedSignalRowView(signal: signal)
+                        .swipeActions {
+                            Button("Trade") {
+                                signalMonitor.startTrade(signal)
+                            }
+                            .tint(DesignSystem.successColor)
+                        }
+                }
+            }
+        }
+    }
+
+    private var activeTradesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DeskSectionHeader(title: "Active Risk", systemImage: "flame.fill", accent: DesignSystem.dangerColor)
+
+            if signalMonitor.activeTrades.isEmpty {
+                InfoCard {
+                    Text("No live risk. Keep it that way until the tape deserves it.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else {
+                ForEach(signalMonitor.activeTrades) { trade in
+                    TradeRowView(trade: trade)
                 }
             }
         }
@@ -55,27 +89,96 @@ struct TradingDashboard: View {
 
 struct TestSessionBanner: View {
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Next Trading Test")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(AppConfig.Testing.nextTradingTestDate)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                HStack(alignment: .center, spacing: 14) {
+                    BallsOfSteelMark(size: 62)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("TEST SESSION")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1.2)
+                            .foregroundColor(DesignSystem.mutedText)
+                        Text(AppConfig.Testing.nextTradingTestDate)
+                            .font(DesignSystem.Typography.heroFont)
+                            .foregroundColor(DesignSystem.primaryText)
+                    }
+                }
+
+                Spacer()
+
+                Text("OPEN FIRST")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.1)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.06))
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                    .clipShape(Capsule())
+                    .foregroundColor(DesignSystem.primaryColor)
             }
-            Spacer()
-            Text("Open + Close Focus")
-                .font(.caption)
-                .foregroundColor(.secondary)
+
+            Text("Open first. Close honest. Small size. If the chart wants aggression, it can earn it.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
+
+            HStack(spacing: 8) {
+                sessionPill("SPY + VXX")
+                sessionPill("Extended Hours Aware")
+                sessionPill("No Fantasy Fills")
+            }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(radius: 2)
-        )
-        .padding([.horizontal, .top])
+        .deskPanel(glow: DesignSystem.edgeGlow.opacity(0.16))
+    }
+
+    private func sessionPill(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(DesignSystem.Typography.labelFont)
+            .tracking(0.8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Color.white.opacity(0.04))
+            .clipShape(Capsule())
+            .foregroundColor(DesignSystem.primaryText)
+    }
+}
+
+private struct DashboardPulseStrip: View {
+    let signalCount: Int
+    let tradeCount: Int
+    let phase: MarketPhase
+
+    var body: some View {
+        HStack(spacing: 12) {
+            PulseTile(title: "Setups", value: "\(signalCount)", accent: DesignSystem.warningColor)
+            PulseTile(title: "Risk", value: "\(tradeCount)", accent: DesignSystem.dangerColor)
+            PulseTile(title: "Now", value: phase.displayName, accent: phase.color)
+        }
+    }
+}
+
+private struct PulseTile: View {
+    let title: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                DeskPulseDot(accent: accent, size: 7)
+                Text(title.uppercased())
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1)
+                    .foregroundColor(DesignSystem.mutedText)
+            }
+            Text(value)
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .deskPanel(glow: accent.opacity(0.12), padding: 14)
     }
 }
 
@@ -89,9 +192,10 @@ struct CloseManagementCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "clock.badge.exclamationmark")
-                    .foregroundColor(.orange)
+                    .foregroundColor(DesignSystem.warningColor)
                 Text(title)
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Spacer()
             }
 
@@ -101,66 +205,53 @@ struct CloseManagementCard: View {
             }
 
             Text(note)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(radius: 2)
-        )
+        .deskPanel(glow: DesignSystem.warningColor.opacity(0.12))
     }
 
     private func timingColumn(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Text(label.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(0.8)
+                .foregroundColor(DesignSystem.mutedText)
             Text(value)
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-// Modern, clean market status view
 struct MarketStatusView: View {
     let phase: MarketPhase
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text("Market Phase")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Text(phase.displayName)
-                        .font(.title2)
-                        .bold()
-                }
-                Spacer()
-                phaseIndicator
+        HStack(spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Market Phase".uppercased())
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.1)
+                    .foregroundColor(DesignSystem.mutedText)
+                Text(phase.displayName)
+                    .font(DesignSystem.Typography.titleFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                Text("Good tape pays. Dead tape wastes attention.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
-            .padding()
+
+            Spacer()
+
+            phaseIndicator
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(radius: 2)
-        )
-        .padding()
+        .deskPanel(glow: phase.color.opacity(0.12))
     }
     
     private var phaseIndicator: some View {
-        Circle()
-            .fill(phase.color)
-            .frame(width: 12, height: 12)
-            .overlay(
-                Circle()
-                    .stroke(phase.color.opacity(0.3), lineWidth: 4)
-            )
+        DeskPulseDot(accent: phase.color, size: 14)
     }
 }
 
@@ -168,22 +259,55 @@ struct TradeRowView: View {
     let trade: Trade
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(trade.symbol)
-                    .font(.headline)
-                StrategyBadge(strategy: trade.strategy)
-            }
-            Spacer()
-            VStack(alignment: .trailing) {
-                Text("P/L: \(trade.unrealizedPnL, specifier: "%.2f")")
-                    .foregroundColor(trade.unrealizedPnL >= 0 ? .green : .red)
-                    .bold()
+        InfoCard(glow: pnlColor.opacity(0.16)) {
+            HStack(alignment: .center, spacing: 12) {
+                DeskSignalGlyph(symbol: trade.symbol, accent: pnlColor, secondaryAccent: directionColor)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(trade.symbol)
+                        .font(DesignSystem.Typography.titleFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                    StrategyBadge(strategy: trade.strategy)
+                    Text(trade.direction.optionLabel)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 6) {
+                    HStack(spacing: 6) {
+                        DeskPulseDot(accent: pnlColor, size: 7)
+                        Text("LIVE P/L")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(0.8)
+                            .foregroundColor(DesignSystem.mutedText)
+                    }
+                    Text(String(format: "$%.2f", trade.unrealizedPnL / 100))
+                        .font(DesignSystem.Typography.monospacedFont)
+                        .foregroundColor(pnlColor)
+                    DeskMeterBar(value: progressToTarget, accent: pnlColor)
+                        .frame(width: 86)
+                }
             }
         }
-        .padding(.vertical, 4)
     }
-} 
+
+    private var pnlColor: Color {
+        trade.unrealizedPnL >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor
+    }
+
+    private var directionColor: Color {
+        trade.direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor
+    }
+
+    private var progressToTarget: Double {
+        let denominator = abs(trade.target - trade.entry)
+        guard denominator > 0 else { return 0 }
+        let moved = trade.direction == .bullish ? (trade.currentPrice - trade.entry) : (trade.entry - trade.currentPrice)
+        return min(max(moved / denominator, 0), 1)
+    }
+}
 
 struct SPYTradingDashboard: View {
     @StateObject private var viewModel = SPYDashboardViewModel()
@@ -191,38 +315,42 @@ struct SPYTradingDashboard: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 16) {
-                    TestSessionBanner()
+            ZStack {
+                TradingBackdrop()
+
+                ScrollView {
+                    VStack(spacing: 16) {
+                        TestSessionBanner()
+                            .padding(.horizontal)
+
+                        spyMarketSnapshotSection
+
+                        if let nextWindow = viewModel.nextWindow {
+                            SPYWindowAlertCard(window: nextWindow.window, minutesUntil: nextWindow.minutesUntil)
+                                .padding(.horizontal)
+                        }
+
+                        CloseManagementCard(
+                            title: "SPY Close Management",
+                            warningTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime),
+                            hardExitTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime),
+                            note: "Warn first into the close. If you are still in it later, that should be a decision, not an accident."
+                        )
                         .padding(.horizontal)
 
-                    spyMarketSnapshotSection
+                        if viewModel.hasManualData {
+                            SPYSetupBoardCard(viewModel: viewModel)
+                                .padding(.horizontal)
+                        }
 
-                    if let nextWindow = viewModel.nextWindow {
-                        SPYWindowAlertCard(window: nextWindow.window, minutesUntil: nextWindow.minutesUntil)
-                            .padding(.horizontal)
+                        spyChecklistSection
+                        spySignalsSection
+                        spyTradesSection
                     }
-
-                    CloseManagementCard(
-                        title: "SPY Close Management",
-                        warningTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime),
-                        hardExitTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime),
-                        note: "We warn first into the close, then only force the exit later so extended-hours room stays available."
-                    )
-                    .padding(.horizontal)
-
-                    if viewModel.hasManualData {
-                        SPYSetupBoardCard(viewModel: viewModel)
-                            .padding(.horizontal)
-                    }
-
-                    spyChecklistSection
-                    spySignalsSection
-                    spyTradesSection
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
             }
-            .navigationTitle("SPY Trading")
+            .navigationTitle("SPY Desk")
         }
         .task {
             await viewModel.startMonitoring()
@@ -232,70 +360,60 @@ struct SPYTradingDashboard: View {
     private var spyMarketSnapshotSection: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("SPY")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("SPY TAPE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.1)
+                    .foregroundColor(DesignSystem.mutedText)
 
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("$\(viewModel.spyPrice, specifier: "%.2f")")
-                        .font(.system(.title2, design: .monospaced))
-                        .fontWeight(.bold)
+                        .font(DesignSystem.Typography.heroFont)
+                        .foregroundColor(DesignSystem.primaryText)
 
                     Text("\(viewModel.spyChangePercent, specifier: "%+.2f")%")
-                        .font(.subheadline)
-                        .foregroundColor(viewModel.spyChangePercent >= 0 ? .green : .red)
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                 }
+
+                Text("Respect the tape, not the story.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.windowBackgroundColor))
-                    .shadow(radius: 2)
-            )
+            .deskPanel(glow: viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor.opacity(0.16) : DesignSystem.bearishColor.opacity(0.16))
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Context")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("CONTEXT")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.1)
+                    .foregroundColor(DesignSystem.mutedText)
 
                 Text(viewModel.contextLabel)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
 
                 Text(viewModel.lastUpdateLabel)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.windowBackgroundColor))
-                    .shadow(radius: 2)
-            )
+            .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
         }
         .padding(.horizontal)
     }
 
     private var spyChecklistSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "list.bullet.clipboard")
-                    .foregroundColor(.blue)
-                Text("SPY Focus")
-                    .font(.headline)
-                Spacer()
-            }
+            DeskSectionHeader(title: "SPY Discipline", systemImage: "scope", accent: DesignSystem.primaryColor)
             .padding(.horizontal)
 
             VStack(spacing: 10) {
-                spyFocusRow(title: "Open Drive", detail: "9:35-10:05 AM. Needs arrow plus VWAP agreement and volume.")
+                spyFocusRow(title: "Open Drive", detail: "9:35-10:05. Arrow first. VWAP agreement. Volume there. No begging.")
                 spyFocusRow(
                     title: "Close Drive",
-                    detail: "3:30-\(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). First warning at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)), extended hard exit at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime))."
+                    detail: "3:30-\(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Warning at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Hard exit later at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime)) if you are still managing."
                 )
-                spyFocusRow(title: "Risk Filter", detail: "High news now requires more volume before we promote a watch to an entry.")
+                spyFocusRow(title: "News Filter", detail: "Heavy news can pay. It still has to prove it on volume before it graduates from watch to entry.")
             }
             .padding(.horizontal)
         }
@@ -303,46 +421,35 @@ struct SPYTradingDashboard: View {
 
     private func spyFocusRow(title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            Text(title.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1)
+                .foregroundColor(DesignSystem.primaryText)
             Text(detail)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(radius: 2)
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.08), padding: 14)
     }
 
     private var spySignalsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "bell.fill")
-                    .foregroundColor(.orange)
-                Text("SPY Signals")
-                    .font(.headline)
+                DeskSectionHeader(title: "SPY Signals", systemImage: "bolt.fill", accent: DesignSystem.warningColor)
                 Spacer()
-                Text("\(spySignals.count)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
+                DeskCountBadge(value: "\(spySignals.count)", accent: DesignSystem.warningColor)
             }
             .padding(.horizontal)
 
             if spySignals.isEmpty {
-                Text("No active SPY signals yet. Use Manual Data Entry with SPY selected to drive this tab.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                InfoCard {
+                    Text("Nothing live. If Manual is quiet, this tab should be quiet.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal)
             } else {
                 ForEach(spySignals) { signal in
                     SharedSignalRowView(signal: signal)
@@ -361,20 +468,20 @@ struct SPYTradingDashboard: View {
     private var spyTradesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "briefcase.fill")
-                    .foregroundColor(.green)
-                Text("SPY Trades")
-                    .font(.headline)
+                DeskSectionHeader(title: "SPY Risk", systemImage: "flame.fill", accent: DesignSystem.dangerColor)
                 Spacer()
+                DeskCountBadge(value: "\(spyTrades.count)", accent: DesignSystem.dangerColor)
             }
             .padding(.horizontal)
 
             if spyTrades.isEmpty {
-                Text("No active SPY trades")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                InfoCard {
+                    Text("No SPY risk on. That is a position too.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal)
             } else {
                 ForEach(spyTrades) { trade in
                     TradeDetailCard(trade: trade)
@@ -399,27 +506,28 @@ private struct SPYWindowAlertCard: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Next SPY Window")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("NEXT SPY WINDOW")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1)
+                    .foregroundColor(DesignSystem.mutedText)
                 Text(window.displayName)
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Text(window.timeRange)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
             Spacer()
-            Text("\(minutesUntil)m")
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(.orange)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("\(minutesUntil)m")
+                    .font(DesignSystem.Typography.titleFont)
+                    .foregroundColor(DesignSystem.warningColor)
+                Text(minutesUntil > 0 ? "until it matters" : "window live")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
+            }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(radius: 2)
-        )
+        .deskPanel(glow: DesignSystem.warningColor.opacity(0.14))
     }
 }
 
@@ -582,6 +690,8 @@ final class SPYDashboardViewModel: ObservableObject {
             return "Open Drive Active"
         case _ where date.isSPYCloseWindow:
             return "Close Drive Active"
+        case _ where date.isAfternoonFlexWindow:
+            return "Afternoon Flex Active"
         default:
             return "Between Windows"
         }
@@ -591,13 +701,16 @@ final class SPYDashboardViewModel: ObservableObject {
         if date.isSPYOpenWindow {
             return "Open flow is active right now."
         }
+        if date.isAfternoonFlexWindow && !date.isSPYCloseWindow {
+            return "Afternoon tape is tradable now. Good setups can build before the close if volume earns it."
+        }
         if date.isSPYCloseWindow {
             return "Close flow is active right now."
         }
         if let nextWindow {
             return "\(nextWindow.window.displayName) in \(nextWindow.minutesUntil)m."
         }
-        return "Cash session focus is over, so alerts are now mostly exit management."
+        return "Outside the main windows now. Stay selective or manage what is already on."
     }
 
     private var suggestedAction: String {
@@ -702,18 +815,20 @@ private struct SPYSetupBoardCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "scope")
-                    .foregroundColor(.blue)
-                Text("SPY Setup Board")
-                    .font(.headline)
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text("SPY Bias Board")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Spacer()
             }
 
             Text(viewModel.setupHeadline)
-                .font(.headline)
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(DesignSystem.primaryText)
 
             Text(viewModel.setupSubheadline)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
 
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(viewModel.setupMetrics) { metric in
@@ -721,12 +836,7 @@ private struct SPYSetupBoardCard: View {
                 }
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(radius: 2)
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
     }
 }
 
@@ -739,23 +849,20 @@ private struct SPYSetupMetricCard: View {
                 Image(systemName: metric.systemImage)
                     .foregroundColor(metric.color)
                 Text(metric.title)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
             }
 
             Text(metric.value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
 
             Text(metric.detail)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(metric.color.opacity(0.08))
-        )
+        .deskPanel(glow: metric.color.opacity(0.12), padding: 14)
     }
 }

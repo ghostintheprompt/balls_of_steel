@@ -79,6 +79,10 @@ extension Date {
         isInWindow("12:20", "12:35")  // 15 minute window starting at 12:20 PM
     }
 
+    var isAfternoonFlexWindow: Bool {
+        isInWindow("13:30", "15:45")
+    }
+
     var isVXXPowerHourWindow: Bool {
         isInWindow("15:10", "15:25")  // 15 minute window starting at 3:10 PM
     }

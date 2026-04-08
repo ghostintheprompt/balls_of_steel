@@ -10,33 +10,22 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            TradingBackdrop()
 
             TabView(selection: $currentPage) {
-                // Page 1: Welcome - The Game
                 welcomePage
                     .tag(0)
 
-                // Page 2: How It Works
                 howItWorksPage
                     .tag(1)
 
-                // Page 3: Reality Check
                 realityCheckPage
                     .tag(2)
 
-                // Page 4: Platform Selection
                 platformSelectionPage
                     .tag(3)
             }
 
-            // Skip button (only on first 3 pages)
             if currentPage < 3 {
                 VStack {
                     HStack {
@@ -45,7 +34,7 @@ struct OnboardingView: View {
                             completeOnboarding()
                         }
                         .padding()
-                        .foregroundColor(.blue)
+                        .foregroundColor(DesignSystem.primaryColor)
                     }
                     Spacer()
                 }
@@ -58,30 +47,19 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            // Logo/Icon
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
-
-                Text("💎")
-                    .font(.system(size: 60))
-            }
+            BallsOfSteelMark(size: 124)
 
             VStack(spacing: 16) {
-                Text("BALLS OF STEEL")
-                    .font(.system(size: 36, weight: .black, design: .default))
-                    .multilineTextAlignment(.center)
+                BallsOfSteelWordmark(
+                    alignment: .center,
+                    title: "BALLS OF STEEL",
+                    subtitle: "Open first. Close honest."
+                )
+                .multilineTextAlignment(.center)
 
-                Text("VXX Trading System")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
+                Text("Manual desk for SPY and VXX.")
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
 
             VStack(spacing: 12) {
@@ -91,22 +69,21 @@ struct OnboardingView: View {
             }
 
             Text("**Your phone beeps. VXX institutional flow. 300% volume. Arrow confirmed. You make the trade.**")
-                .font(.subheadline)
+                .font(DesignSystem.Typography.bodyFont)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-                .foregroundColor(.secondary)
+                .foregroundColor(DesignSystem.mutedText)
 
             Spacer()
 
-            // Next button
             Button(action: { withAnimation { currentPage = 1 } }) {
                 Text("Let's Go")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
+                    .background(DesignSystem.primaryColor)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .cornerRadius(14)
             }
             .padding(.horizontal, 32)
         }
@@ -119,7 +96,8 @@ struct OnboardingView: View {
             Spacer()
 
             Text("How It Works")
-                .font(.system(size: 32, weight: .bold))
+                .font(DesignSystem.Typography.heroFont)
+                .foregroundColor(DesignSystem.primaryText)
 
             VStack(alignment: .leading, spacing: 24) {
                 OnboardingStep(
@@ -148,19 +126,19 @@ struct OnboardingView: View {
             }
 
             Text("**Total time: ~15 minutes spread across the day.**")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
 
             Spacer()
 
             Button(action: { withAnimation { currentPage = 2 } }) {
                 Text("Got It")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
+                    .background(DesignSystem.primaryColor)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .cornerRadius(14)
             }
             .padding(.horizontal, 32)
         }
@@ -172,12 +150,11 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.orange)
+            BallsOfSteelMark(size: 92, primaryAccent: DesignSystem.warningColor, bullishAccent: DesignSystem.primaryColor, bearishAccent: DesignSystem.bearishColor)
 
             Text("Reality Check")
-                .font(.system(size: 32, weight: .bold))
+                .font(DesignSystem.Typography.heroFont)
+                .foregroundColor(DesignSystem.primaryText)
 
             VStack(alignment: .leading, spacing: 16) {
                 RealityCheckPoint(
@@ -206,22 +183,22 @@ struct OnboardingView: View {
             }
 
             Text("Only trade with money you can afford to lose.")
-                .font(.caption)
-                .foregroundColor(.red)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.bearishColor)
                 .padding()
-                .background(Color.red.opacity(0.1))
+                .background(DesignSystem.bearishColor.opacity(0.12))
                 .cornerRadius(8)
 
             Spacer()
 
             Button(action: { withAnimation { currentPage = 3 } }) {
                 Text("I Understand")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.orange)
+                    .background(DesignSystem.warningColor)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .cornerRadius(14)
             }
             .padding(.horizontal, 32)
         }
@@ -234,11 +211,12 @@ struct OnboardingView: View {
             Spacer()
 
             Text("Choose Your Platform")
-                .font(.system(size: 32, weight: .bold))
+                .font(DesignSystem.Typography.heroFont)
+                .foregroundColor(DesignSystem.primaryText)
 
             Text("Where do you execute trades?")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
 
             VStack(spacing: 16) {
                 ForEach(TradingPlatform.allCases, id: \.self) { platform in
@@ -252,8 +230,8 @@ struct OnboardingView: View {
             .padding(.horizontal, 32)
 
             Text("You'll enter data manually from your platform. The app validates signals and generates prompts.")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
@@ -264,12 +242,12 @@ struct OnboardingView: View {
                 completeOnboarding()
             }) {
                 Text("Start Trading")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.green)
+                    .background(DesignSystem.bullishColor)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .cornerRadius(14)
             }
             .padding(.horizontal, 32)
         }
@@ -297,23 +275,22 @@ struct FeatureHighlight: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundColor(.blue)
+                .foregroundColor(DesignSystem.primaryColor)
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(text)
-                    .font(.subheadline)
+                    .font(DesignSystem.Typography.headlineFont)
                     .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.primaryText)
                 Text(subtext)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
 
             Spacer()
         }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(12)
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.08), padding: 14)
     }
 }
 
@@ -342,15 +319,18 @@ struct OnboardingStep: View {
                     Image(systemName: icon)
                         .foregroundColor(color)
                     Text(title)
-                        .font(.headline)
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
                 }
 
                 Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.mutedText)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(14)
+        .deskPanel(glow: color.opacity(0.10), padding: 0)
     }
 }
 
@@ -368,9 +348,12 @@ struct RealityCheckPoint: View {
                 .frame(width: 30)
 
             Text(LocalizedStringKey(text))
-                .font(.subheadline)
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(14)
+        .deskPanel(glow: color.opacity(0.08), padding: 0)
     }
 }
 
@@ -384,23 +367,24 @@ struct PlatformButton: View {
         Button(action: action) {
             HStack {
                 Text(platform.displayName)
-                    .font(.subheadline)
+                    .font(DesignSystem.Typography.bodyFont)
                     .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(DesignSystem.primaryText)
 
                 Spacer()
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(DesignSystem.bullishColor)
                 }
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.green.opacity(0.1) : Color(NSColor.windowBackgroundColor))
+                    .fill(isSelected ? DesignSystem.bullishColor.opacity(0.12) : Color.white.opacity(0.04))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.green : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                            .stroke(isSelected ? DesignSystem.bullishColor : Color.white.opacity(0.08), lineWidth: isSelected ? 2 : 1)
                     )
             )
         }

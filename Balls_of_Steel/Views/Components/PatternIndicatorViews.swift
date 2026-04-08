@@ -6,24 +6,23 @@ struct PatternBadgeView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            // Pattern icon
             Image(systemName: patternIcon)
-                .font(.caption)
+                .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(signalColor)
 
-            // Pattern name
             Text(pattern.type.rawValue)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(signalColor)
 
-            // Strength indicator
             strengthIndicator
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(signalColor.opacity(0.1))
-        .cornerRadius(6)
+        .background(signalColor.opacity(0.12))
+        .overlay(
+            Capsule().stroke(signalColor.opacity(0.24), lineWidth: 1)
+        )
+        .clipShape(Capsule())
     }
 
     private var patternIcon: String {
@@ -78,22 +77,13 @@ struct TechnicalIndicatorsCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundColor(.blue)
-                Text("Technical Indicators")
-                    .font(.headline)
-                Spacer()
-            }
+            DeskSectionHeader(title: "Structure Read", systemImage: "chart.line.uptrend.xyaxis", accent: DesignSystem.primaryColor)
 
-            Divider()
-
-            // SMA Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("Moving Averages")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
 
                 HStack {
                     IndicatorRow(
@@ -112,122 +102,110 @@ struct TechnicalIndicatorsCard: View {
                 }
             }
 
-            Divider()
-
-            // VWAP Section
             HStack {
                 Text("VWAP")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
                 Spacer()
                 Text("$\(indicators.vwap, specifier: "%.2f")")
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.cyan)
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.primaryColor)
                 if indicators.isPriceAboveVWAP {
                     Image(systemName: "arrow.up.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(DesignSystem.bullishColor)
                 } else {
                     Image(systemName: "arrow.down.circle.fill")
-                        .foregroundColor(.red)
+                        .foregroundColor(DesignSystem.bearishColor)
                 }
             }
 
-            // VWAP Deviation
             if abs(indicators.vwapDeviation) > 0.5 {
                 HStack {
                     Text("Deviation")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                     Spacer()
                     Text("\(indicators.vwapDeviation, specifier: "%+.2f")%")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(indicators.vwapDeviation > 0 ? .green : .red)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(indicators.vwapDeviation > 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                 }
             }
 
-            Divider()
-
-            // Volume Section
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Volume")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(0.8)
+                        .foregroundColor(DesignSystem.mutedText)
                     Spacer()
                     Text(indicators.volumeSignal.displayName)
-                        .font(.caption)
+                        .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(volumeColor)
                 }
 
                 HStack {
                     Text("\(indicators.currentVolume)")
-                        .font(.system(.body, design: .monospaced))
+                        .font(DesignSystem.Typography.monospacedFont)
+                        .foregroundColor(DesignSystem.primaryText)
                     Spacer()
                     Text("\(indicators.volumeMultiple, specifier: "%.1f")x avg")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
             }
 
-            // RSI
             if indicators.rsi > 0 {
-                Divider()
                 HStack {
                     Text("RSI")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(0.8)
+                        .foregroundColor(DesignSystem.mutedText)
                     Spacer()
                     Text("\(indicators.rsi, specifier: "%.0f")")
-                        .font(.system(.body, design: .monospaced))
+                        .font(DesignSystem.Typography.monospacedFont)
                         .foregroundColor(rsiColor)
                 }
             }
 
-            // IV if available
             if indicators.impliedVolatility > 0 {
-                Divider()
                 HStack {
                     Text("Implied Volatility")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(0.8)
+                        .foregroundColor(DesignSystem.mutedText)
                     Spacer()
                     Text("\(indicators.impliedVolatility, specifier: "%.1f")%")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundColor(.purple)
+                        .font(DesignSystem.Typography.monospacedFont)
+                        .foregroundColor(DesignSystem.primaryColor)
                 }
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
     }
 
     private var volumeColor: Color {
         switch indicators.volumeSignal {
         case .extremelyHigh:
-            return .red
+            return DesignSystem.bearishColor
         case .high:
-            return .orange
+            return DesignSystem.warningColor
         case .aboveAverage:
-            return .green
+            return DesignSystem.bullishColor
         case .belowAverage:
-            return .gray
+            return DesignSystem.mutedText
         case .veryLow:
-            return .gray.opacity(0.5)
+            return DesignSystem.mutedText.opacity(0.6)
         }
     }
 
     private var rsiColor: Color {
         if indicators.rsi >= 70 {
-            return .red // Overbought
+            return DesignSystem.bearishColor
         } else if indicators.rsi <= 30 {
-            return .green // Oversold
+            return DesignSystem.bullishColor
         } else {
-            return .primary
+            return DesignSystem.primaryText
         }
     }
 }
@@ -246,16 +224,17 @@ struct IndicatorRow: View {
                     .fill(color)
                     .frame(width: 8, height: 8)
                 Text(label)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
             HStack(spacing: 4) {
                 Text("$\(value, specifier: "%.2f")")
-                    .font(.system(.caption, design: .monospaced))
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.caption2)
-                        .foregroundColor(.green)
+                        .foregroundColor(DesignSystem.bullishColor)
                 }
             }
         }
@@ -268,48 +247,36 @@ struct VXXVIXRatioView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header
-            HStack {
-                Image(systemName: "chart.bar.xaxis")
-                    .foregroundColor(.purple)
-                Text("VXX/VIX Ratio")
-                    .font(.headline)
-                Spacer()
-            }
+            DeskSectionHeader(title: "Ratio Pressure", systemImage: "chart.bar.xaxis", accent: DesignSystem.primaryColor)
 
-            Divider()
-
-            // Ratio value
             HStack {
                 Text("Ratio")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
                 Spacer()
                 Text("\(ratio.ratio, specifier: "%.2f")")
-                    .font(.system(.title3, design: .monospaced))
-                    .fontWeight(.bold)
+                    .font(DesignSystem.Typography.titleFont)
                     .foregroundColor(ratioColor)
             }
 
-            // Signal
             HStack {
-                Text("Signal")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                Text("Read")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
                 Spacer()
                 Text(ratio.signal.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(DesignSystem.Typography.headlineFont)
                     .foregroundColor(signalColor)
             }
 
-            // Visual indicator
             if ratio.signal != .noTrade {
                 HStack(spacing: 4) {
                     Image(systemName: ratio.signal == .fadeSetup ? "arrow.down.circle.fill" : "exclamationmark.triangle.fill")
                         .foregroundColor(signalColor)
                     Text(ratio.signal.displayName)
-                        .font(.caption)
+                        .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(signalColor)
                 }
                 .padding(.vertical, 4)
@@ -317,13 +284,12 @@ struct VXXVIXRatioView: View {
                 .background(signalColor.opacity(0.1))
                 .cornerRadius(6)
             }
+
+            Text(ratio.signal == .noTrade ? "If the ratio is dead, skip the fantasy." : "Useful only when the rest of the tape agrees.")
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        )
+        .deskPanel(glow: signalColor.opacity(0.14))
     }
 
     private var ratioColor: Color {
@@ -355,41 +321,31 @@ struct TradingWindowAlertView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon
             Image(systemName: "clock.fill")
                 .font(.title2)
-                .foregroundColor(.orange)
+                .foregroundColor(DesignSystem.warningColor)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(window.displayName)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
 
-                Text(minutesUntil > 0 ? "Opens in \(minutesUntil) minutes" : "Window Active")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                Text(minutesUntil > 0 ? "Opens in \(minutesUntil) minutes" : "Window active right now")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
 
             Spacer()
 
-            // Time range
             Text(window.timeRange)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.primaryText)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.orange.opacity(0.1))
+                .background(DesignSystem.warningColor.opacity(0.1))
                 .cornerRadius(6)
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.orange.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange, lineWidth: 2)
-                )
-        )
+        .deskPanel(glow: DesignSystem.warningColor.opacity(0.16))
     }
 }
 
@@ -429,76 +385,66 @@ struct EnhancedSignalRowView: View {
     let indicators: TechnicalIndicators?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Top row: Symbol, Strategy, Confidence
-            HStack {
-                VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(signal.symbol)
-                        .font(.headline)
-                        .fontWeight(.bold)
+                        .font(DesignSystem.Typography.titleFont)
+                        .foregroundColor(DesignSystem.primaryText)
                     StrategyBadge(strategy: signal.strategy)
                     Text("\(signal.kind.displayName) • \(signal.direction.optionLabel)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
 
                 Spacer()
 
-                VStack(alignment: .trailing) {
+                VStack(alignment: .trailing, spacing: 6) {
                     Text("\(signal.confidence * 100, specifier: "%.0f")%")
-                        .font(.title3)
-                        .fontWeight(.bold)
+                        .font(DesignSystem.Typography.titleFont)
                         .foregroundColor(confidenceColor)
                     Text("Confidence")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
             }
 
-            // Pattern badge if available
             if let pattern = pattern {
                 PatternBadgeView(pattern: pattern)
             }
 
-            // Entry/Target/Stop
             HStack(spacing: 16) {
-                PriceLabelView(label: "Entry", price: signal.entry, color: .blue)
-                PriceLabelView(label: "Target", price: signal.target, color: .green)
-                PriceLabelView(label: "Stop", price: signal.stop, color: .red)
+                PriceLabelView(label: "Entry", price: signal.entry, color: DesignSystem.primaryColor)
+                PriceLabelView(label: "Target", price: signal.target, color: DesignSystem.bullishColor)
+                PriceLabelView(label: "Stop", price: signal.stop, color: DesignSystem.bearishColor)
             }
 
-            // Quick indicators summary
             if let indicators = indicators {
                 HStack(spacing: 8) {
                     if indicators.isVolumeAboveAverage {
-                        MiniIndicator(icon: "arrow.up.circle.fill", label: "Vol", color: .orange)
+                        MiniIndicator(icon: "arrow.up.circle.fill", label: "VOL", color: DesignSystem.warningColor)
                     }
                     if indicators.isPriceAboveVWAP {
-                        MiniIndicator(icon: "chart.line.uptrend.xyaxis", label: "VWAP", color: .cyan)
+                        MiniIndicator(icon: "chart.line.uptrend.xyaxis", label: "VWAP", color: DesignSystem.primaryColor)
                     }
                     if indicators.smaSignal == .bullish {
-                        MiniIndicator(icon: "arrow.up.right", label: "SMA", color: .green)
+                        MiniIndicator(icon: "arrow.up.right", label: "SMA", color: DesignSystem.bullishColor)
                     } else if indicators.smaSignal == .bearish {
-                        MiniIndicator(icon: "arrow.down.right", label: "SMA", color: .red)
+                        MiniIndicator(icon: "arrow.down.right", label: "SMA", color: DesignSystem.bearishColor)
                     }
                 }
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        )
+        .deskPanel(glow: confidenceColor.opacity(0.12))
     }
 
     private var confidenceColor: Color {
         if signal.confidence >= 0.8 {
-            return .green
+            return DesignSystem.bullishColor
         } else if signal.confidence >= 0.6 {
-            return .orange
+            return DesignSystem.warningColor
         } else {
-            return .red
+            return DesignSystem.bearishColor
         }
     }
 }
@@ -512,13 +458,16 @@ struct PriceLabelView: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
             Text("$\(price, specifier: "%.2f")")
-                .font(.system(.caption, design: .monospaced))
-                .fontWeight(.semibold)
+                .font(DesignSystem.Typography.monospacedFont)
                 .foregroundColor(color)
         }
+        .frame(maxWidth: .infinity)
+        .padding(10)
+        .background(Color.white.opacity(0.04))
+        .cornerRadius(10)
     }
 }
 
@@ -530,9 +479,9 @@ struct MiniIndicator: View {
     var body: some View {
         HStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.caption2)
+                .font(DesignSystem.Typography.captionFont)
             Text(label)
-                .font(.caption2)
+                .font(DesignSystem.Typography.captionFont)
         }
         .foregroundColor(color)
         .padding(.horizontal, 6)

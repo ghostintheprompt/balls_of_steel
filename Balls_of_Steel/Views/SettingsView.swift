@@ -12,20 +12,61 @@ struct SettingsView: View {
     @StateObject private var notifications = SignalNotification.shared
     
     var body: some View {
-        Form {
-            Section("Playtest Readiness") {
+        ZStack {
+            TradingBackdrop()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    settingsHeader
+                    playtestCard
+                    brokerCard
+                    monitoringCard
+                    notificationsCard
+                    closeManagementCard
+                    hoursCard
+                }
+                .padding(20)
+            }
+        }
+        .task {
+            await notifications.refreshAuthorizationStatus()
+        }
+    }
+
+    private var settingsHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SETTINGS")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.mutedText)
+            Text("Keep the launch clean.")
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(DesignSystem.primaryText)
+            Text("This is the quiet side of the desk: alert readiness, monitoring, close timing, and the broker placeholder.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
+        }
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.10))
+    }
+
+    private var playtestCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Trading Test")
+                        Text("PLAYTEST READINESS")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1)
+                            .foregroundColor(DesignSystem.mutedText)
                         Text(AppConfig.Testing.nextTradingTestDate)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(DesignSystem.Typography.headlineFont)
+                            .foregroundColor(DesignSystem.primaryText)
                     }
                     Spacer()
-                    Text(notifications.isPermissionGranted ? "Alerts Ready" : notifications.permissionStatusText)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(notifications.isPermissionGranted ? .green : .orange)
+                    DeskCountBadge(
+                        value: notifications.isPermissionGranted ? "ALERTS READY" : notifications.permissionStatusText.uppercased(),
+                        accent: notifications.isPermissionGranted ? DesignSystem.bullishColor : DesignSystem.warningColor
+                    )
                 }
 
                 Button(notifications.isPermissionGranted ? "Refresh Alert Status" : "Enable Alerts") {
@@ -38,16 +79,21 @@ struct SettingsView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-
-                Text("This keeps the launch flow simple before a playtest: notification status, background monitoring, and close timing are all visible in one place.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
+        }
+    }
 
-            Section("Schwab API Configuration") {
+    private var brokerCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("BROKER PLACEHOLDER")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1)
+                    .foregroundColor(DesignSystem.mutedText)
+
                 SecureField("API Key", text: $apiKey)
                     .textFieldStyle(.roundedBorder)
-                
+
                 Button(connectionManager.isConnected ? "Disconnect" : "Connect") {
                     Task {
                         if connectionManager.isConnected {
@@ -58,71 +104,108 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(apiKey.isEmpty)
-                
-                // Connection status indicator
-                HStack {
+
+                HStack(spacing: 8) {
                     Circle()
-                        .fill(connectionManager.isConnected ? .green : .red)
+                        .fill(connectionManager.isConnected ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                         .frame(width: 8, height: 8)
                     Text(connectionManager.isConnected ? "Connected" : "Disconnected")
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
+
+                Text("Still manual-first. The field stays here so the workflow is ready when the live broker path comes back.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
-            
-            Section("Monitoring") {
+        }
+    }
+
+    private var monitoringCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("MONITORING")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1)
+                    .foregroundColor(DesignSystem.mutedText)
+
                 Toggle("Background Monitoring", isOn: $isBackgroundMonitoringEnabled)
-                Text("Monitors for signals even when app is in background")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+
+                Text("Leave this on if you want the desk to keep watching while you are doing other things.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
-            
-            Section("Notifications") {
+        }
+    }
+
+    private var notificationsCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Notification Status")
+                    Text("ALERTS")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1)
+                        .foregroundColor(DesignSystem.mutedText)
                     Spacer()
                     Text(notifications.permissionStatusText)
-                        .foregroundColor(notifications.isPermissionGranted ? .green : .secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(notifications.isPermissionGranted ? DesignSystem.bullishColor : DesignSystem.warningColor)
                 }
-                
-                VStack(alignment: .leading) {
-                    HStack {
-                        Image(systemName: "speaker.wave.2.fill")
-                        Text("Alert Volume")
+
+                HStack {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .foregroundColor(DesignSystem.primaryColor)
+                    Text("Alert Volume")
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                }
+
+                HStack {
+                    Slider(value: $alertVolume)
+                    Button("Test") {
+                        SignalNotification.shared.playTestSound()
                     }
-                    HStack {
-                        Slider(value: $alertVolume)
-                        Button("Test") {
-                            SignalNotification.shared.playTestSound()
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                    .buttonStyle(.bordered)
                 }
             }
+        }
+    }
 
-            Section("Close Management") {
+    private var closeManagementCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("CLOSE MANAGEMENT")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1)
+                    .foregroundColor(DesignSystem.mutedText)
+
                 DatePicker("General First Warning", selection: timeBinding(for: $generalWarningTime, defaultValue: AppConfig.CloseManagement.defaultGeneralWarning), displayedComponents: .hourAndMinute)
                 DatePicker("General Hard Exit", selection: timeBinding(for: $generalHardExitTime, defaultValue: AppConfig.CloseManagement.defaultGeneralHardExit), displayedComponents: .hourAndMinute)
                 DatePicker("Institutional Warning", selection: timeBinding(for: $institutionalWarningTime, defaultValue: AppConfig.CloseManagement.defaultInstitutionalWarning), displayedComponents: .hourAndMinute)
                 DatePicker("Institutional Hard Exit", selection: timeBinding(for: $institutionalHardExitTime, defaultValue: AppConfig.CloseManagement.defaultInstitutionalHardExit), displayedComponents: .hourAndMinute)
 
                 Text("SPY and most VXX setups use the general timing. VXX institutional flow keeps its own extended warning and hard-exit window.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
-            
-            Section("Trading Hours") {
+        }
+    }
+
+    private var hoursCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("HOURS")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1)
+                    .foregroundColor(DesignSystem.mutedText)
                 VStack(alignment: .leading) {
                     Text("Market Open: 9:30 AM ET")
                     Text("Market Close: 4:00 PM ET")
                     Text("Extended monitoring can continue beyond the cash close based on your exit settings above.")
                 }
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
             }
-        }
-        .padding()
-        .frame(width: 400)
-        .task {
-            await notifications.refreshAuthorizationStatus()
         }
     }
 

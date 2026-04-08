@@ -98,6 +98,7 @@ struct ArrowSignal {
         case institutionalFlow  // 3:45-4:10 PM - 90% reliability ⭐⭐⭐
         case morningFade        // 9:50-10:15 AM - 85% reliability
         case powerHourCrush     // 3:10-3:25 PM - 80% reliability
+        case afternoonFlex      // 1:30-3:45 PM - real tape can build before anchor windows
         case lunchDrift         // 12:20-12:40 PM - 70% reliability
         case other              // Other times - 50% reliability (weak)
 
@@ -106,6 +107,7 @@ struct ArrowSignal {
             case .institutionalFlow: return 0.90
             case .morningFade: return 0.85
             case .powerHourCrush: return 0.80
+            case .afternoonFlex: return 0.72
             case .lunchDrift: return 0.70
             case .other: return 0.50
             }
@@ -116,6 +118,7 @@ struct ArrowSignal {
             case .institutionalFlow: return "Institutional Flow (3:45-4:10 PM) 90%"
             case .morningFade: return "Morning Fade (9:50-10:15 AM) 85%"
             case .powerHourCrush: return "Power Hour (3:10-3:25 PM) 80%"
+            case .afternoonFlex: return "Afternoon Flex (1:30-3:45 PM) 72%"
             case .lunchDrift: return "Lunch Drift (12:20-12:40 PM) 70%"
             case .other: return "Off-Window (50%)"
             }
@@ -126,8 +129,9 @@ struct ArrowSignal {
             case .institutionalFlow: return 1
             case .morningFade: return 2
             case .powerHourCrush: return 3
-            case .lunchDrift: return 4
-            case .other: return 5
+            case .afternoonFlex: return 4
+            case .lunchDrift: return 5
+            case .other: return 6
             }
         }
 
@@ -136,6 +140,7 @@ struct ArrowSignal {
             case .institutionalFlow: return "3:45-4:10 PM"
             case .morningFade: return "9:50-10:15 AM"
             case .powerHourCrush: return "3:10-3:25 PM"
+            case .afternoonFlex: return "1:30-3:45 PM"
             case .lunchDrift: return "12:20-12:40 PM"
             case .other: return "Other"
             }
@@ -366,6 +371,8 @@ class ArrowSignalDetector {
             return .powerHourCrush
         } else if timestamp.isVXXLunchWindow {
             return .lunchDrift
+        } else if timestamp.isAfternoonFlexWindow {
+            return .afternoonFlex
         } else {
             return .other
         }
@@ -383,9 +390,20 @@ class ArrowSignalDetector {
             return .weak
         }
 
-        // STRONG: Arrow + Volume >200% + Time Window + Technical
-        if !confluence.isEmpty && timeWindow != .other {
-            return .strong
+        if !confluence.isEmpty {
+            switch timeWindow {
+            case .institutionalFlow, .morningFade, .powerHourCrush, .lunchDrift:
+                return .strong
+            case .afternoonFlex:
+                if confluence.count >= 2 ||
+                    volumeConfirmation == .institutional ||
+                    volumeConfirmation == .majorInstitution {
+                    return .strong
+                }
+                return .moderate
+            case .other:
+                break
+            }
         }
 
         // MODERATE: Arrow + Volume >200% only

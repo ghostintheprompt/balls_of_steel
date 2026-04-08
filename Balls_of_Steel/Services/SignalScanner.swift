@@ -242,8 +242,12 @@ extension Strategy {
             guard data.timestamp.isSPYOpenWindow,
                   data.hasArrowSignal else { return nil }
         case .spyCloseDrive:
-            guard data.timestamp.isSPYCloseWindow,
-                  data.hasArrowSignal else { return nil }
+            let anchorWatch = data.timestamp.isSPYCloseWindow && data.hasArrowSignal
+            let flexWatch = data.timestamp.isAfternoonFlexWindow &&
+                data.hasArrowSignal &&
+                isDirectionalVWAPAligned(data) &&
+                data.volumeMultiple >= warningVolumeMultiple(data, base: 1.8)
+            guard anchorWatch || flexWatch else { return nil }
         default:
             return nil
         }
@@ -282,5 +286,10 @@ extension Strategy {
             required = max(required, base + 0.3)
         }
         return required
+    }
+
+    private func isDirectionalVWAPAligned(_ data: MarketData) -> Bool {
+        guard let direction = data.arrowDirection else { return false }
+        return direction == .bullish ? data.isAboveVWAP : !data.isAboveVWAP
     }
 }

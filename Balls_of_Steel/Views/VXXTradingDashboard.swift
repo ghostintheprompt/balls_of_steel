@@ -9,60 +9,57 @@ struct VXXTradingDashboard: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 16) {
-                    TestSessionBanner()
-                        .padding(.horizontal)
+            ZStack {
+                TradingBackdrop()
 
-                    // Market Phase & VXX Status
-                    marketStatusSection
+                ScrollView {
+                    VStack(spacing: 16) {
+                        TestSessionBanner()
+                            .padding(.horizontal)
 
-                    // Trading Window Alerts
-                    if let nextWindow = viewModel.nextTradingWindow {
-                        TradingWindowAlertView(
-                            window: nextWindow.window,
-                            minutesUntil: nextWindow.minutesUntil
+                        marketStatusSection
+
+                        if let nextWindow = viewModel.nextTradingWindow {
+                            TradingWindowAlertView(
+                                window: nextWindow.window,
+                                minutesUntil: nextWindow.minutesUntil
+                            )
+                            .padding(.horizontal)
+                        }
+
+                        CloseManagementCard(
+                            title: "VXX Close Management",
+                            warningTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime),
+                            hardExitTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime),
+                            note: "VXX can carry real late flow. Warn first, then leave enough runway for the move that actually matters."
                         )
                         .padding(.horizontal)
+
+                        if let ratioData = viewModel.vxxVixRatio {
+                            VXXVIXRatioView(ratio: ratioData)
+                                .padding(.horizontal)
+                        }
+
+                        if let indicators = viewModel.technicalIndicators {
+                            TechnicalIndicatorsCard(indicators: indicators)
+                                .padding(.horizontal)
+                        }
+
+                        if !viewModel.detectedPatterns.isEmpty {
+                            patternsSection
+                        }
+
+                        vxxSignalsSection
+
+                        if viewModel.showOptionsChain, let optionsChain = viewModel.optionsChain {
+                            OptionsChainQuickView(optionsChain: optionsChain)
+                                .padding(.horizontal)
+                        }
                     }
-
-                    CloseManagementCard(
-                        title: "VXX Close Management",
-                        warningTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime),
-                        hardExitTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime),
-                        note: "Institutional flow can stretch to \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.institutionalHardExitTime)), so the app warns first and still leaves room for the later VXX flow."
-                    )
-                    .padding(.horizontal)
-
-                    // VXX/VIX Ratio Monitor
-                    if let ratioData = viewModel.vxxVixRatio {
-                        VXXVIXRatioView(ratio: ratioData)
-                            .padding(.horizontal)
-                    }
-
-                    // Technical Indicators
-                    if let indicators = viewModel.technicalIndicators {
-                        TechnicalIndicatorsCard(indicators: indicators)
-                            .padding(.horizontal)
-                    }
-
-                    // Detected Patterns
-                    if !viewModel.detectedPatterns.isEmpty {
-                        patternsSection
-                    }
-
-                    // Active VXX Signals
-                    vxxSignalsSection
-
-                    // Options Chain Quick View
-                    if viewModel.showOptionsChain, let optionsChain = viewModel.optionsChain {
-                        OptionsChainQuickView(optionsChain: optionsChain)
-                            .padding(.horizontal)
-                    }
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
             }
-            .navigationTitle("VXX Trading System")
+            .navigationTitle("VXX Desk")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -78,6 +75,7 @@ struct VXXTradingDashboard: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .foregroundColor(DesignSystem.primaryColor)
                     }
                 }
             }
@@ -93,53 +91,51 @@ struct VXXTradingDashboard: View {
     // MARK: - Market Status Section
     private var marketStatusSection: some View {
         HStack(spacing: 16) {
-            // VXX Price Card
             VStack(alignment: .leading, spacing: 8) {
-                Text("VXX")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("VXX TAPE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.1)
+                    .foregroundColor(DesignSystem.mutedText)
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("$\(viewModel.vxxPrice, specifier: "%.2f")")
-                        .font(.system(.title2, design: .monospaced))
-                        .fontWeight(.bold)
+                        .font(DesignSystem.Typography.heroFont)
+                        .foregroundColor(DesignSystem.primaryText)
 
                     Text("\(viewModel.vxxChangePercent, specifier: "%+.2f")%")
-                        .font(.subheadline)
-                        .foregroundColor(viewModel.vxxChangePercent >= 0 ? .green : .red)
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(viewModel.vxxChangePercent >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                 }
+
+                Text("Wait until vol actually gets loud.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.windowBackgroundColor))
-                    .shadow(radius: 2)
-            )
+            .deskPanel(glow: viewModel.vxxChangePercent >= 0 ? DesignSystem.bullishColor.opacity(0.14) : DesignSystem.bearishColor.opacity(0.14))
 
-            // VIX Card
             VStack(alignment: .leading, spacing: 8) {
-                Text("VIX")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("VIX PRESSURE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.1)
+                    .foregroundColor(DesignSystem.mutedText)
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(viewModel.vixLevel, specifier: "%.2f")")
-                        .font(.system(.title2, design: .monospaced))
-                        .fontWeight(.bold)
+                        .font(DesignSystem.Typography.heroFont)
+                        .foregroundColor(DesignSystem.primaryText)
 
                     Text("\(viewModel.vixChangePercent, specifier: "%+.2f")%")
-                        .font(.subheadline)
-                        .foregroundColor(viewModel.vixChangePercent >= 0 ? .red : .green)
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(viewModel.vixChangePercent >= 0 ? DesignSystem.dangerColor : DesignSystem.bullishColor)
                 }
+
+                Text(viewModel.vixChangePercent >= 0 ? "Fear is rising. Make it prove itself." : "Pressure is easing. Fade carefully.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.windowBackgroundColor))
-                    .shadow(radius: 2)
-            )
+            .deskPanel(glow: DesignSystem.warningColor.opacity(0.12))
         }
         .padding(.horizontal)
     }
@@ -148,11 +144,9 @@ struct VXXTradingDashboard: View {
     private var patternsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "chart.bar.fill")
-                    .foregroundColor(.purple)
-                Text("Detected Patterns")
-                    .font(.headline)
+                DeskSectionHeader(title: "Pattern Pressure", systemImage: "chart.bar.fill", accent: DesignSystem.primaryColor)
                 Spacer()
+                DeskCountBadge(value: "\(viewModel.detectedPatterns.count)", accent: DesignSystem.primaryColor)
             }
             .padding(.horizontal)
 
@@ -171,27 +165,20 @@ struct VXXTradingDashboard: View {
     private var vxxSignalsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "bell.fill")
-                    .foregroundColor(.orange)
-                Text("VXX Signals")
-                    .font(.headline)
+                DeskSectionHeader(title: "VXX Signals", systemImage: "bolt.fill", accent: DesignSystem.warningColor)
                 Spacer()
-                Text("\(vxxSignals.count)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
+                DeskCountBadge(value: "\(vxxSignals.count)", accent: DesignSystem.warningColor)
             }
             .padding(.horizontal)
 
             if vxxSignals.isEmpty {
-                Text("No active VXX signals")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                InfoCard {
+                    Text("No volatility setup. Good. Wait until it actually gets loud.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal)
             } else {
                 ForEach(vxxSignals) { signal in
                     EnhancedSignalRowView(
@@ -231,19 +218,18 @@ struct PatternCard: View {
                 Image(systemName: patternIcon)
                     .foregroundColor(patternColor)
                 Text(pattern.type.rawValue)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
             }
 
             Text(pattern.type.description)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
                 .lineLimit(2)
 
             HStack {
                 Text(pattern.signal == .strong ? "Strong" : pattern.signal == .moderate ? "Moderate" : "Weak")
-                    .font(.caption2)
-                    .fontWeight(.medium)
+                    .font(DesignSystem.Typography.labelFont)
                     .foregroundColor(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -253,21 +239,12 @@ struct PatternCard: View {
                 Spacer()
 
                 Text("\(pattern.strength * 100, specifier: "%.0f")%")
-                    .font(.caption)
-                    .fontWeight(.semibold)
+                    .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(patternColor)
             }
         }
-        .padding()
+        .deskPanel(glow: patternColor.opacity(0.14), padding: 14)
         .frame(width: 200)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(patternColor.opacity(0.3), lineWidth: 2)
-                )
-        )
     }
 
     private var patternIcon: String {
@@ -304,17 +281,18 @@ struct OptionsChainQuickView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "chart.bar.doc.horizontal")
-                    .foregroundColor(.blue)
+                    .foregroundColor(DesignSystem.primaryColor)
                 Text("Options Chain (0-4 DTE)")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Spacer()
             }
 
-            // Top 3 OTM Puts (for fade setups)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Top OTM Puts")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
 
                 ForEach(topPuts.prefix(3), id: \.strike) { contract in
                     OptionContractRow(contract: contract, type: .put)
@@ -323,23 +301,18 @@ struct OptionsChainQuickView: View {
 
             Divider()
 
-            // Top 3 OTM Calls (for reversal setups)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Top OTM Calls")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.mutedText)
 
                 ForEach(topCalls.prefix(3), id: \.strike) { contract in
                     OptionContractRow(contract: contract, type: .call)
                 }
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.1))
     }
 
     private var topPuts: [OptionContract] {
@@ -368,25 +341,26 @@ struct OptionContractRow: View {
     var body: some View {
         HStack {
             Text("$\(contract.strike, specifier: "%.0f")")
-                .font(.system(.subheadline, design: .monospaced))
-                .fontWeight(.semibold)
+                .font(DesignSystem.Typography.monospacedFont)
+                .foregroundColor(DesignSystem.primaryText)
 
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text("$\(contract.last, specifier: "%.2f")")
-                    .font(.system(.caption, design: .monospaced))
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Text("IV: \(contract.impliedVolatility, specifier: "%.0f")%")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
             }
 
             Text("Δ \(contract.delta, specifier: "%.2f")")
-                .font(.caption2)
-                .foregroundColor(type == .call ? .green : .red)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(type == .call ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background((type == .call ? Color.green : Color.red).opacity(0.1))
+                .background((type == .call ? DesignSystem.bullishColor : DesignSystem.bearishColor).opacity(0.12))
                 .cornerRadius(4)
         }
         .padding(.vertical, 4)
