@@ -13,6 +13,7 @@ struct MarketData {
     let vix: Double                      // VIX level
     let vixDailyChange: Double           // VIX daily percentage change
     let spyDailyChange: Double           // SPY daily percentage change
+    let newsRisk: NewsRisk               // News/volatility risk level
     let hasZDTEOptions: Bool             // Whether 0DTE options are available
     let averageVolume: Int               // Average volume for comparison
     let averageOptionsVolume: Int        // Average options volume
@@ -42,6 +43,9 @@ struct MarketData {
     var vwapDeviation: Double { 
         ((quote.price - vwap) / vwap) * 100 
     }
+    var isAboveVWAP: Bool {
+        quote.price > vwap
+    }
     var consecutiveGreenBars: Int {
         quote.recentCandles.suffix(3).reduce(0) { count, candle in
             candle.close > candle.open ? count + 1 : 0
@@ -56,6 +60,9 @@ struct MarketData {
     }
     var timestamp: Date {
         quote.timestamp
+    }
+    var volumeMultiple: Double {
+        averageVolume > 0 ? Double(volume) / Double(averageVolume) : 0
     }
     var volumeSpike: Int {
         // Comprehensive volume spike calculation using both metrics
@@ -94,6 +101,26 @@ struct MarketData {
     var arrowDirection: ArrowSignal.Direction? {
         detectedArrowSignal?.direction
     }
+
+    var vxxVixRatioValue: Double {
+        vix > 0 ? currentPrice / vix : 0
+    }
+
+    var isVxxRatioTradeable: Bool {
+        vxxVixRatioValue >= 1.45
+    }
+
+    var isVxxRatioWarning: Bool {
+        vxxVixRatioValue >= 1.35
+    }
+
+    var isHighVolatility: Bool {
+        vix >= 30
+    }
+
+    var isHighNewsRisk: Bool {
+        newsRisk == .high
+    }
     
     // VWAP deviation check using your exact criteria
     var hasVWAPDeviation: Bool {
@@ -123,6 +150,28 @@ struct MarketData {
         }
 
         return volume >= threshold
+    }
+
+    enum NewsRisk {
+        case none
+        case moderate
+        case high
+
+        var displayName: String {
+            switch self {
+            case .none: return "None"
+            case .moderate: return "Moderate"
+            case .high: return "High"
+            }
+        }
+
+        var volumeMultiplier: Double {
+            switch self {
+            case .none: return 1.0
+            case .moderate: return 1.15
+            case .high: return 1.3
+            }
+        }
     }
 }
 

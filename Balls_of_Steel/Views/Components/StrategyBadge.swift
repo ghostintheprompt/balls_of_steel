@@ -29,6 +29,10 @@ extension Strategy {
         case .vxxVolumeSpike: return .teal
         case .vxxLunchWindow: return .mint
 
+        // SPY-specific strategies
+        case .spyOpenDrive: return .green
+        case .spyCloseDrive: return .orange
+
         // Additional strategies (11 more) - Various colors
         case .consolidationBreakout: return .green
         case .movingAverageCross: return .blue

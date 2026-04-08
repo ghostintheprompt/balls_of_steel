@@ -83,6 +83,15 @@ extension Date {
         isInWindow("15:10", "15:25")  // 15 minute window starting at 3:10 PM
     }
 
+    // SPY-specific windows (open/close focus)
+    var isSPYOpenWindow: Bool {
+        isInWindow("09:35", "10:05")
+    }
+
+    var isSPYCloseWindow: Bool {
+        isInWindow("15:30", "15:55")
+    }
+
     // Check if any VXX trading window is active
     var isVXXTradingWindow: Bool {
         isVXXMorningWindow || isVXXLunchWindow || isVXXPowerHourWindow

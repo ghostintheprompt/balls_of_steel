@@ -110,7 +110,93 @@ struct AppConfig {
             target: 3.0
         )
     }
+
+    struct Testing {
+        static let nextTradingTestDate = "April 8, 2026"
+    }
+
+    struct CloseManagement {
+        static let generalWarningKey = "closeManagement.generalWarning"
+        static let generalHardExitKey = "closeManagement.generalHardExit"
+        static let institutionalWarningKey = "closeManagement.institutionalWarning"
+        static let institutionalHardExitKey = "closeManagement.institutionalHardExit"
+
+        static let defaultGeneralWarning = "15:55"
+        static let defaultGeneralHardExit = "16:10"
+        static let defaultInstitutionalWarning = "16:05"
+        static let defaultInstitutionalHardExit = "16:15"
+
+        private static let easternTimeZone = TimeZone(identifier: "America/New_York")!
+        private static let storageFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.timeZone = easternTimeZone
+            formatter.dateFormat = "HH:mm"
+            return formatter
+        }()
+
+        private static let displayFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.timeZone = easternTimeZone
+            formatter.dateFormat = "h:mm a"
+            return formatter
+        }()
+
+        static var generalWarningTime: String {
+            UserDefaults.standard.string(forKey: generalWarningKey) ?? defaultGeneralWarning
+        }
+
+        static var generalHardExitTime: String {
+            UserDefaults.standard.string(forKey: generalHardExitKey) ?? defaultGeneralHardExit
+        }
+
+        static var institutionalWarningTime: String {
+            UserDefaults.standard.string(forKey: institutionalWarningKey) ?? defaultInstitutionalWarning
+        }
+
+        static var institutionalHardExitTime: String {
+            UserDefaults.standard.string(forKey: institutionalHardExitKey) ?? defaultInstitutionalHardExit
+        }
+
+        static func warningTime(for strategy: Strategy) -> String {
+            usesInstitutionalTiming(for: strategy) ? institutionalWarningTime : generalWarningTime
+        }
+
+        static func hardExitTime(for strategy: Strategy) -> String {
+            usesInstitutionalTiming(for: strategy) ? institutionalHardExitTime : generalHardExitTime
+        }
+
+        static func displayTime(_ timeString: String) -> String {
+            guard let date = date(from: timeString) else { return timeString }
+            return displayFormatter.string(from: date)
+        }
+
+        static func date(from timeString: String) -> Date? {
+            let parts = timeString.split(separator: ":")
+            guard parts.count == 2,
+                  let hour = Int(parts[0]),
+                  let minute = Int(parts[1]) else {
+                return nil
+            }
+
+            let calendar = Calendar.current
+            var components = calendar.dateComponents(in: easternTimeZone, from: Date())
+            components.hour = hour
+            components.minute = minute
+            components.second = 0
+            components.nanosecond = 0
+            components.timeZone = easternTimeZone
+            return calendar.date(from: components)
+        }
+
+        static func storageTime(from date: Date) -> String {
+            storageFormatter.string(from: date)
+        }
+
+        private static func usesInstitutionalTiming(for strategy: Strategy) -> Bool {
+            strategy == .vxxInstitutionalFlow
+        }
+    }
     
     // Secure storage key
     @AppStorage("schwabApiKey") static var apiKey: String = ""
-} 
+}

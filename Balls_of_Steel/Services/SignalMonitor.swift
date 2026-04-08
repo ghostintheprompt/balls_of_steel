@@ -16,7 +16,17 @@ class SignalMonitor: ObservableObject {
     private let notificationService = NotificationService()
 
     init() {
+        setupSignalStream()
         setupWidgetUpdates()
+        setupExitMonitoring()
+    }
+
+    private func setupSignalStream() {
+        scanner.signalPublisher
+            .sink { [weak self] signal in
+                self?.handleNewSignal(signal)
+            }
+            .store(in: &cancellables)
     }
 
     private func setupWidgetUpdates() {
@@ -34,6 +44,14 @@ class SignalMonitor: ObservableObject {
     private func handleMarketPhaseChange(_ phase: MarketPhase) {
         // Widget lifecycle removed for v3.0
     }
+
+    private func setupExitMonitoring() {
+        exitService.exitPublisher
+            .sink { [weak self] exitSignal in
+                self?.handleExitSignal(exitSignal)
+            }
+            .store(in: &cancellables)
+    }
     
     func startBackgroundMonitoring() {
         // Use macOS background task alternative
@@ -46,21 +64,24 @@ class SignalMonitor: ObservableObject {
     
     private func refreshSignals() {
         Task {
-            // Check for new signals
-            scanner.signalPublisher
-                .sink { [weak self] signal in
-                    self?.handleNewSignal(signal)
-                }
-                .store(in: &cancellables)
-                
             // Monitor exits
-            activeTrades.forEach { trade in
-                exitService.monitorPosition(symbol: trade.symbol, strategy: trade.strategy)
+            for index in activeTrades.indices {
+                let trade = activeTrades[index]
+                exitService.monitorPosition(trade: trade)
+                if let quote = MarketDataService.shared.latestQuote(symbol: trade.symbol) {
+                    activeTrades[index].currentPrice = quote.price
+                    activeTrades[index].priceHistory.append(PricePoint(price: quote.price, timestamp: quote.timestamp))
+                }
             }
         }
     }
     
     private func handleNewSignal(_ signal: Signal) {
+        activeSignals.removeAll {
+            $0.symbol == signal.symbol &&
+            $0.strategy == signal.strategy &&
+            $0.kind == signal.kind
+        }
         activeSignals.append(signal)
         SignalNotification.shared.signalDetected(signal)
         
@@ -92,6 +113,7 @@ class SignalMonitor: ObservableObject {
         let trade = Trade(
             symbol: signal.symbol,
             strategy: signal.strategy,
+            direction: signal.direction,
             entry: signal.entry,
             stop: signal.stop,
             target: signal.target,
@@ -100,5 +122,13 @@ class SignalMonitor: ObservableObject {
             priceHistory: [PricePoint(price: signal.entry, timestamp: Date())]
         )
         activeTrades.append(trade)
+        exitService.monitorPosition(trade: trade)
     }
-} 
+
+    private func handleExitSignal(_ exitSignal: ExitSignal) {
+        if exitSignal.action == .exit {
+            activeTrades.removeAll { $0.symbol == exitSignal.symbol && $0.strategy == exitSignal.strategy }
+        }
+        SignalNotification.shared.exitDetected(exitSignal)
+    }
+}

@@ -437,6 +437,9 @@ struct EnhancedSignalRowView: View {
                         .font(.headline)
                         .fontWeight(.bold)
                     StrategyBadge(strategy: signal.strategy)
+                    Text("\(signal.kind.displayName) • \(signal.direction.optionLabel)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 Spacer()

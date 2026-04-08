@@ -11,6 +11,10 @@ enum Strategy: String, CaseIterable {
     case vxxVolumeSpike = "VXX Volume Spike"
     case vxxLunchWindow = "VXX Lunch Window (12:20 PM)"
 
+    // SPY-specific strategies (open/close focus)
+    case spyOpenDrive = "SPY Open Drive (9:35 AM)"
+    case spyCloseDrive = "SPY Close Drive (3:30 PM)"
+
     // Additional strategies (11 more for 16 total)
     case consolidationBreakout = "Consolidation Breakout"
     case movingAverageCross = "Moving Average Cross"
@@ -55,6 +59,7 @@ enum Strategy: String, CaseIterable {
     }
     
     func validateCriteria(_ data: MarketData) -> Bool {
+        guard passesRiskGuards(data) else { return false }
         switch self {
         // v3.0: Institutional Flow (FREE strategy)
         case .vxxInstitutionalFlow:
@@ -63,43 +68,64 @@ enum Strategy: String, CaseIterable {
             // Volume explosion >300% = Institutional threshold
             return data.symbol == "VXX" &&
                    data.timestamp.isInstitutionalFlowWindow &&
-                   data.volume >= Int(Double(data.averageVolume) * 3.0) && // 300%+ institutional threshold
+                   data.isVxxRatioTradeable &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 3.0)) &&
                    data.hasArrowSignal // Arrow signal confirmation required
 
         // VXX-specific strategies
         case .vxxFadeSetup:
             // VXX fade: Above resistance, bearish pattern (Shooting Star/Hanging Man), volume 150%+
             return data.symbol == "VXX" &&
-                   data.hasPattern &&
-                   data.patternType == .bearish &&
-                   data.volume >= Int(Double(data.averageVolume) * 1.5)
+                   (data.hasPattern || data.hasArrowSignal) &&
+                   (data.patternType == .bearish || data.arrowDirection == .bearish) &&
+                   data.isVxxRatioTradeable &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0))
 
         case .vxxPowerHour:
             // 3:10-3:25 PM window: Pattern + volume + reversal setup
             return data.symbol == "VXX" &&
                    data.timestamp.isVXXPowerHourWindow &&
-                   data.hasPattern &&
-                   data.volume >= Int(Double(data.averageVolume) * 1.5)
+                   (data.hasPattern || data.hasArrowSignal) &&
+                   data.isVxxRatioTradeable &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0))
 
         case .vxxMorningWindow:
             // 9:50-10:00 AM window: Pattern + volume confirmation
             return data.symbol == "VXX" &&
                    data.timestamp.isVXXMorningWindow &&
-                   data.hasPattern &&
-                   data.volume >= Int(Double(data.averageVolume) * 1.5)
+                   (data.hasPattern || data.hasArrowSignal) &&
+                   data.isVxxRatioTradeable &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0))
 
         case .vxxVolumeSpike:
             // Volume surge (200%+) + any pattern
             return data.symbol == "VXX" &&
-                   data.volume >= Int(Double(data.averageVolume) * 2.0) &&
-                   data.hasPattern
+                   data.isVxxRatioTradeable &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0)) &&
+                   (data.hasPattern || data.hasArrowSignal)
 
         case .vxxLunchWindow:
             // 12:20-12:35 PM window: Pattern + volume + VIX context
             return data.symbol == "VXX" &&
                    data.timestamp.isVXXLunchWindow &&
-                   data.hasPattern &&
-                   data.volume >= data.averageVolume
+                   (data.hasPattern || data.hasArrowSignal) &&
+                   data.isVxxRatioTradeable &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0))
+
+        // SPY-specific strategies
+        case .spyOpenDrive:
+            return data.symbol == "SPY" &&
+                   data.timestamp.isSPYOpenWindow &&
+                   data.hasArrowSignal &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 1.5)) &&
+                   (data.arrowDirection == .bullish ? data.isAboveVWAP : !data.isAboveVWAP)
+
+        case .spyCloseDrive:
+            return data.symbol == "SPY" &&
+                   data.timestamp.isSPYCloseWindow &&
+                   data.hasArrowSignal &&
+                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 1.5)) &&
+                   (data.arrowDirection == .bullish ? data.isAboveVWAP : !data.isAboveVWAP)
 
         // Additional strategies
         case .consolidationBreakout:
@@ -144,45 +170,95 @@ enum Strategy: String, CaseIterable {
             return data.isWeeklyExpiration && data.otmProbability < 0.20
         }
     }
+
+    private func passesRiskGuards(_ data: MarketData) -> Bool {
+        guard data.isMarketHours else { return false }
+        if EventDayManager.shared.shouldExitBeforeEvent(date: data.timestamp) {
+            return false
+        }
+        return true
+    }
+
+    private func requiredVolumeMultiple(_ data: MarketData, base: Double) -> Double {
+        var required = base
+        if data.newsRisk != .none {
+            required *= data.newsRisk.volumeMultiplier
+        }
+        if data.isHighVolatility {
+            required = max(required, base + 0.5)
+        }
+        return required
+    }
     
     func createSignal(_ data: MarketData) -> Signal {
         let confidence = calculateConfidence(data)
         let setupQuality = determineSetupQuality(data, confidence: confidence)
+        let direction = inferDirection(data)
         
         // Calculate entry, stop, and target based on strategy
         let entry = data.currentPrice
-        let stop: Double
-        let target: Double
+        let stopPercent: Double
+        let targetPercent: Double
         
         switch self {
         case .gapAndGo:
-            stop = entry * 0.985   // 1.5% stop loss
-            target = entry * 1.02  // 2% target
+            stopPercent = 0.015   // 1.5% stop loss
+            targetPercent = 0.02  // 2% target
         case .vwapReversal:
-            stop = entry * 0.9925  // 0.75% stop loss
-            target = entry * 1.015 // 1.5% target
+            stopPercent = 0.0075  // 0.75% stop loss
+            targetPercent = 0.015 // 1.5% target
         case .powerHour:
-            stop = entry * 0.9925  // 0.75% stop loss
-            target = entry * 1.015 // 1.5% target
+            stopPercent = 0.0075  // 0.75% stop loss
+            targetPercent = 0.015 // 1.5% target
         case .panicReversal:
-            stop = entry * 0.99    // 1% stop loss
-            target = entry * 1.03  // 3% target
+            stopPercent = 0.01    // 1% stop loss
+            targetPercent = 0.03  // 3% target
         default:
-            stop = entry * 0.99    // 1% default stop loss
-            target = entry * 1.02  // 2% default target
+            stopPercent = 0.01    // 1% default stop loss
+            targetPercent = 0.02  // 2% default target
+        }
+
+        let stop: Double
+        let target: Double
+        if direction == .bullish {
+            stop = entry * (1 - stopPercent)
+            target = entry * (1 + targetPercent)
+        } else {
+            stop = entry * (1 + stopPercent)
+            target = entry * (1 - targetPercent)
         }
         
         return Signal(
             symbol: data.symbol,
             strategy: self,
+            direction: direction,
             entry: entry,
             stop: stop,
             target: target,
             timestamp: Date(),
             confidence: confidence,
             setupQuality: setupQuality,
-            positionSizePercent: getPositionSize(vix: data.vix, setupQuality: setupQuality)
+            positionSizePercent: getPositionSize(vix: data.vix, setupQuality: setupQuality),
+            kind: .entry
         )
+    }
+
+    private func inferDirection(_ data: MarketData) -> TradeDirection {
+        if let arrowDirection = data.arrowDirection {
+            return arrowDirection == .bullish ? .bullish : .bearish
+        }
+
+        switch data.patternType {
+        case .bullish: return .bullish
+        case .bearish: return .bearish
+        case .neutral:
+            switch self {
+            case .vxxFadeSetup, .vxxPowerHour, .vxxMorningWindow, .vxxVolumeSpike, .vxxLunchWindow, .vxxInstitutionalFlow:
+                return .bearish
+            default:
+                return data.spyDailyChange >= 0 ? .bullish : .bearish
+            }
+        }
     }
     
     private func calculateConfidence(_ data: MarketData) -> Double {
@@ -198,8 +274,12 @@ enum Strategy: String, CaseIterable {
         // VXX strategies
         case .vxxFadeSetup, .vxxPowerHour, .vxxMorningWindow, .vxxVolumeSpike, .vxxLunchWindow:
             let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
-            let patternScore = data.hasPattern ? 1.0 : 0.3
+            let patternScore = (data.hasPattern || data.hasArrowSignal) ? 1.0 : 0.3
             return (volumeScore + patternScore) / 2.0
+        case .spyOpenDrive, .spyCloseDrive:
+            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
+            let arrowScore = data.hasArrowSignal ? 1.0 : 0.3
+            return (volumeScore + arrowScore) / 2.0
 
         // Additional strategies
         case .earningsPlay:
@@ -249,6 +329,10 @@ enum Strategy: String, CaseIterable {
         case .vxxMorningWindow: return 0.72          // Morning setup window
         case .vxxVolumeSpike: return 0.70            // Volume + pattern combination
         case .vxxLunchWindow: return 0.68            // Lunch window
+
+        // SPY strategies
+        case .spyOpenDrive: return 0.70              // Open drive
+        case .spyCloseDrive: return 0.72             // Close drive
 
         // Additional strategies (11 more)
         case .consolidationBreakout: return 0.68     // Consolidation breakout

@@ -11,6 +11,21 @@ struct MainView: View {
                 .tabItem {
                     Label("Dashboard", systemImage: "chart.line.uptrend.xyaxis")
                 }
+
+            ManualDataEntryView()
+                .tabItem {
+                    Label("Manual", systemImage: "slider.horizontal.3")
+                }
+
+            VXXTradingDashboard(signalMonitor: signalMonitor)
+                .tabItem {
+                    Label("VXX", systemImage: "waveform.path.ecg")
+                }
+
+            SPYTradingDashboard(signalMonitor: signalMonitor)
+                .tabItem {
+                    Label("SPY", systemImage: "arrow.left.arrow.right")
+                }
             
             ActiveTradesView(signalMonitor: signalMonitor)
                 .tabItem {
