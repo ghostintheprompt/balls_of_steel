@@ -3,7 +3,9 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // App launch configuration
+        Task {
+            await SignalNotification.shared.prepareForLaunch()
+        }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

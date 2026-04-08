@@ -4,6 +4,7 @@ struct Trade: Identifiable {
     let id = UUID()
     let symbol: String
     let strategy: Strategy
+    let direction: TradeDirection
     let entry: Double
     let stop: Double
     let target: Double
@@ -12,7 +13,8 @@ struct Trade: Identifiable {
     var priceHistory: [PricePoint]
 
     var unrealizedPnL: Double {
-        (currentPrice - entry) * 100  // Simple P&L calculation (assumes 100 shares/contracts)
+        let delta = direction == .bullish ? (currentPrice - entry) : (entry - currentPrice)
+        return delta * 100  // Simple P&L calculation (assumes 100 shares/contracts)
     }
 }
 

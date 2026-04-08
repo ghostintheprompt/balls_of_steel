@@ -16,7 +16,13 @@ struct SharedSignalRowView: View {
                             .font(DesignSystem.Typography.captionFont)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
+                        Text(signal.kind.displayName)
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(signal.kind == .entry ? DesignSystem.successColor : signal.kind == .watch ? DesignSystem.warningColor : DesignSystem.dangerColor)
                     }
+                    Text("\(signal.direction.optionLabel) • \(signal.direction.displayName)")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(.secondary)
                     
                     // Price info with design system
                     HStack(spacing: DesignSystem.spacing) {
@@ -71,13 +77,15 @@ struct SharedSignalRowView_Previews: PreviewProvider {
         SharedSignalRowView(signal: Signal(
             symbol: "SPY",
             strategy: .gapAndGo,
+            direction: .bullish,
             entry: 450.0,
             stop: 448.0,
             target: 454.0,
             timestamp: Date(),
             confidence: 0.85,
             setupQuality: .perfect,
-            positionSizePercent: 2.0
+            positionSizePercent: 2.0,
+            kind: .entry
         ))
         .padding()
         .previewLayout(.sizeThatFits)

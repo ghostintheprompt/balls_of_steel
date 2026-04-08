@@ -27,15 +27,18 @@ struct TradeDetailCard: View {
                         .font(.title2)
                         .bold()
                     StrategyBadge(strategy: trade.strategy)
+                    Text(trade.direction.optionLabel)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 Spacer()
                 // P&L Display
                 VStack(alignment: .trailing) {
-                    let pnl = trade.currentPrice - trade.entry
+                    let pnl = trade.unrealizedPnL / 100
                     let pnlPercent = (pnl / trade.entry) * 100
                     Text(String(format: "$%.2f", pnl))
-                        .font(.title3)
-                        .foregroundColor(pnl >= 0 ? .green : .red)
+                    .font(.title3)
+                    .foregroundColor(pnl >= 0 ? .green : .red)
                     Text(String(format: "%.2f%%", pnlPercent))
                         .font(.caption)
                         .foregroundColor(pnl >= 0 ? .green : .red)

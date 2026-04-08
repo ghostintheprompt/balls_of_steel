@@ -81,31 +81,45 @@ struct ManualDataEntryView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // VXX Price
+            // Instrument Picker
             VStack(alignment: .leading, spacing: 8) {
-                Label("VXX Price", systemImage: "dollarsign.circle.fill")
+                Label("Instrument", systemImage: "chart.line.uptrend.xyaxis")
                     .font(.subheadline)
                     .foregroundColor(.primary)
-                TextField("e.g., 42.15", text: $viewModel.vxxPrice)
+                Picker("Instrument", selection: $viewModel.instrument) {
+                    Text("VXX").tag(TradingInstrument.vxx)
+                    Text("SPY").tag(TradingInstrument.spy)
+                }
+                .pickerStyle(.segmented)
+            }
+
+            // Instrument Price
+            VStack(alignment: .leading, spacing: 8) {
+                Label("\(viewModel.instrument.displayName) Price", systemImage: "dollarsign.circle.fill")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                TextField(viewModel.instrument == .vxx ? "e.g., 42.15" : "e.g., 520.40", text: $viewModel.price)
                     .textFieldStyle(.roundedBorder)
-                if let error = viewModel.vxxPriceError {
+                if let error = viewModel.priceError {
                     Text(error)
                         .font(.caption)
                         .foregroundColor(.red)
                 }
             }
 
-            // VIX Level
-            VStack(alignment: .leading, spacing: 8) {
-                Label("VIX Level", systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                TextField("e.g., 18.50", text: $viewModel.vixLevel)
-                    .textFieldStyle(.roundedBorder)
-                if let error = viewModel.vixLevelError {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.red)
+            // VIX Level (VXX only)
+            if viewModel.instrument == .vxx {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("VIX Level", systemImage: "chart.line.uptrend.xyaxis")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                    TextField("e.g., 18.50", text: $viewModel.vixLevel)
+                        .textFieldStyle(.roundedBorder)
+                    if let error = viewModel.vixLevelError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
                 }
             }
 
@@ -134,15 +148,16 @@ struct ManualDataEntryView: View {
             Divider()
 
             // VXX/VIX RATIO - THE VALUE FILTER ⭐
-            if let ratio = viewModel.calculatedRatio {
-                ratioIndicator(ratio)
-            } else if !viewModel.vxxPrice.isEmpty && !viewModel.vixLevel.isEmpty {
-                Text("Invalid VXX or VIX values")
-                    .font(.caption)
-                    .foregroundColor(.orange)
+            if viewModel.instrument == .vxx {
+                if let ratio = viewModel.calculatedRatio {
+                    ratioIndicator(ratio)
+                } else if !viewModel.price.isEmpty && !viewModel.vixLevel.isEmpty {
+                    Text("Invalid VXX or VIX values")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+                Divider()
             }
-
-            Divider()
 
             // VWAP Position
             VStack(alignment: .leading, spacing: 8) {
@@ -173,17 +188,32 @@ struct ManualDataEntryView: View {
             // Time Window
             VStack(alignment: .leading, spacing: 8) {
                 Label("Trading Window", systemImage: "clock.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                .font(.subheadline)
+                .foregroundColor(.primary)
                 Picker("Window", selection: $viewModel.timeWindow) {
+                    Text("Open (9:35-10:05)").tag(TimeWindowInput.open)
                     Text("Pre-Market").tag(TimeWindowInput.preMarket)
                     Text("Morning (9:50-10:15)").tag(TimeWindowInput.morning)
                     Text("Lunch (12:20-12:40)").tag(TimeWindowInput.lunch)
                     Text("Power Hour (3:10-3:25)").tag(TimeWindowInput.powerHour)
+                    Text("Close (3:30-3:55)").tag(TimeWindowInput.close)
                     Text("Institutional (3:45-4:10)").tag(TimeWindowInput.institutional)
                     Text("After Hours").tag(TimeWindowInput.afterHours)
                 }
                 .pickerStyle(.menu)
+            }
+
+            // News Risk
+            VStack(alignment: .leading, spacing: 8) {
+                Label("News Risk", systemImage: "newspaper.fill")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                Picker("News Risk", selection: $viewModel.newsRisk) {
+                    Text("None").tag(NewsRiskInput.none)
+                    Text("Moderate").tag(NewsRiskInput.moderate)
+                    Text("High").tag(NewsRiskInput.high)
+                }
+                .pickerStyle(.segmented)
             }
         }
         .padding()
@@ -476,10 +506,12 @@ struct ManualDataEntryView: View {
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("VXX: $\(entry.vxxPrice, specifier: "%.2f")")
-                    Text("VIX: \(entry.vixLevel, specifier: "%.2f")")
-                    Text("Ratio: \(entry.ratio, specifier: "%.2f")")
-                        .fontWeight(.semibold)
+                    Text("\(entry.instrument.displayName): $\(entry.price, specifier: "%.2f")")
+                    if entry.instrument == .vxx {
+                        Text("VIX: \(entry.vixLevel, specifier: "%.2f")")
+                        Text("Ratio: \(entry.ratio, specifier: "%.2f")")
+                            .fontWeight(.semibold)
+                    }
                     Text("Volume: \(Int(entry.volumePercent))%")
                 }
                 .font(.subheadline)
@@ -490,11 +522,14 @@ struct ManualDataEntryView: View {
                     Text(entry.ratioTier)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(entry.ratio >= 1.60 ? .green : entry.ratio >= 1.45 ? .cyan : .orange)
+                        .foregroundColor(entry.instrument == .vxx ? (entry.ratio >= 1.60 ? .green : entry.ratio >= 1.45 ? .cyan : .orange) : .secondary)
                     Text(entry.arrowSignal.displayName)
                         .font(.caption)
                         .foregroundColor(entry.arrowSignal.color)
                     Text(entry.timeWindow.displayName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(entry.newsRisk.displayName)
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(entry.timestamp, style: .time)
@@ -514,14 +549,16 @@ struct ManualDataEntryView: View {
 // MARK: - View Model
 @MainActor
 class ManualDataEntryViewModel: ObservableObject {
-    @Published var vxxPrice: String = ""
+    @Published var instrument: TradingInstrument = .vxx
+    @Published var price: String = ""
     @Published var vixLevel: String = ""
     @Published var volumePercent: String = ""
     @Published var vwapPosition: VWAPPosition = .above
     @Published var arrowSignal: ArrowSignalInput = .none
     @Published var timeWindow: TimeWindowInput = .morning
+    @Published var newsRisk: NewsRiskInput = .none
 
-    @Published var vxxPriceError: String?
+    @Published var priceError: String?
     @Published var vixLevelError: String?
     @Published var volumePercentError: String?
 
@@ -529,7 +566,8 @@ class ManualDataEntryViewModel: ObservableObject {
 
     // VXX/VIX Ratio calculation
     var calculatedRatio: VXXVIXRatio? {
-        guard let vxxValue = Double(vxxPrice),
+        guard instrument == .vxx,
+              let vxxValue = Double(price),
               let vixValue = Double(vixLevel),
               vxxValue > 0,
               vixValue > 0 else {
@@ -540,26 +578,26 @@ class ManualDataEntryViewModel: ObservableObject {
 
     var isValidEntry: Bool {
         validateFields()
-        return vxxPriceError == nil &&
-               vixLevelError == nil &&
+        let vixValid = instrument == .vxx ? vixLevelError == nil && !vixLevel.isEmpty : true
+        return priceError == nil &&
+               vixValid &&
                volumePercentError == nil &&
-               !vxxPrice.isEmpty &&
-               !vixLevel.isEmpty &&
+               !price.isEmpty &&
                !volumePercent.isEmpty
     }
 
     func validateFields() {
-        // Validate VXX Price
-        if !vxxPrice.isEmpty {
-            if let price = Double(vxxPrice), price > 0, price < 1000 {
-                vxxPriceError = nil
+        // Validate Instrument Price
+        if !price.isEmpty {
+            if let parsedPrice = Double(price), parsedPrice > 0, parsedPrice < 10_000 {
+                priceError = nil
             } else {
-                vxxPriceError = "Enter valid price (0-1000)"
+                priceError = "Enter valid price (0-10000)"
             }
         }
 
         // Validate VIX Level
-        if !vixLevel.isEmpty {
+        if instrument == .vxx && !vixLevel.isEmpty {
             if let vix = Double(vixLevel), vix > 0, vix < 100 {
                 vixLevelError = nil
             } else {
@@ -579,19 +617,21 @@ class ManualDataEntryViewModel: ObservableObject {
 
     func saveEntry() -> Bool {
         guard isValidEntry,
-              let vxxPriceValue = Double(vxxPrice),
-              let vixLevelValue = Double(vixLevel),
+              let priceValue = Double(price),
               let volumePercentValue = Double(volumePercent) else {
             return false
         }
+        let vixLevelValue = Double(vixLevel) ?? 0
 
         let entry = MarketDataEntry(
-            vxxPrice: vxxPriceValue,
+            instrument: instrument,
+            price: priceValue,
             vixLevel: vixLevelValue,
             volumePercent: volumePercentValue,
             vwapPosition: vwapPosition,
             arrowSignal: arrowSignal,
             timeWindow: timeWindow,
+            newsRisk: newsRisk,
             timestamp: Date()
         )
 
@@ -610,31 +650,37 @@ class ManualDataEntryViewModel: ObservableObject {
 
     func quickFillLastEntry() {
         guard let entry = lastEntry else { return }
-        vxxPrice = String(format: "%.2f", entry.vxxPrice)
+        instrument = entry.instrument
+        price = String(format: "%.2f", entry.price)
         vixLevel = String(format: "%.2f", entry.vixLevel)
         volumePercent = String(format: "%.0f", entry.volumePercent)
         vwapPosition = entry.vwapPosition
         arrowSignal = entry.arrowSignal
         timeWindow = entry.timeWindow
+        newsRisk = entry.newsRisk
     }
 
     func quickFillSampleData() {
-        vxxPrice = "42.15"
+        instrument = .vxx
+        price = "42.15"
         vixLevel = "18.50"
         volumePercent = "340"
         vwapPosition = .above
         arrowSignal = .bullish
         timeWindow = .institutional
+        newsRisk = .moderate
     }
 
     func clearForm() {
-        vxxPrice = ""
+        instrument = .vxx
+        price = ""
         vixLevel = ""
         volumePercent = ""
         vwapPosition = .above
         arrowSignal = .none
         timeWindow = .morning
-        vxxPriceError = nil
+        newsRisk = .none
+        priceError = nil
         vixLevelError = nil
         volumePercentError = nil
     }
@@ -650,20 +696,90 @@ class ManualDataEntryViewModel: ObservableObject {
 
 // MARK: - Data Models
 struct MarketDataEntry: Codable {
-    let vxxPrice: Double
+    let instrument: TradingInstrument
+    let price: Double
     let vixLevel: Double
     let volumePercent: Double
     let vwapPosition: VWAPPosition
     let arrowSignal: ArrowSignalInput
     let timeWindow: TimeWindowInput
+    let newsRisk: NewsRiskInput
     let timestamp: Date
+
+    enum CodingKeys: String, CodingKey {
+        case instrument
+        case price
+        case vxxPrice
+        case vixLevel
+        case volumePercent
+        case vwapPosition
+        case arrowSignal
+        case timeWindow
+        case newsRisk
+        case timestamp
+    }
+
+    init(
+        instrument: TradingInstrument,
+        price: Double,
+        vixLevel: Double,
+        volumePercent: Double,
+        vwapPosition: VWAPPosition,
+        arrowSignal: ArrowSignalInput,
+        timeWindow: TimeWindowInput,
+        newsRisk: NewsRiskInput,
+        timestamp: Date
+    ) {
+        self.instrument = instrument
+        self.price = price
+        self.vixLevel = vixLevel
+        self.volumePercent = volumePercent
+        self.vwapPosition = vwapPosition
+        self.arrowSignal = arrowSignal
+        self.timeWindow = timeWindow
+        self.newsRisk = newsRisk
+        self.timestamp = timestamp
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        instrument = try container.decodeIfPresent(TradingInstrument.self, forKey: .instrument) ?? .vxx
+        if let priceValue = try container.decodeIfPresent(Double.self, forKey: .price) {
+            price = priceValue
+        } else if let legacyPrice = try container.decodeIfPresent(Double.self, forKey: .vxxPrice) {
+            price = legacyPrice
+        } else {
+            price = 0
+        }
+        vixLevel = try container.decodeIfPresent(Double.self, forKey: .vixLevel) ?? 0
+        volumePercent = try container.decodeIfPresent(Double.self, forKey: .volumePercent) ?? 0
+        vwapPosition = try container.decodeIfPresent(VWAPPosition.self, forKey: .vwapPosition) ?? .above
+        arrowSignal = try container.decodeIfPresent(ArrowSignalInput.self, forKey: .arrowSignal) ?? .none
+        timeWindow = try container.decodeIfPresent(TimeWindowInput.self, forKey: .timeWindow) ?? .morning
+        newsRisk = try container.decodeIfPresent(NewsRiskInput.self, forKey: .newsRisk) ?? .none
+        timestamp = try container.decodeIfPresent(Date.self, forKey: .timestamp) ?? Date()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(instrument, forKey: .instrument)
+        try container.encode(price, forKey: .price)
+        try container.encode(vixLevel, forKey: .vixLevel)
+        try container.encode(volumePercent, forKey: .volumePercent)
+        try container.encode(vwapPosition, forKey: .vwapPosition)
+        try container.encode(arrowSignal, forKey: .arrowSignal)
+        try container.encode(timeWindow, forKey: .timeWindow)
+        try container.encode(newsRisk, forKey: .newsRisk)
+        try container.encode(timestamp, forKey: .timestamp)
+    }
 
     // Computed ratio
     var ratio: Double {
-        vixLevel > 0 ? vxxPrice / vixLevel : 0
+        instrument == .vxx && vixLevel > 0 ? price / vixLevel : 0
     }
 
     var ratioTier: String {
+        guard instrument == .vxx else { return "N/A" }
         if ratio >= 1.60 {
             return "Premium Fade ⭐⭐⭐"
         } else if ratio >= 1.55 {
@@ -711,14 +827,16 @@ enum ArrowSignalInput: String, Codable, CaseIterable {
 }
 
 enum TimeWindowInput: String, Codable, CaseIterable {
-    case preMarket, morning, lunch, powerHour, institutional, afterHours
+    case open, preMarket, morning, lunch, powerHour, close, institutional, afterHours
 
     var displayName: String {
         switch self {
+        case .open: return "Open (9:35-10:05)"
         case .preMarket: return "Pre-Market"
         case .morning: return "Morning (9:50-10:15)"
         case .lunch: return "Lunch (12:20-12:40)"
         case .powerHour: return "Power Hour (3:10-3:25)"
+        case .close: return "Close (3:30-3:55)"
         case .institutional: return "Institutional (3:45-4:10)"
         case .afterHours: return "After Hours"
         }
@@ -729,8 +847,47 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         case .institutional: return "90%"
         case .morning: return "85%"
         case .powerHour: return "80%"
+        case .open, .close: return "78%"
         case .lunch: return "70%"
         default: return "50%"
+        }
+    }
+}
+
+enum TradingInstrument: String, Codable, CaseIterable {
+    case vxx
+    case spy
+
+    var displayName: String {
+        switch self {
+        case .vxx: return "VXX"
+        case .spy: return "SPY"
+        }
+    }
+
+    var symbol: String {
+        displayName
+    }
+}
+
+enum NewsRiskInput: String, Codable, CaseIterable {
+    case none
+    case moderate
+    case high
+
+    var displayName: String {
+        switch self {
+        case .none: return "News: None"
+        case .moderate: return "News: Moderate"
+        case .high: return "News: High"
+        }
+    }
+
+    func toNewsRisk() -> MarketData.NewsRisk {
+        switch self {
+        case .none: return .none
+        case .moderate: return .moderate
+        case .high: return .high
         }
     }
 }

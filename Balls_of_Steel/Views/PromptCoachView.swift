@@ -473,7 +473,9 @@ class PromptCoachViewModel: ObservableObject {
         var filledPrompt = prompt.template
 
         // Replace placeholders with manual entry data
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[VXX_PRICE]", with: String(format: "$%.2f", entry.vxxPrice))
+        let priceValue = String(format: "$%.2f", entry.price)
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[VXX_PRICE]", with: priceValue)
+        filledPrompt = filledPrompt.replacingOccurrences(of: "[SPY_PRICE]", with: priceValue)
         filledPrompt = filledPrompt.replacingOccurrences(of: "[VIX_LEVEL]", with: String(format: "%.2f", entry.vixLevel))
         filledPrompt = filledPrompt.replacingOccurrences(of: "[VOLUME_PCT]", with: String(format: "%.0f%%", entry.volumePercent))
         filledPrompt = filledPrompt.replacingOccurrences(of: "[VWAP_POSITION]", with: entry.vwapPosition.displayName)

@@ -46,14 +46,16 @@ class SignalScanner: ObservableObject {
     // MARK: - Manual Data Entry Integration
     /// When user enters manual data, validate and show signals
     private func setupManualDataListener() {
-        marketData.subscribeToMarketData(symbol: "VXX")
-            .compactMap { $0 }
-            .sink { [weak self] data in
-                Task { @MainActor in
-                    await self?.validateManualEntry(data)
-                }
+        let symbols = ["VXX", "SPY"]
+        Publishers.MergeMany(
+            symbols.map { marketData.subscribeToMarketData(symbol: $0).compactMap { $0 } }
+        )
+        .sink { [weak self] data in
+            Task { @MainActor in
+                await self?.validateManualEntry(data)
             }
-            .store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 
     private func validateManualEntry(_ data: MarketData) async {
@@ -61,11 +63,14 @@ class SignalScanner: ObservableObject {
         activeSignals.removeAll()
 
         // Validate strategies with manual data
-        for strategy in Strategy.allCases where strategy.isVXXStrategy {
+        for strategy in Strategy.allCases where strategy.isEligible(for: data.symbol) {
             if strategy.validateCriteria(data) {
                 let signal = strategy.createSignal(data)
                 activeSignals.append(signal)
                 signalSubject.send(signal)
+            } else if let warning = strategy.warningSignal(data) {
+                activeSignals.append(warning)
+                signalSubject.send(warning)
             }
         }
     }
@@ -200,4 +205,82 @@ extension Strategy {
             return false
         }
     }
-} 
+
+    var isSPYStrategy: Bool {
+        switch self {
+        case .spyOpenDrive,
+             .spyCloseDrive:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func isEligible(for symbol: String) -> Bool {
+        switch symbol {
+        case "VXX": return isVXXStrategy
+        case "SPY": return isSPYStrategy
+        default: return false
+        }
+    }
+
+    func warningSignal(_ data: MarketData) -> Signal? {
+        guard isEligible(for: data.symbol),
+              data.volumeMultiple >= warningVolumeMultiple(data, base: 1.5) else {
+            return nil
+        }
+
+        switch self {
+        case .vxxInstitutionalFlow:
+            guard data.timestamp.isInstitutionalFlowWindow,
+                  data.isVxxRatioWarning,
+                  data.hasArrowSignal else { return nil }
+        case .vxxFadeSetup, .vxxPowerHour, .vxxMorningWindow, .vxxVolumeSpike, .vxxLunchWindow:
+            guard (data.hasPattern || data.hasArrowSignal),
+                  data.isVxxRatioWarning else { return nil }
+        case .spyOpenDrive:
+            guard data.timestamp.isSPYOpenWindow,
+                  data.hasArrowSignal else { return nil }
+        case .spyCloseDrive:
+            guard data.timestamp.isSPYCloseWindow,
+                  data.hasArrowSignal else { return nil }
+        default:
+            return nil
+        }
+
+        let confidence = max(0.45, min(data.volumeMultiple / 3.0, 0.65))
+        let setupQuality: Strategy.SetupQuality = confidence >= 0.6 ? .good : .marginal
+        let direction = data.arrowDirection == .bullish ? TradeDirection.bullish : TradeDirection.bearish
+
+        let entry = data.currentPrice
+        let stopPercent = 0.01
+        let targetPercent = 0.02
+        let stop = direction == .bullish ? entry * (1 - stopPercent) : entry * (1 + stopPercent)
+        let target = direction == .bullish ? entry * (1 + targetPercent) : entry * (1 - targetPercent)
+
+        return Signal(
+            symbol: data.symbol,
+            strategy: self,
+            direction: direction,
+            entry: entry,
+            stop: stop,
+            target: target,
+            timestamp: Date(),
+            confidence: confidence,
+            setupQuality: setupQuality,
+            positionSizePercent: 0.5,
+            kind: .watch
+        )
+    }
+
+    private func warningVolumeMultiple(_ data: MarketData, base: Double) -> Double {
+        var required = base
+        if data.newsRisk != .none {
+            required *= data.newsRisk.volumeMultiplier
+        }
+        if data.isHighVolatility {
+            required = max(required, base + 0.3)
+        }
+        return required
+    }
+}

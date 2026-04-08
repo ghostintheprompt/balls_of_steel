@@ -356,6 +356,10 @@ class ArrowSignalDetector {
     private static func determineTimeWindow(timestamp: Date) -> ArrowSignal.TimeWindow {
         if timestamp.isInstitutionalFlowWindow {
             return .institutionalFlow
+        } else if timestamp.isSPYCloseWindow {
+            return .powerHourCrush
+        } else if timestamp.isSPYOpenWindow {
+            return .morningFade
         } else if timestamp.isVXXMorningWindow || timestamp.isInWindow("09:50", "10:15") {
             return .morningFade
         } else if timestamp.isVXXPowerHourWindow {

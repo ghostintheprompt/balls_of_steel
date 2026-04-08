@@ -12,6 +12,16 @@ struct AlertView: View {
                     Spacer()
                     StrategyBadge(strategy: signal.strategy)
                 }
+
+                HStack {
+                    Text(signal.kind.displayName)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(signal.kind == .entry ? DesignSystem.successColor : signal.kind == .watch ? DesignSystem.warningColor : DesignSystem.dangerColor)
+                    Spacer()
+                    Text(signal.direction.optionLabel)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(signal.direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor)
+                }
                 
                 VStack(alignment: .leading, spacing: DesignSystem.smallSpacing) {
                     HStack {
@@ -72,13 +82,15 @@ struct AlertView_Previews: PreviewProvider {
         AlertView(signal: Signal(
             symbol: "SPY",
             strategy: .gapAndGo,
+            direction: .bullish,
             entry: 450.0,
             stop: 448.0,
             target: 454.0,
             timestamp: Date(),
             confidence: 0.85,
             setupQuality: .perfect,
-            positionSizePercent: 2.0
+            positionSizePercent: 2.0,
+            kind: .entry
         ))
         .frame(width: 400)
         .preferredColorScheme(.dark)

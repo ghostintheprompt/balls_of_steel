@@ -11,6 +11,9 @@ struct VXXTradingDashboard: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
+                    TestSessionBanner()
+                        .padding(.horizontal)
+
                     // Market Phase & VXX Status
                     marketStatusSection
 
@@ -22,6 +25,14 @@ struct VXXTradingDashboard: View {
                         )
                         .padding(.horizontal)
                     }
+
+                    CloseManagementCard(
+                        title: "VXX Close Management",
+                        warningTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime),
+                        hardExitTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime),
+                        note: "Institutional flow can stretch to \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.institutionalHardExitTime)), so the app warns first and still leaves room for the later VXX flow."
+                    )
+                    .padding(.horizontal)
 
                     // VXX/VIX Ratio Monitor
                     if let ratioData = viewModel.vxxVixRatio {

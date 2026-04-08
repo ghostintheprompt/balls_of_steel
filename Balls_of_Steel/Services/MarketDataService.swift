@@ -48,6 +48,7 @@ class MarketDataService: ObservableObject {
             vix: 15.0,
             vixDailyChange: 0.0,
             spyDailyChange: 0.0,
+            newsRisk: .none,
             hasZDTEOptions: false,
             averageVolume: quote.volume,
             averageOptionsVolume: 0,
@@ -106,13 +107,15 @@ class MarketDataService: ObservableObject {
     /// This is the primary data source for the educational app
     func updateWithManualEntry(_ entry: MarketDataEntry) {
         // Convert manual entry to Quote
-        let vwap = entry.vwapPosition == .above ? entry.vxxPrice - 0.20 : entry.vxxPrice + 0.20
-        let vxxQuote = Quote(
-            symbol: "VXX",
-            price: entry.vxxPrice,
+        let symbol = entry.instrument.symbol
+        let price = entry.price
+        let vwap = entry.vwapPosition == .above ? price - 0.20 : entry.vwapPosition == .below ? price + 0.20 : price
+        let primaryQuote = Quote(
+            symbol: symbol,
+            price: price,
             volume: Int(entry.volumePercent) * 10_000, // Approximate volume
             vwap: vwap,
-            previousClose: entry.vxxPrice * 0.98, // Approximate
+            previousClose: price * 0.98, // Approximate
             timestamp: entry.timestamp,
             recentCandles: [] // Manual entry doesn't provide candles
         )
@@ -154,16 +157,17 @@ class MarketDataService: ObservableObject {
         }()
 
         let marketData = MarketData(
-            quote: vxxQuote,
+            quote: primaryQuote,
             vwap: vwap,
             volume: Int(entry.volumePercent) * 10_000,
             trades: 0,
             ivRank: 0.0,
             daysToEarnings: 30,
-            hasFundamentalNews: false,
+            hasFundamentalNews: entry.newsRisk != .none,
             vix: entry.vixLevel,
             vixDailyChange: 0.0,
             spyDailyChange: 0.0,
+            newsRisk: entry.newsRisk.toNewsRisk(),
             hasZDTEOptions: false,
             averageVolume: 1_000_000,
             averageOptionsVolume: 0,
@@ -181,11 +185,13 @@ class MarketDataService: ObservableObject {
         )
 
         // Update cache and notify subscribers
-        quoteCache["VXX"] = vxxQuote
-        quoteCache["VIX"] = vixQuote
-        marketDataSubjects["VXX"]?.send(marketData)
-        latestQuotes["VXX"] = vxxQuote
-        latestQuotes["VIX"] = vixQuote
+        quoteCache[symbol] = primaryQuote
+        latestQuotes[symbol] = primaryQuote
+        if entry.vixLevel > 0 {
+            quoteCache["VIX"] = vixQuote
+            latestQuotes["VIX"] = vixQuote
+        }
+        marketDataSubjects[symbol]?.send(marketData)
     }
 
     // Helper: Volume confirmation level
@@ -215,12 +221,16 @@ class MarketDataService: ObservableObject {
     // Helper: Time window conversion
     private func timeWindow(for input: TimeWindowInput) -> ArrowSignal.TimeWindow {
         switch input {
+        case .open:
+            return .morningFade
         case .morning:
             return .morningFade
         case .lunch:
             return .lunchDrift
         case .powerHour:
-            return .institutionalFlow // Map to closest available
+            return .powerHourCrush
+        case .close:
+            return .powerHourCrush
         case .institutional:
             return .institutionalFlow
         default:
