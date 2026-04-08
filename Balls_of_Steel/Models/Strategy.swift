@@ -84,10 +84,7 @@ enum Strategy: String, CaseIterable {
         case .vxxPowerHour:
             // 3:10-3:25 PM window: Pattern + volume + reversal setup
             return data.symbol == "VXX" &&
-                   data.timestamp.isVXXPowerHourWindow &&
-                   (data.hasPattern || data.hasArrowSignal) &&
-                   data.isVxxRatioTradeable &&
-                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0))
+                   (qualifiesForVXXPowerHourAnchor(data) || qualifiesForVXXAfternoonFlex(data))
 
         case .vxxMorningWindow:
             // 9:50-10:00 AM window: Pattern + volume confirmation
@@ -122,10 +119,7 @@ enum Strategy: String, CaseIterable {
 
         case .spyCloseDrive:
             return data.symbol == "SPY" &&
-                   data.timestamp.isSPYCloseWindow &&
-                   data.hasArrowSignal &&
-                   data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 1.5)) &&
-                   (data.arrowDirection == .bullish ? data.isAboveVWAP : !data.isAboveVWAP)
+                   (qualifiesForSPYCloseAnchor(data) || qualifiesForSPYAfternoonFlex(data))
 
         // Additional strategies
         case .consolidationBreakout:
@@ -177,6 +171,39 @@ enum Strategy: String, CaseIterable {
             return false
         }
         return true
+    }
+
+    private func qualifiesForVXXPowerHourAnchor(_ data: MarketData) -> Bool {
+        data.timestamp.isVXXPowerHourWindow &&
+        (data.hasPattern || data.hasArrowSignal) &&
+        data.isVxxRatioTradeable &&
+        data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.0))
+    }
+
+    private func qualifiesForVXXAfternoonFlex(_ data: MarketData) -> Bool {
+        data.timestamp.isAfternoonFlexWindow &&
+        data.hasArrowSignal &&
+        data.isVxxRatioTradeable &&
+        data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 2.35))
+    }
+
+    private func qualifiesForSPYCloseAnchor(_ data: MarketData) -> Bool {
+        data.timestamp.isSPYCloseWindow &&
+        data.hasArrowSignal &&
+        data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 1.5)) &&
+        isDirectionalVWAPAligned(data)
+    }
+
+    private func qualifiesForSPYAfternoonFlex(_ data: MarketData) -> Bool {
+        data.timestamp.isAfternoonFlexWindow &&
+        data.hasArrowSignal &&
+        isDirectionalVWAPAligned(data) &&
+        data.volume >= Int(Double(data.averageVolume) * requiredVolumeMultiple(data, base: 1.85))
+    }
+
+    private func isDirectionalVWAPAligned(_ data: MarketData) -> Bool {
+        guard let direction = data.arrowDirection else { return false }
+        return direction == .bullish ? data.isAboveVWAP : !data.isAboveVWAP
     }
 
     private func requiredVolumeMultiple(_ data: MarketData, base: Double) -> Double {
@@ -272,14 +299,28 @@ enum Strategy: String, CaseIterable {
             return (volumeScore + windowScore + arrowScore) / 3.0
 
         // VXX strategies
-        case .vxxFadeSetup, .vxxPowerHour, .vxxMorningWindow, .vxxVolumeSpike, .vxxLunchWindow:
+        case .vxxFadeSetup, .vxxMorningWindow, .vxxVolumeSpike, .vxxLunchWindow:
             let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
             let patternScore = (data.hasPattern || data.hasArrowSignal) ? 1.0 : 0.3
             return (volumeScore + patternScore) / 2.0
+        case .vxxPowerHour:
+            let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
+            let patternScore = (data.hasPattern || data.hasArrowSignal) ? 1.0 : 0.3
+            let timeScore = data.timestamp.isVXXPowerHourWindow ? 1.0 : (data.timestamp.isAfternoonFlexWindow ? 0.6 : 0.3)
+            return (volumeScore + patternScore + timeScore) / 3.0
         case .spyOpenDrive, .spyCloseDrive:
             let volumeScore = min(Double(data.volume) / Double(data.averageVolume * 2), 1.0)
             let arrowScore = data.hasArrowSignal ? 1.0 : 0.3
-            return (volumeScore + arrowScore) / 2.0
+            let timeScore: Double
+            switch self {
+            case .spyOpenDrive:
+                timeScore = data.timestamp.isSPYOpenWindow ? 1.0 : 0.3
+            case .spyCloseDrive:
+                timeScore = data.timestamp.isSPYCloseWindow ? 1.0 : (data.timestamp.isAfternoonFlexWindow ? 0.6 : 0.3)
+            default:
+                timeScore = 0.3
+            }
+            return (volumeScore + arrowScore + timeScore) / 3.0
 
         // Additional strategies
         case .earningsPlay:

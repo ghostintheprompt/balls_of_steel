@@ -5,73 +5,150 @@ struct SharedSignalRowView: View {
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        InfoCard {
-            HStack {
-                VStack(alignment: .leading, spacing: DesignSystem.smallSpacing) {
-                    HStack {
-                        Text(signal.symbol)
-                            .font(DesignSystem.Typography.monospacedFont)
-                            .bold()
-                        Text(signal.strategy.rawValue)
-                            .font(DesignSystem.Typography.captionFont)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                        Text(signal.kind.displayName)
-                            .font(DesignSystem.Typography.captionFont)
-                            .foregroundColor(signal.kind == .entry ? DesignSystem.successColor : signal.kind == .watch ? DesignSystem.warningColor : DesignSystem.dangerColor)
+        InfoCard(glow: kindColor.opacity(0.18)) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top) {
+                    HStack(alignment: .top, spacing: 12) {
+                        DeskSignalGlyph(
+                            symbol: signal.symbol,
+                            accent: kindColor,
+                            secondaryAccent: directionColor
+                        )
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                Text(signal.symbol)
+                                    .font(DesignSystem.Typography.titleFont)
+                                    .foregroundColor(DesignSystem.primaryText)
+
+                                Text(signal.kind.displayName.uppercased())
+                                    .font(DesignSystem.Typography.labelFont)
+                                    .tracking(1)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(kindColor.opacity(0.15))
+                                    .overlay(
+                                        Capsule().stroke(kindColor.opacity(0.4), lineWidth: 1)
+                                    )
+                                    .clipShape(Capsule())
+                                    .foregroundColor(kindColor)
+                            }
+
+                            HStack(spacing: 8) {
+                                StrategyBadge(strategy: signal.strategy)
+                                DirectionPill(direction: signal.direction)
+                            }
+
+                            Text(signalSummary)
+                                .font(DesignSystem.Typography.captionFont)
+                                .foregroundColor(DesignSystem.mutedText)
+                        }
                     }
-                    Text("\(signal.direction.optionLabel) • \(signal.direction.displayName)")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(.secondary)
-                    
-                    // Price info with design system
-                    HStack(spacing: DesignSystem.spacing) {
-                        PriceTag("Entry", value: signal.entry, color: .primary)
-                        PriceTag("Stop", value: signal.stop, color: DesignSystem.dangerColor)
-                        PriceTag("Target", value: signal.target, color: DesignSystem.successColor)
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 8) {
+                        Text(signal.timestamp, style: .time)
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(DesignSystem.mutedText)
+                        Text("R:R")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1)
+                            .foregroundColor(DesignSystem.mutedText)
+                        Text("\(signal.riskRewardRatio, specifier: "%.1f")")
+                            .font(DesignSystem.Typography.monospacedFont)
+                            .foregroundColor(DesignSystem.primaryText)
+                        Text("\(signal.confidence * 100, specifier: "%.0f")% confidence")
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(DesignSystem.mutedText)
+                        DeskMeterBar(value: signal.confidence, accent: kindColor)
+                            .frame(width: 92)
                     }
                 }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: DesignSystem.smallSpacing) {
-                    StrategyBadge(strategy: signal.strategy)
-                    
-                    Text("R:R \(signal.riskRewardRatio, specifier: "%.1f")")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(.secondary)
+
+                HStack(spacing: 12) {
+                    PriceTile(label: "Entry", value: signal.entry, color: DesignSystem.primaryText)
+                    PriceTile(label: "Stop", value: signal.stop, color: DesignSystem.dangerColor)
+                    PriceTile(label: "Target", value: signal.target, color: DesignSystem.successColor)
                 }
             }
         }
         .animation(DesignSystem.defaultAnimation, value: signal.id)
     }
-}
 
-private struct PriceTag: View {
-    let label: String
-    let value: Double
-    let color: Color
-    
-    init(_ label: String, value: Double, color: Color = .primary) {
-        self.label = label
-        self.value = value
-        self.color = color
+    private var kindColor: Color {
+        switch signal.kind {
+        case .entry:
+            return DesignSystem.successColor
+        case .watch:
+            return DesignSystem.warningColor
+        case .exit:
+            return DesignSystem.dangerColor
+        }
     }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(.secondary)
-            Text("$\(value, specifier: "%.2f")")
-                .font(DesignSystem.Typography.captionFont)
-                .bold()
-                .foregroundColor(color)
+
+    private var directionColor: Color {
+        signal.direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor
+    }
+
+    private var signalSummary: String {
+        switch signal.kind {
+        case .entry:
+            return "\(signal.direction.optionLabel) are green-lit. Size stays honest."
+        case .watch:
+            return "Watch it. Promotion only if the tape keeps its word."
+        case .exit:
+            return "Either take the money or kill the lie."
         }
     }
 }
 
-// Preview
+private struct DirectionPill: View {
+    let direction: TradeDirection
+
+    var body: some View {
+        Text(direction.displayName.uppercased())
+            .font(DesignSystem.Typography.labelFont)
+            .tracking(0.8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(color.opacity(0.14))
+            .overlay(
+                Capsule().stroke(color.opacity(0.35), lineWidth: 1)
+            )
+            .clipShape(Capsule())
+            .foregroundColor(color)
+    }
+
+    private var color: Color {
+        direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor
+    }
+}
+
+private struct PriceTile: View {
+    let label: String
+    let value: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(0.8)
+                .foregroundColor(DesignSystem.mutedText)
+            Text("$\(value, specifier: "%.2f")")
+                .font(DesignSystem.Typography.monospacedFont)
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.04))
+        )
+    }
+}
+
 struct SharedSignalRowView_Previews: PreviewProvider {
     static var previews: some View {
         SharedSignalRowView(signal: Signal(

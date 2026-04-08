@@ -3,6 +3,8 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.applicationIconImage = BrandIconFactory.makeDockIcon()
+
         Task {
             await SignalNotification.shared.prepareForLaunch()
         }

@@ -10,54 +10,43 @@ struct FirstLaunchDisclaimerView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    disclaimerHeader
+            ZStack {
+                TradingBackdrop()
 
-                    // Educational Tool Statement
-                    educationalToolSection
-
-                    // Risk Disclaimer
-                    riskDisclaimerSection
-
-                    // No Financial Advice
-                    noAdviceSection
-
-                    // Manual Execution
-                    manualExecutionSection
-
-                    // Acknowledgment Checkboxes
-                    acknowledgmentSection
-
-                    // Accept Button
-                    acceptButton
+                ScrollView {
+                    VStack(spacing: 24) {
+                        disclaimerHeader
+                        educationalToolSection
+                        riskDisclaimerSection
+                        noAdviceSection
+                        manualExecutionSection
+                        acknowledgmentSection
+                        acceptButton
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle("Important Disclaimer")
         }
-        .interactiveDismissDisabled(true) // Must accept to proceed
+        .interactiveDismissDisabled(true)
     }
 
     private var disclaimerHeader: some View {
         VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.orange)
+            BallsOfSteelMark(size: 104, primaryAccent: DesignSystem.warningColor)
 
-            Text("BALLS OF STEEL")
-                .font(.title)
-                .fontWeight(.bold)
+            BallsOfSteelWordmark(
+                alignment: .center,
+                title: "BALLS OF STEEL",
+                subtitle: "Educational desk. Manual execution."
+            )
+            .multilineTextAlignment(.center)
 
-            Text("Educational Trading Tool")
-                .font(.headline)
-                .foregroundColor(.secondary)
-
-            Text("Please read carefully before using this app")
-                .font(.subheadline)
-                .foregroundColor(.red)
+            Text("Read this carefully before you touch the tape.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.bearishColor)
         }
+        .deskPanel(glow: DesignSystem.warningColor.opacity(0.12))
     }
 
     private var educationalToolSection: some View {
@@ -143,33 +132,30 @@ struct FirstLaunchDisclaimerView: View {
         VStack(alignment: .leading, spacing: 16) {
             Toggle(isOn: $hasReadDisclaimer) {
                 Text("I have read and understand all disclaimers above")
-                    .font(.subheadline)
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.primaryText)
             }
             .toggleStyle(CheckboxToggleStyle())
 
             Toggle(isOn: $hasAgreedToTerms) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("I agree that:")
-                        .font(.subheadline)
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.primaryText)
                     Text("• This is an educational tool only")
-                        .font(.caption)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                     Text("• I trade at my own risk")
-                        .font(.caption)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                     Text("• I will not hold the creator liable for losses")
-                        .font(.caption)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
             }
             .toggleStyle(CheckboxToggleStyle())
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.yellow.opacity(0.1))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.yellow, lineWidth: 2)
-                )
-        )
+        .deskPanel(glow: DesignSystem.warningColor.opacity(0.12))
     }
 
     private var acceptButton: some View {
@@ -180,12 +166,12 @@ struct FirstLaunchDisclaimerView: View {
             }
         }) {
             Text(hasReadDisclaimer && hasAgreedToTerms ? "Accept & Continue" : "Read All Disclaimers First")
-                .font(.headline)
+                .font(DesignSystem.Typography.headlineFont)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(hasReadDisclaimer && hasAgreedToTerms ? Color.blue : Color.gray)
+                .background(hasReadDisclaimer && hasAgreedToTerms ? DesignSystem.primaryColor : DesignSystem.secondaryColor.opacity(0.7))
                 .foregroundColor(.white)
-                .cornerRadius(12)
+                .cornerRadius(14)
         }
         .disabled(!hasReadDisclaimer || !hasAgreedToTerms)
     }
@@ -205,24 +191,17 @@ struct DisclaimerCard<Content: View>: View {
                     .font(.title2)
                     .foregroundColor(color)
                 Text(title)
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineFont)
                     .foregroundColor(color)
             }
 
             content
-                .font(.subheadline)
-                .foregroundColor(.primary)
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.primaryText)
         }
-        .padding()
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(color.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(color.opacity(0.3), lineWidth: 1)
-                )
-        )
+        .deskPanel(glow: color.opacity(0.12), padding: 0)
     }
 }
 
@@ -233,7 +212,7 @@ struct CheckboxToggleStyle: ToggleStyle {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
                     .font(.title2)
-                    .foregroundColor(configuration.isOn ? .blue : .gray)
+                    .foregroundColor(configuration.isOn ? DesignSystem.primaryColor : DesignSystem.mutedText)
                 configuration.label
                     .multilineTextAlignment(.leading)
                 Spacer()
@@ -258,17 +237,14 @@ struct EducationalBanner: View {
                 .foregroundColor(color)
 
             Text(message)
-                .font(.caption)
-                .foregroundColor(.primary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer()
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(color.opacity(0.1))
-        )
+        .deskPanel(glow: color.opacity(0.1), padding: 0)
     }
 }
 

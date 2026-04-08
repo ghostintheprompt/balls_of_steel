@@ -5,74 +5,94 @@ struct AlertView: View {
     
     var body: some View {
         InfoCard {
-            VStack(alignment: .leading, spacing: DesignSystem.spacing) {
-                HStack {
-                    Text(signal.symbol)
-                        .font(DesignSystem.Typography.titleFont)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(signal.symbol)
+                            .font(DesignSystem.Typography.titleFont)
+                            .foregroundColor(DesignSystem.primaryText)
+                        HStack(spacing: 8) {
+                            StrategyBadge(strategy: signal.strategy)
+                            Text(signal.kind.displayName.uppercased())
+                                .font(DesignSystem.Typography.labelFont)
+                                .tracking(1)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(kindColor.opacity(0.14))
+                                .overlay(
+                                    Capsule().stroke(kindColor.opacity(0.35), lineWidth: 1)
+                                )
+                                .clipShape(Capsule())
+                                .foregroundColor(kindColor)
+                        }
+                    }
+
                     Spacer()
-                    StrategyBadge(strategy: signal.strategy)
+
+                    Text(signal.direction.optionLabel.uppercased())
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(0.8)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(directionColor.opacity(0.14))
+                        .overlay(
+                            Capsule().stroke(directionColor.opacity(0.35), lineWidth: 1)
+                        )
+                        .clipShape(Capsule())
+                        .foregroundColor(directionColor)
+                }
+
+                HStack(spacing: 12) {
+                    alertPriceTile(label: "Entry", price: signal.entry, color: DesignSystem.primaryColor)
+                    alertPriceTile(label: "Stop", price: signal.stop, color: DesignSystem.bearishColor)
+                    alertPriceTile(label: "Target", price: signal.target, color: DesignSystem.bullishColor)
                 }
 
                 HStack {
-                    Text(signal.kind.displayName)
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(signal.kind == .entry ? DesignSystem.successColor : signal.kind == .watch ? DesignSystem.warningColor : DesignSystem.dangerColor)
-                    Spacer()
-                    Text(signal.direction.optionLabel)
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(signal.direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor)
-                }
-                
-                VStack(alignment: .leading, spacing: DesignSystem.smallSpacing) {
-                    HStack {
-                        Text("Entry:")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        PriceDisplay(price: signal.entry, trend: nil)
-                    }
-                    
-                    HStack {
-                        Text("Target:")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        PriceDisplay(price: signal.target, trend: .up)
-                    }
-                    
-                    HStack {
-                        Text("Stop:")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        PriceDisplay(price: signal.stop, trend: .down)
-                    }
-                    
-                    Divider()
-                    
-                    HStack {
-                        Text("Risk/Reward:")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(signal.riskRewardRatio, specifier: "%.1f"):1")
-                            .font(DesignSystem.Typography.bodyFont)
-                            .bold()
-                            .foregroundColor(signal.riskRewardRatio >= 2.0 ? DesignSystem.successColor : DesignSystem.warningColor)
-                    }
-                }
-                .font(DesignSystem.Typography.bodyFont)
-                
-                HStack {
                     Text(signal.timestamp, style: .time)
                         .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.mutedText)
                     
                     Spacer()
                     
-                    Text("Confidence: \(signal.confidence * 100, specifier: "%.0f")%")
+                    Text("R:R \(signal.riskRewardRatio, specifier: "%.1f") • \(signal.confidence * 100, specifier: "%.0f")% confidence")
                         .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(signal.riskRewardRatio >= 2.0 ? DesignSystem.bullishColor : DesignSystem.warningColor)
                 }
             }
         }
         .animation(DesignSystem.defaultAnimation, value: signal.id)
+    }
+
+    private var kindColor: Color {
+        switch signal.kind {
+        case .entry:
+            return DesignSystem.successColor
+        case .watch:
+            return DesignSystem.warningColor
+        case .exit:
+            return DesignSystem.dangerColor
+        }
+    }
+
+    private var directionColor: Color {
+        signal.direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor
+    }
+
+    private func alertPriceTile(label: String, price: Double, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(0.8)
+                .foregroundColor(DesignSystem.mutedText)
+            Text("$\(price, specifier: "%.2f")")
+                .font(DesignSystem.Typography.monospacedFont)
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.white.opacity(0.04))
+        .cornerRadius(12)
     }
 }
 

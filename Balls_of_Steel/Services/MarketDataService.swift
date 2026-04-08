@@ -227,6 +227,8 @@ class MarketDataService: ObservableObject {
             return .morningFade
         case .lunch:
             return .lunchDrift
+        case .afternoonFlex:
+            return .afternoonFlex
         case .powerHour:
             return .powerHourCrush
         case .close:

@@ -9,83 +9,85 @@ struct ManualDataEntryView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header with educational messaging
-                    educationalHeader
+            ZStack {
+                TradingBackdrop()
 
-                    // Manual Entry Form
-                    dataEntryForm
+                ScrollView {
+                    VStack(spacing: 24) {
+                        educationalHeader
+                        dataEntryForm
+                        quickFillSection
+                        actionButtons
 
-                    // Quick Fill Options
-                    quickFillSection
-
-                    // Action Buttons
-                    actionButtons
-
-                    // Last Entry Preview
-                    if let lastEntry = viewModel.lastEntry {
-                        lastEntryCard(lastEntry)
+                        if let lastEntry = viewModel.lastEntry {
+                            lastEntryCard(lastEntry)
+                        }
                     }
+                    .padding(20)
                 }
-                .padding()
             }
-            .navigationTitle("Manual Data Entry")
+            .navigationTitle("Manual Feed")
             .alert("Data Saved", isPresented: $showingSaved) {
                 Button("OK") { }
             } message: {
-                Text("Market data saved successfully. Use Prompt Coach to analyze this setup.")
+                Text("The desk has the read. Check SPY or VXX for the signal state.")
             }
         }
     }
 
-    // MARK: - Educational Header
     private var educationalHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "hand.point.up.left.fill")
-                    .font(.title2)
-                    .foregroundColor(.blue)
-                Text("Enter Live Data From Your Platform")
-                    .font(.headline)
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text("MANUAL FEED")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.mutedText)
             }
 
-            Text("This app is educational only. Connect to ThinkOrSwim, Schwab, or your trading platform for live data. Enter the values manually below.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            Text("Post the chart. Let the app read it.")
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(DesignSystem.primaryText)
+
+            Text("Pull the setup from ThinkOrSwim or Schwab. No auto-feed. No fake certainty. You choose the numbers, and the desk decides whether it deserves attention.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
 
             HStack(spacing: 12) {
-                Label("No Auto-Trading", systemImage: "xmark.shield")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                Label("You Execute", systemImage: "person.fill.checkmark")
-                    .font(.caption)
-                    .foregroundColor(.green)
+                Text("YOU EXECUTE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(DesignSystem.bullishColor.opacity(0.14))
+                    .clipShape(Capsule())
+                    .foregroundColor(DesignSystem.bullishColor)
+                Text("NO AUTO-TRADE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(DesignSystem.bearishColor.opacity(0.14))
+                    .clipShape(Capsule())
+                    .foregroundColor(DesignSystem.bearishColor)
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.blue.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                )
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
     }
 
-    // MARK: - Data Entry Form
     private var dataEntryForm: some View {
         VStack(spacing: 16) {
-            Text("Current Market Data")
-                .font(.headline)
+            Text("DESK INPUT")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.mutedText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Instrument Picker
             VStack(alignment: .leading, spacing: 8) {
                 Label("Instrument", systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Picker("Instrument", selection: $viewModel.instrument) {
                     Text("VXX").tag(TradingInstrument.vxx)
                     Text("SPY").tag(TradingInstrument.spy)
@@ -93,53 +95,49 @@ struct ManualDataEntryView: View {
                 .pickerStyle(.segmented)
             }
 
-            // Instrument Price
             VStack(alignment: .leading, spacing: 8) {
                 Label("\(viewModel.instrument.displayName) Price", systemImage: "dollarsign.circle.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 TextField(viewModel.instrument == .vxx ? "e.g., 42.15" : "e.g., 520.40", text: $viewModel.price)
                     .textFieldStyle(.roundedBorder)
                 if let error = viewModel.priceError {
                     Text(error)
-                        .font(.caption)
-                        .foregroundColor(.red)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.bearishColor)
                 }
             }
 
-            // VIX Level (VXX only)
             if viewModel.instrument == .vxx {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("VIX Level", systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
                     TextField("e.g., 18.50", text: $viewModel.vixLevel)
                         .textFieldStyle(.roundedBorder)
                     if let error = viewModel.vixLevelError {
                         Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(DesignSystem.bearishColor)
                     }
                 }
             }
 
-            // Volume Percentage
             VStack(alignment: .leading, spacing: 8) {
                 Label("Volume (% of Average)", systemImage: "waveform")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 HStack {
                     TextField("e.g., 340", text: $viewModel.volumePercent)
                         .textFieldStyle(.roundedBorder)
                     Text("%")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
                 if let error = viewModel.volumePercentError {
                     Text(error)
-                        .font(.caption)
-                        .foregroundColor(.red)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.bearishColor)
                 }
-                // Volume indicator
                 if let volumePct = Double(viewModel.volumePercent), volumePct > 0 {
                     volumeIndicator(volumePct)
                 }
@@ -147,23 +145,21 @@ struct ManualDataEntryView: View {
 
             Divider()
 
-            // VXX/VIX RATIO - THE VALUE FILTER ⭐
             if viewModel.instrument == .vxx {
                 if let ratio = viewModel.calculatedRatio {
                     ratioIndicator(ratio)
                 } else if !viewModel.price.isEmpty && !viewModel.vixLevel.isEmpty {
                     Text("Invalid VXX or VIX values")
-                        .font(.caption)
-                        .foregroundColor(.orange)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.warningColor)
                 }
                 Divider()
             }
 
-            // VWAP Position
             VStack(alignment: .leading, spacing: 8) {
                 Label("Price vs VWAP", systemImage: "arrow.up.arrow.down")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Picker("VWAP Position", selection: $viewModel.vwapPosition) {
                     Text("Above VWAP").tag(VWAPPosition.above)
                     Text("Below VWAP").tag(VWAPPosition.below)
@@ -172,11 +168,10 @@ struct ManualDataEntryView: View {
                 .pickerStyle(.segmented)
             }
 
-            // Arrow Signal
             VStack(alignment: .leading, spacing: 8) {
                 Label("Arrow Signal", systemImage: "arrow.up.arrow.down.circle.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Picker("Arrow Signal", selection: $viewModel.arrowSignal) {
                     Text("No Arrow").tag(ArrowSignalInput.none)
                     Text("Bullish ⬆").tag(ArrowSignalInput.bullish)
@@ -185,16 +180,16 @@ struct ManualDataEntryView: View {
                 .pickerStyle(.segmented)
             }
 
-            // Time Window
             VStack(alignment: .leading, spacing: 8) {
                 Label("Trading Window", systemImage: "clock.fill")
-                .font(.subheadline)
-                .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Picker("Window", selection: $viewModel.timeWindow) {
                     Text("Open (9:35-10:05)").tag(TimeWindowInput.open)
                     Text("Pre-Market").tag(TimeWindowInput.preMarket)
                     Text("Morning (9:50-10:15)").tag(TimeWindowInput.morning)
                     Text("Lunch (12:20-12:40)").tag(TimeWindowInput.lunch)
+                    Text("Afternoon Flex (1:30-3:45)").tag(TimeWindowInput.afternoonFlex)
                     Text("Power Hour (3:10-3:25)").tag(TimeWindowInput.powerHour)
                     Text("Close (3:30-3:55)").tag(TimeWindowInput.close)
                     Text("Institutional (3:45-4:10)").tag(TimeWindowInput.institutional)
@@ -203,11 +198,10 @@ struct ManualDataEntryView: View {
                 .pickerStyle(.menu)
             }
 
-            // News Risk
             VStack(alignment: .leading, spacing: 8) {
                 Label("News Risk", systemImage: "newspaper.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
                 Picker("News Risk", selection: $viewModel.newsRisk) {
                     Text("None").tag(NewsRiskInput.none)
                     Text("Moderate").tag(NewsRiskInput.moderate)
@@ -216,67 +210,53 @@ struct ManualDataEntryView: View {
                 .pickerStyle(.segmented)
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.10))
     }
 
-    // MARK: - Volume Indicator
     private func volumeIndicator(_ volumePct: Double) -> some View {
         HStack(spacing: 8) {
             if volumePct >= 400 {
                 Label("MAJOR INSTITUTION", systemImage: "star.fill")
-                    .font(.caption)
-                    .fontWeight(.bold)
+                    .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.purple)
+                    .background(DesignSystem.primaryColor)
                     .cornerRadius(8)
             } else if volumePct >= 300 {
                 Label("INSTITUTIONAL FLOW", systemImage: "star.fill")
-                    .font(.caption)
-                    .fontWeight(.bold)
+                    .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.red)
+                    .background(DesignSystem.dangerColor)
                     .cornerRadius(8)
             } else if volumePct >= 200 {
-                Label("Standard Entry OK", systemImage: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(.green)
+                Label("ENTRY-GRADE", systemImage: "checkmark.circle.fill")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.bullishColor)
             } else {
-                Label("Below Threshold - Skip", systemImage: "xmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(.orange)
+                Label("NOT ENOUGH", systemImage: "xmark.circle.fill")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.warningColor)
             }
         }
     }
 
-    // MARK: - VXX/VIX Ratio Indicator (The Value Filter)
     private func ratioIndicator(_ ratioData: VXXVIXRatio) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header
             HStack {
                 Label("VXX/VIX Ratio", systemImage: "chart.bar.fill")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
 
                 Spacer()
 
-                // Current ratio value
                 Text(String(format: "%.2f", ratioData.ratio))
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(DesignSystem.Typography.titleFont)
                     .foregroundColor(ratioColor(for: ratioData.tier))
             }
 
-            // Tier indicator
             HStack(spacing: 12) {
                 Image(systemName: ratioIcon(for: ratioData.tier))
                     .font(.title3)
@@ -284,24 +264,23 @@ struct ManualDataEntryView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(ratioData.tier.displayName)
-                        .font(.headline)
+                        .font(DesignSystem.Typography.headlineFont)
                         .foregroundColor(ratioColor(for: ratioData.tier))
 
                     Text("Range: \(ratioData.tier.thresholdRange)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
 
                 Spacer()
 
-                // Position size recommendation
                 if ratioData.recommendedPositionSize > 0 {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("Position")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(DesignSystem.mutedText)
                         Text("$\(Int(ratioData.recommendedPositionSize))")
-                            .font(.headline)
+                            .font(DesignSystem.Typography.headlineFont)
                             .foregroundColor(ratioColor(for: ratioData.tier))
                     }
                 }
@@ -312,37 +291,26 @@ struct ManualDataEntryView: View {
                     .fill(ratioColor(for: ratioData.tier).opacity(0.1))
             )
 
-            // Visual threshold guide
             ratioThresholdGuide(currentRatio: ratioData.ratio)
 
-            // Trade recommendation
             HStack {
                 Image(systemName: ratioData.shouldTrade ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundColor(ratioData.shouldTrade ? .green : .red)
+                    .foregroundColor(ratioData.shouldTrade ? DesignSystem.bullishColor : DesignSystem.bearishColor)
 
                 Text(ratioData.shouldTrade ? "TRADE ELIGIBLE (Ratio ≥1.45)" : "SKIP TRADE (Ratio <1.45)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(ratioData.shouldTrade ? .green : .red)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(ratioData.shouldTrade ? DesignSystem.bullishColor : DesignSystem.bearishColor)
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.blue.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 2)
-                )
-        )
+        .deskPanel(glow: ratioColor(for: ratioData.tier).opacity(0.12), padding: 14)
     }
 
     // MARK: - Ratio Threshold Visual Guide
     private func ratioThresholdGuide(currentRatio: Double) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Thresholds:")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
 
             HStack(spacing: 0) {
                 // Below 1.35 - Red zone
@@ -424,11 +392,11 @@ struct ManualDataEntryView: View {
     // Helper functions for ratio display
     private func ratioColor(for tier: VXXVIXRatio.RatioTier) -> Color {
         switch tier {
-        case .premiumFade: return .green
-        case .strongFade: return .yellow
-        case .normalFade: return .cyan
-        case .weakFade: return .orange
-        case .noFade: return .red
+        case .premiumFade: return DesignSystem.bullishColor
+        case .strongFade: return DesignSystem.primaryColor
+        case .normalFade: return Color.cyan
+        case .weakFade: return DesignSystem.warningColor
+        case .noFade: return DesignSystem.bearishColor
         }
     }
 
@@ -442,11 +410,12 @@ struct ManualDataEntryView: View {
         }
     }
 
-    // MARK: - Quick Fill Section
     private var quickFillSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick Fill Options")
-                .font(.headline)
+            Text("RESET + RELOAD")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.mutedText)
 
             HStack(spacing: 12) {
                 Button(action: { viewModel.quickFillLastEntry() }) {
@@ -455,12 +424,6 @@ struct ManualDataEntryView: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(viewModel.lastEntry == nil)
-
-                Button(action: { viewModel.quickFillSampleData() }) {
-                    Label("Sample Data", systemImage: "sparkles")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
             }
 
             Button(action: { viewModel.clearForm() }) {
@@ -468,11 +431,11 @@ struct ManualDataEntryView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .tint(.red)
+            .tint(DesignSystem.dangerColor)
         }
+        .deskPanel(glow: DesignSystem.warningColor.opacity(0.08))
     }
 
-    // MARK: - Action Buttons
     private var actionButtons: some View {
         VStack(spacing: 12) {
             Button(action: {
@@ -480,69 +443,68 @@ struct ManualDataEntryView: View {
                     showingSaved = true
                 }
             }) {
-                Label("Save & Analyze", systemImage: "checkmark.circle.fill")
-                    .font(.headline)
+                Label("Post To Desk", systemImage: "checkmark.circle.fill")
+                    .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(viewModel.isValidEntry ? Color.blue : Color.gray)
+                    .background(viewModel.isValidEntry ? DesignSystem.primaryColor : DesignSystem.secondaryColor.opacity(0.7))
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .cornerRadius(14)
             }
             .disabled(!viewModel.isValidEntry)
 
             if !viewModel.isValidEntry {
-                Text("Fill all required fields with valid data")
-                    .font(.caption)
-                    .foregroundColor(.orange)
+                Text("Fill the required fields with real numbers before you post it.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.warningColor)
             }
         }
     }
 
-    // MARK: - Last Entry Card
     private func lastEntryCard(_ entry: MarketDataEntry) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Last Entry")
-                .font(.headline)
+            Text("LAST READ")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.mutedText)
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(entry.instrument.displayName): $\(entry.price, specifier: "%.2f")")
+                        .foregroundColor(DesignSystem.primaryText)
                     if entry.instrument == .vxx {
                         Text("VIX: \(entry.vixLevel, specifier: "%.2f")")
+                            .foregroundColor(DesignSystem.primaryText)
                         Text("Ratio: \(entry.ratio, specifier: "%.2f")")
-                            .fontWeight(.semibold)
+                            .foregroundColor(DesignSystem.primaryColor)
                     }
                     Text("Volume: \(Int(entry.volumePercent))%")
+                        .foregroundColor(DesignSystem.primaryText)
                 }
-                .font(.subheadline)
+                .font(DesignSystem.Typography.bodyFont)
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(entry.ratioTier)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(entry.instrument == .vxx ? (entry.ratio >= 1.60 ? .green : entry.ratio >= 1.45 ? .cyan : .orange) : .secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(entry.instrument == .vxx ? (entry.ratio >= 1.60 ? DesignSystem.bullishColor : entry.ratio >= 1.45 ? Color.cyan : DesignSystem.warningColor) : DesignSystem.mutedText)
                     Text(entry.arrowSignal.displayName)
-                        .font(.caption)
+                        .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(entry.arrowSignal.color)
                     Text(entry.timeWindow.displayName)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                     Text(entry.newsRisk.displayName)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                     Text(entry.timestamp, style: .time)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
                 }
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.1))
-        )
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.08))
     }
 }
 
@@ -827,7 +789,7 @@ enum ArrowSignalInput: String, Codable, CaseIterable {
 }
 
 enum TimeWindowInput: String, Codable, CaseIterable {
-    case open, preMarket, morning, lunch, powerHour, close, institutional, afterHours
+    case open, preMarket, morning, lunch, afternoonFlex, powerHour, close, institutional, afterHours
 
     var displayName: String {
         switch self {
@@ -835,6 +797,7 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         case .preMarket: return "Pre-Market"
         case .morning: return "Morning (9:50-10:15)"
         case .lunch: return "Lunch (12:20-12:40)"
+        case .afternoonFlex: return "Afternoon Flex (1:30-3:45)"
         case .powerHour: return "Power Hour (3:10-3:25)"
         case .close: return "Close (3:30-3:55)"
         case .institutional: return "Institutional (3:45-4:10)"
@@ -847,6 +810,7 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         case .institutional: return "90%"
         case .morning: return "85%"
         case .powerHour: return "80%"
+        case .afternoonFlex: return "72%"
         case .open, .close: return "78%"
         case .lunch: return "70%"
         default: return "50%"
