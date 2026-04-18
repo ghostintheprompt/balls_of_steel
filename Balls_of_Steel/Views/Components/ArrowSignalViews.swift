@@ -171,7 +171,7 @@ struct SignalValidationMatrixView: View {
     private var validationBadge: some View {
         Group {
             if signal.isValid {
-                Text("VALID ✅")
+                Text("VALID (Confirmed)")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.green)
@@ -180,7 +180,7 @@ struct SignalValidationMatrixView: View {
                     .background(Color.green.opacity(0.1))
                     .cornerRadius(6)
             } else {
-                Text("SKIP ❌")
+                Text("SKIP (X)")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.red)
@@ -259,7 +259,7 @@ struct InstitutionalFlowAlertView: View {
                     .foregroundColor(.primary)
 
                 if isActive {
-                    Text("WINDOW ACTIVE NOW! ⭐⭐⭐")
+                    Text("WINDOW ACTIVE NOW! (Rating)")
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.purple)
@@ -269,7 +269,7 @@ struct InstitutionalFlowAlertView: View {
                         .foregroundColor(.secondary)
                 }
 
-                Text("90% Reliability • 300%+ Volume Required")
+                Text("90% Reliability - 300%+ Volume Required")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

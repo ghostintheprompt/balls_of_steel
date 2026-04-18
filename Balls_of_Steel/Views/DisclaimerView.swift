@@ -792,7 +792,7 @@ struct RiskDisclaimerView: View {
                     .fontWeight(.bold)
 
                 Text("""
-                **WARNING: TRADING INVOLVES SUBSTANTIAL RISK OF LOSS WARNING:**
+                **WARNING: TRADING INVOLVES SUBSTANTIAL RISK OF LOSS**
 
                 **Options Trading Risks:**
                 - Options can expire worthless

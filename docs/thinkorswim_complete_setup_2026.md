@@ -20,7 +20,7 @@ This setup transforms ThinkOrSwim into a professional VXX trading machine with:
 ## STEP 1: BASIC CHART CONFIGURATION
 
 ### Chart Settings:
-1. Right-click chart → **Chart Settings**
+1. Right-click chart -> **Chart Settings**
 2. **Time Frame**: 5 minutes (primary trading timeframe)
 3. **Chart Type**: Candlestick
 4. **Background**: Dark (easier for long sessions)
@@ -32,7 +32,7 @@ This setup transforms ThinkOrSwim into a professional VXX trading machine with:
 
 ### A. 20-Period Simple Moving Average (Short-term Trend)
 
-1. Click **Studies** → **Add Study** → Search: "SimpleMovingAvg"
+1. Click **Studies** -> **Add Study** -> Search: "SimpleMovingAvg"
 2. Settings:
    - **Length**: 20
    - **Color**: Yellow
@@ -46,7 +46,7 @@ This setup transforms ThinkOrSwim into a professional VXX trading machine with:
 
 ### B. 50-Period Simple Moving Average (Medium-term Trend)
 
-1. **Studies** → **Add Study** → Search: "SimpleMovingAvg"
+1. **Studies** -> **Add Study** -> Search: "SimpleMovingAvg"
 2. Settings:
    - **Length**: 50
    - **Color**: Orange
@@ -60,7 +60,7 @@ This setup transforms ThinkOrSwim into a professional VXX trading machine with:
 
 ### C. VWAP (Volume Weighted Average Price)
 
-1. **Studies** → **Add Study** → Search: "VWAP"
+1. **Studies** -> **Add Study** -> Search: "VWAP"
 2. Settings:
    - **Color**: Cyan/Light Blue
    - **Line Weight**: 2
@@ -73,9 +73,9 @@ This setup transforms ThinkOrSwim into a professional VXX trading machine with:
 
 ### D. Volume with Average (Confirmation Tool)
 
-1. **Studies** → **Add Study** → Search: "Volume"
+1. **Studies** -> **Add Study** -> Search: "Volume"
 2. Settings:
-   - **Show Volume Average**: ✅ CHECK THIS
+   - **Show Volume Average**: (Check) CHECK THIS
    - **Average Length**: 30
    - **Above Average Color**: Green
    - **Below Average Color**: Red
@@ -93,22 +93,22 @@ This setup transforms ThinkOrSwim into a professional VXX trading machine with:
 
 ### E. Implied Volatility (Options Environment)
 
-1. **Studies** → **Add Study** → Search: "ImpVolatility"
+1. **Studies** -> **Add Study** -> Search: "ImpVolatility"
 2. Settings:
    - **Location**: Lower Panel (creates new subgraph)
    - **Color**: Cyan
-   - **Show Current Level**: ✅ Check
+   - **Show Current Level**: (Check) Check
 3. Click **OK**
 
 **Purpose**: Shows options pricing environment (avoid buying when IV >85%)
 
 ---
 
-### F. VXX/VIX RATIO ⭐ (THE MISSING PIECE)
+### F. VXX/VIX RATIO (Rating) (THE MISSING PIECE)
 
 **This is your value filter - tells you when VXX is overpriced and worth fading**
 
-1. Click **Studies** → **Edit Studies** → **New**
+1. Click **Studies** -> **Edit Studies** -> **New**
 2. Name it: "VXX_VIX_Ratio"
 3. **Paste this exact code**:
 
@@ -153,12 +153,12 @@ AddCloud(RatioLine, HighThreshold, Color.DARK_GREEN, Color.CURRENT);
 ### A. VXX Percentage Alerts
 
 **Alert 1: 3% Spike**
-1. Right-click chart → **Create Alert**
+1. Right-click chart -> **Create Alert**
 2. Settings:
    - Symbol: VXX
    - Condition: "% Change" "is greater than" "3.0"
    - Message: "VXX spike 3%+ - fade opportunity"
-   - Sound: ✅ Enable
+   - Sound: (Check) Enable
    - Frequency: Once per bar
 
 **Alert 2: 5% Major Spike**
@@ -171,10 +171,10 @@ AddCloud(RatioLine, HighThreshold, Color.DARK_GREEN, Color.CURRENT);
 
 ### B. Volume Surge Alert
 
-1. Right-click chart → **Create Alert**
+1. Right-click chart -> **Create Alert**
 2. Condition: "Volume" "is greater than" "Average(Volume,20) * 1.5"
 3. Message: "VXX volume surge 150%+"
-4. Sound: ✅ Enable
+4. Sound: (Check) Enable
 
 **Purpose**: Flags institutional participation
 
@@ -217,9 +217,9 @@ AddCloud(RatioLine, HighThreshold, Color.DARK_GREEN, Color.CURRENT);
 
 ### Save Your Setup
 
-1. **Setup** → **Save Workspace As**
+1. **Setup** -> **Save Workspace As**
 2. Name: "VXX_Trading_System_2026"
-3. Include: ✅ All settings and alerts
+3. Include: (Check) All settings and alerts
 
 **Now you can load everything with one click**
 
@@ -243,12 +243,12 @@ AddCloud(RatioLine, HighThreshold, Color.DARK_GREEN, Color.CURRENT);
 
 ### Quick Access Configuration
 
-1. **Trade** tab → **Options**
+1. **Trade** tab -> **Options**
 2. Symbol: VXX
 3. Settings:
    - **Expiration**: Current week (0-4 DTE)
    - **View**: Puts (your primary strategy)
-   - **Strikes**: Show ±5 from current price
+   - **Strikes**: Show +/-5 from current price
    - **Layout**: Single view
 
 **This gives you one-click access to option pricing**
@@ -274,7 +274,7 @@ AddCloud(RatioLine, HighThreshold, Color.DARK_GREEN, Color.CURRENT);
 - Cyan line showing IV%
 - Watch for IV >80% (expensive options)
 
-**VXX/VIX Ratio Panel** ⭐:
+**VXX/VIX Ratio Panel** (Rating):
 - Cyan line (current ratio)
 - Green line at 1.60 (premium fade zone)
 - Red line at 1.35 (no fade zone)
@@ -359,27 +359,27 @@ AddCloud(RatioLine, HighThreshold, Color.DARK_GREEN, Color.CURRENT);
 
 ```
 MAIN CHART (Top Panel):
-           🔴 ← VXX spikes to $29-30
-           │   Candlestick reversal forming
-      [50 SMA] ══════ Orange line (resistance)
-           │
-           ↓   ← ENTRY POINT HERE
+           O <- VXX spikes to $29-30
+           |   Candlestick reversal forming
+      [50 SMA] ====== Orange line (resistance)
+           |
+           v   <- ENTRY POINT HERE
         
        BUY PUTS AT REJECTION
 
 VOLUME PANEL (Middle):
-    │     
-    │  █  ← Current bar GREEN and TALL
-    │  █     Label shows >533,000
-────┼──█─────────────────
-    │ ▄█   (>200% average)
+    |     
+    |  #  <- Current bar GREEN and TALL
+    |  #     Label shows >533,000
+----+--#-----------------
+    | _#   (>200% average)
     
 RATIO PANEL (Bottom):
-[1.60] ─────── Green line (premium fade)
-         ↗ 
-        /  ← Cyan line at 1.55+ (strong fade)
+[1.60] ------- Green line (premium fade)
+         / 
+        /  <- Cyan line at 1.55+ (strong fade)
        /
-[1.45] ─────── Red line (minimum threshold)
+[1.45] ------- Red line (minimum threshold)
 ```
 
 **This visual = IMMEDIATE ENTRY**
@@ -390,20 +390,20 @@ RATIO PANEL (Bottom):
 
 **Best Reversal Signals for Puts:**
 
-**1. Shooting Star** ⭐ (Best signal):
+**1. Shooting Star** (Rating) (Best signal):
 ```
-    |  ← Long upper wick (buyers rejected)
-    ■  ← Small red/green body
-       ← Little or no lower wick
+    |  <- Long upper wick (buyers rejected)
+    #  <- Small red/green body
+       <- Little or no lower wick
 ```
 **Meaning**: Price tried to go higher, sellers crushed it
 **Action**: Enter puts immediately
 
 **2. Doji** (Indecision at key level):
 ```
-    |  ← Upper wick
-    -  ← Tiny body (open ≈ close)
-    |  ← Lower wick
+    |  <- Upper wick
+    -  <- Tiny body (open approx close)
+    |  <- Lower wick
 ```
 **Meaning**: Battle at resistance, usually breaks down
 **Action**: Enter puts on next candle confirmation
@@ -411,17 +411,17 @@ RATIO PANEL (Bottom):
 **3. Bearish Engulfing** (Strong reversal):
 ```
   [Previous]  [Current]
-      □         ■■■  ← Large red candle
-      □              ← Completely covers prior green
+      [ ]       ###  <- Large red candle
+      [ ]              <- Completely covers prior green
 ```
 **Meaning**: Sellers took full control
 **Action**: Enter puts aggressively
 
 **4. Hanging Man** (Top reversal):
 ```
-       ← Little upper wick
-    ■  ← Small body at top
-    |  ← Long lower wick
+       <- Little upper wick
+    #  <- Small body at top
+    |  <- Long lower wick
 ```
 **Meaning**: Failed rally attempt
 **Action**: Enter puts if at resistance
@@ -435,9 +435,9 @@ RATIO PANEL (Bottom):
 **Seconds 0-10: Quick Visual Scan**
 ```
 Main Chart Check:
-├─ VXX location? (At $29-30 resistance?)
-├─ At 50 SMA orange line? (YES/NO)
-└─ Pattern forming? (Shooting star visible?)
++- VXX location? (At $29-30 resistance?)
++- At 50 SMA orange line? (YES/NO)
+-- Pattern forming? (Shooting star visible?)
 
 Decision: Continue or Skip
 ```
@@ -445,9 +445,9 @@ Decision: Continue or Skip
 **Seconds 10-20: Volume Confirmation**
 ```
 Volume Panel Check:
-├─ Current bar color? (GREEN/RED)
-├─ Bar height? (Taller than average?)
-└─ Label reading? (>533,000 = YES)
++- Current bar color? (GREEN/RED)
++- Bar height? (Taller than average?)
+-- Label reading? (>533,000 = YES)
 
 Decision: Continue or Skip
 ```
@@ -455,9 +455,9 @@ Decision: Continue or Skip
 **Seconds 20-30: Ratio Verification**
 ```
 Ratio Panel Check:
-├─ Cyan line position? (Read number)
-├─ Above 1.45? (Minimum required)
-└─ Above 1.55? (Premium setup)
++- Cyan line position? (Read number)
++- Above 1.45? (Minimum required)
+-- Above 1.55? (Premium setup)
 
 Decision: Position size determined
 ```
@@ -465,9 +465,9 @@ Decision: Position size determined
 **Seconds 30-40: Pattern Confirmation**
 ```
 Wait for Candle:
-├─ Watch current 5-min candle complete
-├─ Wick forming at top? (Rejection)
-└─ Body closing lower? (Sellers won)
++- Watch current 5-min candle complete
++- Wick forming at top? (Rejection)
+-- Body closing lower? (Sellers won)
 
 Decision: GO or Wait 1 more candle
 ```
@@ -475,12 +475,10 @@ Decision: GO or Wait 1 more candle
 **Seconds 40-60: Execute Entry**
 ```
 Options Chain:
-├─ Select strike ($29 puts if VXX at $29.50)
-├─ Check bid/ask spread
-├─ Enter limit order at mid-price
-└─ Submit order
-
-Decision: DONE - Position entered
++- Select strike ($29 puts if VXX at $29.50)
++- Check bid/ask spread
++- Enter limit order at mid-price
+-- Submit order
 ```
 
 **Total Time: 60 seconds from setup to filled**
@@ -502,7 +500,7 @@ Decision: DONE - Position entered
 - Missing technical trigger
 
 **Pattern + Ratio Together:**
-- Shooting star at $29 + Ratio 1.58 = 85% probability ✅
+- Shooting star at $29 + Ratio 1.58 = 85% probability (Check)
 - Value confirmed + Technical entry
 - This is your edge
 
@@ -534,7 +532,7 @@ Decision: DONE - Position entered
 **3:15 PM - Spike Accelerates:**
 - VXX: $30.50, VIX: 19.50
 - Ratio: 1.56 (strong)
-- Assessment: Premium fade, full position ⭐
+- Assessment: Premium fade, full position (Rating)
 
 **Key Insight**: Ratio climbs when VXX spikes faster than VIX rises = overpriced = fade opportunity
 
@@ -545,30 +543,30 @@ Decision: DONE - Position entered
 **Print This - Keep Visible:**
 
 ```
-┌───────────────────────────────────────────┐
-│     3:10 PM POWER HOUR ENTRY CHECKLIST    │
-├───────────────────────────────────────────┤
-│                                           │
-│  [ ] TIME: 3:10-3:25 PM window active    │
-│                                           │
-│  [ ] PRICE: VXX at resistance ($29-30+)   │
-│      OR breaking key support             │
-│                                           │
-│  [ ] PATTERN: Shooting star, doji, or     │
-│      rejection candle visible            │
-│                                           │
-│  [ ] VOLUME: >533,000 (>200% average)     │
-│      Green bars showing                  │
-│                                           │
-│  [ ] RATIO: Cyan line >1.45               │
-│      (Ideally >1.55 for full size)       │
-│                                           │
-│  ─────────────────────────────────────    │
-│                                           │
-│  ALL 5 CHECKED = ENTER IMMEDIATELY        │
-│  4 OR FEWER = SKIP OR WAIT                │
-│                                           │
-└───────────────────────────────────────────┘
++-------------------------------------------+
+|     3:10 PM POWER HOUR ENTRY CHECKLIST    |
++-------------------------------------------+
+|                                           |
+|  [ ] TIME: 3:10-3:25 PM window active     |
+|                                           |
+|  [ ] PRICE: VXX at resistance ($29-30+)   |
+|      OR breaking key support              |
+|                                           |
+|  [ ] PATTERN: Shooting star, doji, or     |
+|      rejection candle visible             |
+|                                           |
+|  [ ] VOLUME: >533,000 (>200% average)     |
+|      Green bars showing                   |
+|                                           |
+|  [ ] RATIO: Cyan line >1.45               |
+|      (Ideally >1.55 for full size)        |
+|                                           |
+|  -------------------------------------    |
+|                                           |
+|  ALL 5 CHECKED = ENTER IMMEDIATELY        |
+|  4 OR FEWER = SKIP OR WAIT                |
+|                                           |
++-------------------------------------------+
 ```
 
 ---
@@ -579,34 +577,34 @@ Decision: DONE - Position entered
 
 ```
 RATIO >1.60 (Above green line):
-├─ Status: PREMIUM FADE
-├─ Position: $500 (maximum)
-├─ Contracts: 5-8 (depending on option price)
-└─ Confidence: Highest
++- Status: PREMIUM FADE
++- Position: $500 (maximum)
++- Contracts: 5-8 (depending on option price)
+-- Confidence: Highest
 
 RATIO 1.55-1.60 (Approaching green):
-├─ Status: STRONG FADE
-├─ Position: $400-500
-├─ Contracts: 4-6
-└─ Confidence: High
++- Status: STRONG FADE
++- Position: $400-500
++- Contracts: 4-6
+-- Confidence: High
 
 RATIO 1.45-1.55 (Between lines):
-├─ Status: NORMAL FADE
-├─ Position: $300-400
-├─ Contracts: 3-5
-└─ Confidence: Standard
++- Status: NORMAL FADE
++- Position: $300-400
++- Contracts: 3-5
+-- Confidence: Standard
 
 RATIO 1.35-1.45 (Approaching red):
-├─ Status: WEAK FADE
-├─ Position: $150-250 or SKIP
-├─ Contracts: 1-2
-└─ Confidence: Low
++- Status: WEAK FADE
++- Position: $150-250 or SKIP
++- Contracts: 1-2
+-- Confidence: Low
 
 RATIO <1.35 (Below red line):
-├─ Status: NO FADE
-├─ Position: $0 (skip entirely)
-├─ Contracts: 0
-└─ Action: Wait for better setup
++- Status: NO FADE
++- Position: $0 (skip entirely)
++- Contracts: 0
+-- Action: Wait for better setup
 ```
 
 **Never override ratio-based sizing, even when "certain"**
@@ -640,9 +638,9 @@ Exit: 3:55 PM SHARP (no exceptions)
 Result: No overnight risk, system integrity
 
 Exception: Institutional flow window
-├─ Entry: 3:45-4:00 PM
-├─ Exit: 4:05 PM maximum
-└─ Still no overnight holds
++- Entry: 3:45-4:00 PM
++- Exit: 4:05 PM maximum
+-- Still no overnight holds
 ```
 
 **Critical**: Time stop overrides everything
@@ -659,26 +657,26 @@ Exception: Institutional flow window
 **Profit Target Hit (Exit Winner):**
 ```
 MAIN CHART:
-VXX dropped from $29.50 → $28.00
-Put option: $1.00 → $1.50 (50% gain)
+VXX dropped from $29.50 -> $28.00
+Put option: $1.00 -> $1.50 (50% gain)
 
 ACTION: 
-├─ Close entire position
-├─ Take profit
-└─ Done for the day
++- Close entire position
++- Take profit
+-- Done for the day
 ```
 
 **Stop Loss Hit (Exit Loser):**
 ```
 MAIN CHART:
-VXX rallied from $29.50 → $31.00
-Put option: $1.00 → $0.50 (50% loss)
+VXX rallied from $29.50 -> $31.00
+Put option: $1.00 -> $0.50 (50% loss)
 
 ACTION:
-├─ Close entire position immediately
-├─ Accept loss
-├─ No revenge trading
-└─ Review what criteria failed
++- Close entire position immediately
++- Accept loss
++- No revenge trading
+-- Review what criteria failed
 ```
 
 **Time Stop (3:55 PM Exit):**
@@ -686,10 +684,10 @@ ACTION:
 CLOCK: 3:55 PM
 
 REGARDLESS OF P&L:
-├─ Winning 20%? Close it.
-├─ Losing 20%? Close it.
-├─ Breaking even? Close it.
-└─ "Just wants to see 4pm"? TOO BAD. Close it.
++- Winning 20%? Close it.
++- Losing 20%? Close it.
++- Breaking even? Close it.
+-- "Just wants to see 4pm"? TOO BAD. Close it.
 
 NO OVERNIGHT HOLDS = NON-NEGOTIABLE
 ```
@@ -703,25 +701,25 @@ NO OVERNIGHT HOLDS = NON-NEGOTIABLE
 **First 5 Minutes (3:10-3:15 PM):**
 ```
 Is trade working immediately?
-├─ VXX dropping? Good, thesis working
-├─ VXX rallying? Watch for stop
-└─ VXX sideways? Normal, give it time
++- VXX dropping? Good, thesis working
++- VXX rallying? Watch for stop
+-- VXX sideways? Normal, give it time
 ```
 
 **Next 15 Minutes (3:15-3:30 PM):**
 ```
 Check profit target:
-├─ Up 30%? Consider scaling out 50%
-├─ Up 50%? Close entire position
-└─ Flat/down? Monitor stop level
++- Up 30%? Consider scaling out 50%
++- Up 50%? Close entire position
+-- Flat/down? Monitor stop level
 ```
 
 **Final Period (3:30-3:55 PM):**
 ```
 Approach time exit:
-├─ 3:50 PM: Prepare to close
-├─ 3:54 PM: Start exit process
-└─ 3:55 PM: Position MUST be closed
++- 3:50 PM: Prepare to close
++- 3:54 PM: Start exit process
+-- 3:55 PM: Position MUST be closed
 ```
 
 **Don't stare at every tick. Check every 5 minutes.**
@@ -732,32 +730,32 @@ Approach time exit:
 
 **Mistake 1: "Close Enough" Syndrome**
 ```
-❌ "Ratio is 1.44, close to 1.45"
-✅ NO. Hard rule is >1.45
+(X) "Ratio is 1.44, close to 1.45"
+(Check) NO. Hard rule is >1.45
 
-❌ "Volume is 190%, almost 200%"
-✅ NO. Must be >200%
+(X) "Volume is 190%, almost 200%"
+(Check) NO. Must be >200%
 
-❌ "It's 3:08, basically 3:10"
-✅ NO. Wait for window
+(X) "It's 3:08, basically 3:10"
+(Check) NO. Wait for window
 ```
 
 **Mistake 2: Partial Criteria**
 ```
-❌ "Great pattern but low volume, I'll trade anyway"
-✅ NO. ALL 5 criteria required
+(X) "Great pattern but low volume, I'll trade anyway"
+(Check) NO. ALL 5 criteria required
 
-❌ "Perfect ratio but no pattern yet, I'll enter now"
-✅ NO. Wait for pattern confirmation
+(X) "Perfect ratio but no pattern yet, I'll enter now"
+(Check) NO. Wait for pattern confirmation
 ```
 
 **Mistake 3: Prediction Override**
 ```
-❌ "I know it's going down, criteria don't matter"
-✅ NO. System over feelings
+(X) "I know it's going down, criteria don't matter"
+(Check) NO. System over feelings
 
-❌ "News says it should spike, I'll wait"
-✅ NO. Trade setup, not predictions
+(X) "News says it should spike, I'll wait"
+(Check) NO. Trade setup, not predictions
 ```
 
 **The criteria exist to protect you. Honor them.**
@@ -769,20 +767,20 @@ Approach time exit:
 **Four Numbers to Memorize:**
 
 ```
-1.35 ── RED LINE ──────┐
-         ↓             │
-    Don't Fade Zone    │
-         ↑             │
-1.45 ── THRESHOLD ─────┤ Your Range
-         ↓             │
-    Normal Fade Zone   │
-         ↑             │
-1.55 ── STRONG ────────┤
-         ↓             │
-    Premium Fade Zone  │
-         ↑             │
-1.60 ── GREEN LINE ────┘
-         ↓
+1.35 -- RED LINE ------+
+         |             |
+    Don't Fade Zone    |
+         |             |
+1.45 -- THRESHOLD -----+ Your Range
+         |             |
+    Normal Fade Zone   |
+         |             |
+1.55 -- STRONG --------+
+         |             |
+    Premium Fade Zone  |
+         |             |
+1.60 -- GREEN LINE ----+
+         |
     Maximum Fade Zone
 ```
 
@@ -805,25 +803,25 @@ This system uses 5 indicators. **All 5 are required**, but understanding their p
 
 ```
 TIER 1 - NON-NEGOTIABLE (Red Light Indicators)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---------------------------------------
 
-1. VOLUME >200% Average (30% weight) 🔴
+1. VOLUME >200% Average (30% weight) [RED]
    Purpose: Proves institutions are actually trading
    Prevents: Fading retail noise that reverses
    Without it: Trading low liquidity = slippage, fake moves
    Example: Volume 180K vs 533K required = SKIP TRADE
    
-2. TIME WINDOW (25% weight) 🔴  
+2. TIME WINDOW (25% weight) [RED]  
    Purpose: Probability shifts dramatically by time
    Prevents: 50/50 coin flip trades during lunch
    Without it: Win rate drops from 85% to 50%
    Example: Perfect setup at 12:30 PM = SKIP (wrong window)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---------------------------------------
 TIER 2 - VALUE FILTER (Yellow Light)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---------------------------------------
 
-3. VXX/VIX RATIO >1.45 (25% weight) 🟡
+3. VXX/VIX RATIO >1.45 (25% weight) [YELLOW]
    Purpose: Tells you if VXX is mathematically overpriced
    Prevents: Fading VXX when already cheap (limited downside)
    Without it: Don't know WHEN to fade
@@ -835,17 +833,17 @@ TIER 2 - VALUE FILTER (Yellow Light)
    - >1.60 = Maximum aggression
    Example: Ratio 1.38 with perfect setup = SKIP
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---------------------------------------
 TIER 3 - TECHNICAL CONFIRMATION (Green Lights)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---------------------------------------
 
-4. PRICE AT KEY LEVEL (15% weight) 🟢
+4. PRICE AT KEY LEVEL (15% weight) [GREEN]
    Purpose: Identifies WHERE the turn happens
    Prevents: Entering mid-range with no edge
    Without it: Random entries with no structure
    Examples: 50 SMA, VWAP, round numbers, prior highs
    
-5. CANDLESTICK PATTERN (5% weight) 🟢
+5. CANDLESTICK PATTERN (5% weight) [GREEN]
    Purpose: Shows rejection is actually happening NOW
    Prevents: Early entry before reversal confirmed
    Without it: Wrong timing, get stopped out
@@ -860,17 +858,17 @@ TIER 3 - TECHNICAL CONFIRMATION (Green Lights)
 
 ```
 Scenario: Volume + Time + Ratio Perfect (80% weight)
-└─ But no key level or pattern
-   └─ WHERE do you enter?
-      └─ Trying to catch falling knife
-         └─ Result: Stopped out despite "good probability"
++- But no key level or pattern
+   +- WHERE do you enter?
+      +- Trying to catch falling knife
+         +- Result: Stopped out despite "good probability"
 
 It's like flying:
-├─ Engines (30%) = Critical
-├─ Navigation (25%) = Critical  
-├─ Fuel (25%) = Critical
-├─ Altitude (15%) = Critical
-└─ Landing gear (5%) = Critical
++- Engines (30%) = Critical
++- Navigation (25%) = Critical  
++- Fuel (25%) = Critical
++- Altitude (15%) = Critical
+-- Landing gear (5%) = Critical
 
 Can't skip "just" landing gear because it's "only 5%"
 You need ALL systems to land safely
@@ -884,21 +882,21 @@ You need ALL systems to land safely
 
 ```
 STEP 1: VOLUME >200% + TIME WINDOW
-↓
+|
 Result: "Something real is happening at optimal time"
-↓
+|
 STEP 2: + RATIO >1.45
-↓  
+|  
 Result: "VXX is overpriced for this move"
-↓
+|
 STEP 3: + KEY LEVEL
-↓
+|
 Result: "This is where it should turn"
-↓
+|
 STEP 4: + PATTERN
-↓
+|
 Result: "Turn is actually happening NOW"
-↓
+|
 = ENTER TRADE
 ```
 
@@ -914,11 +912,11 @@ Result: "Turn is actually happening NOW"
 **Scenario A: Perfect Ratio, No Volume**
 ```
 Setup Check:
-├─ Ratio: 1.65 (premium fade zone) ✅
-├─ Time: 3:15 PM (power hour) ✅
-├─ Level: At 50 SMA resistance ✅
-├─ Pattern: Shooting star forming ✅
-└─ Volume: 180K (only 67% of avg) ❌
++- Ratio: 1.65 (premium fade zone) (Check)
++- Time: 3:15 PM (power hour) (Check)
++- Level: At 50 SMA resistance (Check)
++- Pattern: Shooting star forming (Check)
+-- Volume: 180K (only 67% of avg) (X)
 
 DECISION: SKIP TRADE
 Reason: No institutional confirmation
@@ -929,11 +927,11 @@ Lesson: Volume is non-negotiable
 **Scenario B: Perfect Volume, Weak Ratio**
 ```
 Setup Check:
-├─ Volume: 650K (244% average) ✅
-├─ Time: 3:15 PM (power hour) ✅
-├─ Level: At 50 SMA resistance ✅
-├─ Pattern: Shooting star forming ✅
-└─ Ratio: 1.38 (below 1.45 minimum) ❌
++- Volume: 650K (244% average) (Check)
++- Time: 3:15 PM (power hour) (Check)
++- Level: At 50 SMA resistance (Check)
++- Pattern: Shooting star forming (Check)
+-- Ratio: 1.38 (below 1.45 minimum) (X)
 
 DECISION: SKIP TRADE
 Reason: VXX not expensive enough to fade
@@ -944,11 +942,11 @@ Lesson: Ratio is your value filter
 **Scenario C: All Perfect, Wrong Time**
 ```
 Setup Check:
-├─ Ratio: 1.58 (strong fade) ✅
-├─ Volume: 620K (232% average) ✅
-├─ Level: At 50 SMA resistance ✅
-├─ Pattern: Shooting star forming ✅
-└─ Time: 12:45 PM (lunch period) ❌
++- Ratio: 1.58 (strong fade) (Check)
++- Volume: 620K (232% average) (Check)
++- Level: At 50 SMA resistance (Check)
++- Pattern: Shooting star forming (Check)
+-- Time: 12:45 PM (lunch period) (X)
 
 DECISION: SKIP TRADE
 Reason: Outside high-probability windows
@@ -967,27 +965,27 @@ Lesson: Time windows shift probability dramatically
 
 ```
 Ranked by Success Rate:
-┌────────────────────────────────────────┐
-│ 1. Time Windows: 70-90% win rate      │
-│    (depending on which window)         │
-│    └─ Most consistent edge             │
-│                                        │
-│ 2. Volume >200%: 80%+ reliability      │
-│    └─ When institutions trade, it's    │
-│       real                             │
-│                                        │
-│ 3. Ratio >1.60: 85%+ reliability       │
-│    └─ Premium overpriced setups work   │
-│       best                             │
-│                                        │
-│ 4. Key Levels: 70% respected           │
-│    └─ Price respects structure in      │
-│       trending markets                 │
-│                                        │
-│ 5. Patterns: 70% follow-through        │
-│    └─ Work well in normal volatility,  │
-│       less in extreme conditions       │
-└────────────────────────────────────────┘
++----------------------------------------+
+| 1. Time Windows: 70-90% win rate       |
+|    (depending on which window)         |
+|    +- Most consistent edge             |
+|                                        |
+| 2. Volume >200%: 80%+ reliability      |
+|    +- When institutions trade, it's    |
+|       real                             |
+|                                        |
+| 3. Ratio >1.60: 85%+ reliability       |
+|    +- Premium overpriced setups work   |
+|       best                             |
+|                                        |
+| 4. Key Levels: 70% respected           |
+|    +- Price respects structure in      |
+|       trending markets                 |
+|                                        |
+| 5. Patterns: 70% follow-through        |
+|    +- Work well in normal volatility,  |
+|       less in extreme conditions       |
++----------------------------------------+
 
 CRITICAL NOTE: These stats are when ALL criteria met
 Individually, each is <60% reliable
@@ -1002,16 +1000,16 @@ Together, they create 80-90% edge
 
 ```
 PRE-FLIGHT CHECKLIST:
-┌─────────────────────────────────┐
-│ [ ] Engines working (Volume)    │ ← 30% critical
-│ [ ] Fuel sufficient (Ratio)     │ ← 25% critical
-│ [ ] Navigation active (Time)    │ ← 25% critical
-│ [ ] Altitude correct (Level)    │ ← 15% critical
-│ [ ] Flaps deployed (Pattern)    │ ← 5% critical
-│                                 │
-│ ALL GREEN = Cleared for takeoff │
-│ ONE RED = Abort mission         │
-└─────────────────────────────────┘
++---------------------------------+
+| [ ] Engines working (Volume)    | <- 30% critical
+| [ ] Fuel sufficient (Ratio)     | <- 25% critical
+| [ ] Navigation active (Time)    | <- 25% critical
+| [ ] Altitude correct (Level)    | <- 15% critical
+| [ ] Flaps deployed (Pattern)    | <- 5% critical
+|                                 |
+| ALL GREEN = Cleared for takeoff |
+| ONE RED = Abort mission         |
++---------------------------------+
 
 You don't rank "engine vs navigation"
 You need BOTH working TOGETHER
@@ -1030,29 +1028,29 @@ About SYNERGY and COMPLETENESS
 
 ```
 WITHOUT VOLUME CONFIRMATION:
-├─ Trap: Trading retail noise
-├─ Result: Fake moves, quick reversals
-└─ Example: VXX "spike" on 50K volume reverses in 2 minutes
++- Trap: Trading retail noise
++- Result: Fake moves, quick reversals
+-- Example: VXX "spike" on 50K volume reverses in 2 minutes
 
 WITHOUT TIME WINDOW:
-├─ Trap: Random probability (50/50 coin flip)
-├─ Result: Inconsistent results despite "good setups"
-└─ Example: Perfect pattern at lunch = 50% win rate
++- Trap: Random probability (50/50 coin flip)
++- Result: Inconsistent results despite "good setups"
+-- Example: Perfect pattern at lunch = 50% win rate
 
 WITHOUT RATIO FILTER:
-├─ Trap: Fading VXX when already cheap
-├─ Result: Limited downside = stopped out
-└─ Example: Fade at ratio 1.32, VXX only drops 2%
++- Trap: Fading VXX when already cheap
++- Result: Limited downside = stopped out
+-- Example: Fade at ratio 1.32, VXX only drops 2%
 
 WITHOUT KEY LEVEL:
-├─ Trap: Entering mid-range
-├─ Result: No structure, no edge
-└─ Example: Fade at $28.15 (between $28 and $29)
++- Trap: Entering mid-range
++- Result: No structure, no edge
+-- Example: Fade at $28.15 (between $28 and $29)
 
 WITHOUT PATTERN:
-├─ Trap: Early entry before reversal
-├─ Result: Premature, gets stopped out before working
-└─ Example: Enter at first push to resistance, VXX spikes higher first
++- Trap: Early entry before reversal
++- Result: Premature, gets stopped out before working
+-- Example: Enter at first push to resistance, VXX spikes higher first
 ```
 
 ---
@@ -1066,25 +1064,25 @@ QUESTION: "What's most important indicator?"
 ANSWER: Depends on what you mean...
 
 For PROVING MOVE IS REAL:
-└─ Volume (can't fake institutional participation)
++- Volume (can't fake institutional participation)
 
 For KNOWING WHEN TO FADE:
-└─ Ratio (tells you VXX is overpriced)
++- Ratio (tells you VXX is overpriced)
 
 For MAXIMIZING PROBABILITY:
-└─ Time window (shifts odds from 50% to 85%)
++- Time window (shifts odds from 50% to 85%)
 
 For IDENTIFYING ENTRY:
-└─ Key level (tells you where)
++- Key level (tells you where)
 
 For TIMING ENTRY:
-└─ Pattern (tells you when)
+-- Pattern (tells you when)
 
 But in practice?
-└─ Need ALL FIVE working together
-   └─ Like asking "what's most important: 
++- Need ALL FIVE working together
+   +- Like asking "what's most important: 
        heart or lungs?"
-      └─ You need both to live
+      -- You need both to live
 ```
 
 ---
@@ -1095,38 +1093,38 @@ But in practice?
 
 ```
 ZERO TOLERANCE (Never Break):
-┌─────────────────────────────────┐
-│ 1. VOLUME >200%                 │
-│    └─ No exceptions, ever       │
-│    └─ This is your proof        │
-│                                 │
-│ 2. TIME WINDOW                  │
-│    └─ No exceptions, ever       │
-│    └─ This is when probability  │
-│       shifts                    │
-└─────────────────────────────────┘
++---------------------------------+
+| 1. VOLUME >200%                 |
+|    +- No exceptions, ever       |
+|    -- This is your proof        |
+|                                 |
+| 2. TIME WINDOW                  |
+|    +- No exceptions, ever       |
+|    -- This is when probability  |
+|       shifts                    |
++---------------------------------+
 
 MINIMAL FLEXIBILITY (Rarely):
-┌─────────────────────────────────┐
-│ 3. RATIO >1.45                  │
-│    Hard floor: 1.42 too low     │
-│    Acceptable: 1.45-1.47        │
-│    Prefer: >1.50                │
-│    Ideal: >1.60                 │
-└─────────────────────────────────┘
++---------------------------------+
+| 3. RATIO >1.45                  |
+|    Hard floor: 1.42 too low     |
+|    Acceptable: 1.45-1.47        |
+|    Prefer: >1.50                |
+|    Ideal: >1.60                 |
++---------------------------------+
 
 SOME FLEXIBILITY (Context):
-┌─────────────────────────────────┐
-│ 4. KEY LEVEL                    │
-│    Ideal: Exact 50 SMA touch    │
-│    Acceptable: Within $0.20     │
-│    Skip: Mid-range              │
-│                                 │
-│ 5. PATTERN                      │
-│    Ideal: Perfect shooting star │
-│    Acceptable: Rejection wick   │
-│    Skip: No pattern at all      │
-└─────────────────────────────────┘
++---------------------------------+
+| 4. KEY LEVEL                    |
+|    Ideal: Exact 50 SMA touch    |
+|    Acceptable: Within $0.20     |
+|    Skip: Mid-range              |
+|                                 |
+| 5. PATTERN                      |
+|    Ideal: Perfect shooting star |
+|    Acceptable: Rejection wick   |
+|    Skip: No pattern at all      |
++---------------------------------+
 ```
 
 ---
@@ -1137,20 +1135,20 @@ SOME FLEXIBILITY (Context):
 
 ```
 Individual Reliability:
-├─ Volume spike alone: 55% reliable
-├─ Ratio >1.50 alone: 60% reliable
-├─ Time window alone: 65% reliable
-├─ Key level alone: 50% reliable
-└─ Pattern alone: 55% reliable
++- Volume spike alone: 55% reliable
++- Ratio >1.50 alone: 60% reliable
++- Time window alone: 65% reliable
++- Key level alone: 50% reliable
+-- Pattern alone: 55% reliable
 
 Combined (All 5):
-└─ All criteria met: 85%+ reliable ✅
+-- All criteria met: 85%+ reliable (Check)
 
-This is NOT additive (5 × 60% ≠ 300%)
+This is NOT additive (5 x 60% not equal to 300%)
 This is MULTIPLICATIVE validation:
-└─ Each confirms the other
-   └─ Probability compounds
-      └─ Edge emerges from synergy
+-- Each confirms the other
+   -- Probability compounds
+      -- Edge emerges from synergy
 ```
 
 ---
@@ -1162,24 +1160,24 @@ This is MULTIPLICATIVE validation:
 **Step 1: Check in Priority Order**
 ```
 1. Is it 3:10-3:25 PM? (Time)
-   └─ NO → Stop, skip trade
-   └─ YES → Continue
+   +- NO -> Stop, skip trade
+   -- YES -> Continue
 
 2. Is volume >533K? (Volume)  
-   └─ NO → Stop, skip trade
-   └─ YES → Continue
+   +- NO -> Stop, skip trade
+   -- YES -> Continue
 
 3. Is ratio >1.45? (Ratio)
-   └─ NO → Stop, skip trade
-   └─ YES → Continue, note if >1.55 for sizing
+   +- NO -> Stop, skip trade
+   -- YES -> Continue, note if >1.55 for sizing
 
 4. Is VXX at resistance? (Level)
-   └─ NO → Wait or skip
-   └─ YES → Continue
+   +- NO -> Wait or skip
+   -- YES -> Continue
 
 5. Is pattern forming? (Pattern)
-   └─ NO → Wait 1 candle
-   └─ YES → ENTER TRADE
+   +- NO -> Wait 1 candle
+   -- YES -> ENTER TRADE
 ```
 
 **Get to Step 3 and ratio is 1.42?**
@@ -1202,24 +1200,24 @@ This is MULTIPLICATIVE validation:
 
 ```
 CLARITY:
-├─ Know WHY you're checking each thing
-├─ Not just THAT you should check it
-└─ Builds confidence in system
++- Know WHY you're checking each thing
++- Not just THAT you should check it
+-- Builds confidence in system
 
 DISCIPLINE:
-├─ Understand what each prevents
-├─ Less tempted to skip criteria
-└─ "This prevents fading cheap VXX" = keep the rule
++- Understand what each prevents
++- Less tempted to skip criteria
+-- "This prevents fading cheap VXX" = keep the rule
 
 EXECUTION SPEED:
-├─ Check in priority order (time → volume → ratio)
-├─ Abort early if non-negotiables fail
-└─ Don't waste time if red light already showing
++- Check in priority order (time -> volume -> ratio)
++- Abort early if non-negotiables fail
+-- Don't waste time if red light already showing
 
 POSITION SIZING:
-├─ Ratio 1.48 vs 1.62 = different conviction
-├─ Adjust size based on strength
-└─ Maximum aggression when all align strongly
++- Ratio 1.48 vs 1.62 = different conviction
++- Adjust size based on strength
+-- Maximum aggression when all align strongly
 ```
 
 ---
@@ -1234,21 +1232,21 @@ THE ANSWER: "Wrong question."
 BETTER QUESTION: "Why do I need all 5?"
 
 THE TRUTH:
-├─ Volume proves it's real (institutions trading)
-├─ Ratio proves it's expensive (worth fading)
-├─ Time proves probability is high (optimal window)
-├─ Level proves there's a turn point (structure)
-└─ Pattern proves turn is happening (timing)
++- Volume proves it's real (institutions trading)
++- Ratio proves it's expensive (worth fading)
++- Time proves probability is high (optimal window)
++- Level proves there's a turn point (structure)
+-- Pattern proves turn is happening (timing)
 
 Remove any one:
-└─ Missing proof in chain
-   └─ Edge disappears
-      └─ Back to 50/50 gambling
+-- Missing proof in chain
+   -- Edge disappears
+      -- Back to 50/50 gambling
 
 Keep all five:
-└─ Complete proof chain
-   └─ 85%+ edge emerges
-      └─ Systematic profits compound
+-- Complete proof chain
+   -- 85%+ edge emerges
+      -- Systematic profits compound
 ```
 
 ---
@@ -1417,7 +1415,7 @@ AddCloud(VolPercent, Threshold300, Color.DARK_GREEN, Color.CURRENT);
 - **Test alerts weekly** (set temporary test alerts)
 
 ### Chart Settings for Speed:
-1. Setup → Application Settings → Charts
+1. Setup -> Application Settings -> Charts
 2. **Days to load**: 10 days
 3. **Default aggregation**: 5 min
 4. **Disable**: Real-time news (use separate browser)
@@ -1482,11 +1480,11 @@ Before going live, verify:
 ## DAILY PRE-FLIGHT CHECK (30 seconds)
 
 Every morning:
-1. Load workspace ✅
-2. Check all 6 indicators visible ✅
-3. Check ratio is calculating (shows number) ✅
-4. Set test alert (VXX >1%) to verify alerts work ✅
-5. Review overnight news ✅
+1. Load workspace (Check)
+2. Check all 6 indicators visible (Check)
+3. Check ratio is calculating (shows number) (Check)
+4. Set test alert (VXX >1%) to verify alerts work (Check)
+5. Review overnight news (Check)
 
 **If any indicator missing = fix before trading**
 
@@ -1511,7 +1509,7 @@ Every morning:
 **10:05 AM - Volume Surge**
 
 **Volume Panel**:
-- NOW showing: "620,000 Vol: 266,837" = 232% ✅
+- NOW showing: "620,000 Vol: 266,837" = 232% (Check)
 - Green bars stacking
 
 **VXX/VIX Ratio Panel**:

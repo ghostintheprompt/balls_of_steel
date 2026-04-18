@@ -2,71 +2,50 @@
 
 Native macOS trading desk for discretionary SPY and VXX options trading.
 
-This app is built around a simple truth: the chart setup matters more than a broker logo, and a clean alert at the right moment is worth more than a noisy stream of fake opportunity. Balls of Steel is a local-first desk for traders who already know how they want to trade and want better timing, clearer safeguards, and stronger entry/exit discipline around the open and close.
+Balls of Steel is a local-first desk for traders who require precise timing, clear safeguards, and rigorous entry/exit discipline. It is designed to bridge the gap between chart analysis and disciplined execution, focusing on the high-probability windows around the market open and close.
 
-## What It Is
+## Core Capabilities
 
-- A native Mac desk for SPY and VXX setup validation
-- Manual-first by design: you feed the chart context from ThinkOrSwim, Schwab, or another platform
-- Direction-aware alerts for `WATCH`, `ENTRY`, and `EXIT`
-- Active trade monitoring with targets, stops, timing warnings, and close-management rules
-- Built for aggressive but small positions with real safeguards
+### Setup Validation
+- Native macOS interface for SPY and VXX setup monitoring.
+- Manual-first data entry: Input chart context directly from your primary brokerage platform (e.g., ThinkOrSwim, Schwab).
+- Multi-factor validation: Automated checks for time windows, volume confirmation, VWAP alignment, and volatility context.
 
-## What It Is Not
+### Signal Intelligence
+- Direction-aware alerting system (WATCH, ENTRY, EXIT).
+- Real-time trade monitoring with dynamic targets and stops.
+- Built-in timing safeguards and close-management alerts to prevent emotional overrides.
 
-- Not a black-box auto-trading bot
-- Not safe to auto-execute option orders from the underlying price alone without spread and slippage checks
-- Not trying to be a generic retail trading feed
+### Execution Discipline
+- Designed for aggressive, small-position trading with strict risk management.
+- Local-first architecture ensures data privacy and zero latency from external feeds.
+- Explicit focus on setup detection rather than automated black-box execution.
 
-## Current Product Position
+## Operational Workflow
 
-The strongest version of this app is a direct-distributed Mac product, not an App Store-first finance app.
+1. Analysis: Perform technical analysis on your primary brokerage platform.
+2. Integration: Feed the current chart state into the desk via the Manual Feed.
+3. Validation: The desk validates the setup against institutional flow requirements and historical reliability.
+4. Action: Utilize the signal system to confirm entry or exit timing.
+5. Management: Monitor active trades with automated discipline warnings and hard-exit rules.
 
-The product direction for 2026 is:
+## Technical Requirements
 
-- Direct-distributed macOS app first
-- Broker-agnostic architecture
-- Underlying-led setup detection
-- Human-confirmed options execution
-- SPY and VXX only until reliability is brutal and obvious
-
-## Core Workflow
-
-1. Read the chart in ThinkOrSwim or your broker platform.
-2. Enter the live setup into the app through `Manual Feed`.
-3. Let the desk validate time window, direction, volume, VWAP alignment, news risk, and volatility context.
-4. Use the alert system to decide whether a setup is only worth watching, ready for entry, or ready for exit.
-5. Execute on your broker platform and let the app handle discipline, monitoring, and review context.
-
-## Current Features
-
-- Dedicated `SPY Desk`
-- Dedicated `VXX Desk`
-- `Manual Feed` for chart-state entry
-- `Live` trade monitoring
-- Configurable close warnings and hard-exit timing
-- Local notifications and cleaner alert messaging
-- Branded, high-contrast interface designed for fast sessions
-
-## Build And Launch
-
-### Run In Xcode
-
-1. Open `Balls_of_Steel.xcodeproj` in Xcode.
-2. Choose the `Balls_of_Steel` scheme.
-3. Run on `My Mac`.
+### Installation
+1. Open Balls_of_Steel.xcodeproj in Xcode.
+2. Select the Balls_of_Steel scheme.
+3. Target: My Mac.
+4. Build and Run.
 
 ## Documentation
 
-- [Docs Index](docs/README.md)
-- [ThinkOrSwim Setup](docs/thinkorswim_complete_setup_2026.md)
-- [VXX Trading Philosophy](docs/vxx_trading_philosophy_discipline.md)
-- [VXX Trading Prompts](docs/vxx_trading_prompts_2026.md)
+- [Documentation Index](docs/README.md)
+- [ThinkOrSwim Integration Guide](docs/thinkorswim_complete_setup_2026.md)
+- [Trading Philosophy and Discipline](docs/vxx_trading_philosophy_discipline.md)
+- [System Prompts and Checklists](docs/vxx_trading_prompts_2026.md)
 
-## Near-Term Optimization Priorities
+## Principles
 
-- Decouple market data from any one broker
-- Add explicit spread and slippage-aware confirmation before any future semi-automated option flow
-- Keep improving open and close window quality
-- Tighten launch, packaging, and direct-distribution workflow
-- Stay narrow enough that the product never turns into clutter
+- Local-first: All data and logic remain on your hardware.
+- Manual-first: Maintains the trader's connection to the tape; no automated orders.
+- Integrity: No black-box indicators; every signal is based on transparent, verifiable criteria.

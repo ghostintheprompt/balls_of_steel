@@ -563,12 +563,12 @@ final class SPYDashboardViewModel: ObservableObject {
 
     var contextLabel: String {
         guard let data = latestData else { return "Waiting for SPY manual entry" }
-        return "\(currentWindowLabel(for: data.timestamp)) • \(suggestedAction)"
+        return "\(currentWindowLabel(for: data.timestamp)) - \(suggestedAction)"
     }
 
     var lastUpdateLabel: String {
         guard let data = latestData else { return "Enter SPY in Manual Data Entry" }
-        return "Volume \(formattedVolumeMultiple(data.volumeMultiple)) • \(data.newsRisk.displayName) news risk"
+        return "Volume \(formattedVolumeMultiple(data.volumeMultiple)) - \(data.newsRisk.displayName) news risk"
     }
 
     var setupHeadline: String {
@@ -591,7 +591,7 @@ final class SPYDashboardViewModel: ObservableObject {
 
     var setupSubheadline: String {
         guard let data = latestData else { return "The SPY tab will fill itself as soon as you post a manual entry." }
-        return "\(focusWindowDescription(for: data.timestamp)) • Need \(formattedVolumeMultiple(requiredSPYVolumeMultiple(for: data))) for entry quality."
+        return "\(focusWindowDescription(for: data.timestamp)) - Need \(formattedVolumeMultiple(requiredSPYVolumeMultiple(for: data))) for entry quality."
     }
 
     var setupMetrics: [SPYSetupMetric] {
