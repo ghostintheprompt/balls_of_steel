@@ -174,8 +174,8 @@ struct ManualDataEntryView: View {
                     .foregroundColor(DesignSystem.primaryText)
                 Picker("Arrow Signal", selection: $viewModel.arrowSignal) {
                     Text("No Arrow").tag(ArrowSignalInput.none)
-                    Text("Bullish ⬆").tag(ArrowSignalInput.bullish)
-                    Text("Bearish ⬇").tag(ArrowSignalInput.bearish)
+                    Text("Bullish (Up)").tag(ArrowSignalInput.bullish)
+                    Text("Bearish (Down)").tag(ArrowSignalInput.bearish)
                 }
                 .pickerStyle(.segmented)
             }
@@ -297,7 +297,7 @@ struct ManualDataEntryView: View {
                 Image(systemName: ratioData.shouldTrade ? "checkmark.circle.fill" : "xmark.circle.fill")
                     .foregroundColor(ratioData.shouldTrade ? DesignSystem.bullishColor : DesignSystem.bearishColor)
 
-                Text(ratioData.shouldTrade ? "TRADE ELIGIBLE (Ratio ≥1.45)" : "SKIP TRADE (Ratio <1.45)")
+                Text(ratioData.shouldTrade ? "TRADE ELIGIBLE (Ratio >=1.45)" : "SKIP TRADE (Ratio <1.45)")
                     .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(ratioData.shouldTrade ? DesignSystem.bullishColor : DesignSystem.bearishColor)
             }
@@ -743,15 +743,15 @@ struct MarketDataEntry: Codable {
     var ratioTier: String {
         guard instrument == .vxx else { return "N/A" }
         if ratio >= 1.60 {
-            return "Premium Fade ⭐⭐⭐"
+            return "Premium Fade (Rating: 3)"
         } else if ratio >= 1.55 {
-            return "Strong Fade ⭐⭐"
+            return "Strong Fade (Rating: 2)"
         } else if ratio >= 1.45 {
-            return "Normal Fade ⭐"
+            return "Normal Fade (Rating: 1)"
         } else if ratio >= 1.35 {
             return "Weak Fade"
         } else {
-            return "No Fade ❌"
+            return "No Fade"
         }
     }
 }
@@ -774,8 +774,8 @@ enum ArrowSignalInput: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .none: return "No Arrow"
-        case .bullish: return "Bullish ⬆"
-        case .bearish: return "Bearish ⬇"
+        case .bullish: return "Bullish (Up)"
+        case .bearish: return "Bearish (Down)"
         }
     }
 

@@ -536,7 +536,7 @@ class PromptCoachViewModel: ObservableObject {
     func generatePromptWithLiveData(_ prompt: TradingPrompt) -> String {
         // Use manual entry data to pre-fill prompt
         guard let entry = manualDataEntry else {
-            return prompt.template + "\n\n⚠️ No manual data entered. Go to Manual Data Entry to input current market conditions."
+            return prompt.template + "\n\nWARNING: No manual data entered. Go to Manual Data Entry to input current market conditions."
         }
 
         return generatePromptWithManualData(prompt, entry: entry)
@@ -562,8 +562,8 @@ class PromptCoachViewModel: ObservableObject {
 
         // Add data freshness indicator
         let freshness = dataFreshness(entry.timestamp)
-        filledPrompt += "\n\n📊 Data entered: \(freshness)"
-        filledPrompt += "\n\n⚠️ Educational Tool: Analyze this setup and execute trades manually on your platform."
+        filledPrompt += "\n\n[DATA] Data entered: \(freshness)"
+        filledPrompt += "\n\nWARNING: Educational Tool: Analyze this setup and execute trades manually on your platform."
 
         return filledPrompt
     }

@@ -129,7 +129,7 @@ class IndicatorCalculator {
 
         guard !todayCandles.isEmpty else { return candles.last?.close ?? 0 }
 
-        var totalTPV: Double = 0  // Total (Typical Price × Volume)
+        var totalTPV: Double = 0  // Total (Typical Price x Volume)
         var totalVolume: Int = 0
 
         for candle in todayCandles {
@@ -407,11 +407,11 @@ struct VXXVIXRatio {
 
         var displayName: String {
             switch self {
-            case .premiumFade: return "Premium Fade ⭐⭐⭐"
-            case .strongFade: return "Strong Fade ⭐⭐"
-            case .normalFade: return "Normal Fade ⭐"
+            case .premiumFade: return "Premium Fade (Rating: 3)"
+            case .strongFade: return "Strong Fade (Rating: 2)"
+            case .normalFade: return "Normal Fade (Rating: 1)"
             case .weakFade: return "Weak Fade (Caution)"
-            case .noFade: return "No Fade ❌"
+            case .noFade: return "No Fade"
             }
         }
 

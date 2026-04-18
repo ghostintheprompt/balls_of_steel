@@ -16,7 +16,7 @@ struct TradingPrompt {
         case morningWindow          // 9:45 AM
         case lunchWindow            // 12:15 PM
         case powerHourAnalysis      // 3:05 PM
-        case institutionalFlowAlert // 3:40 PM ⭐ NEW
+        case institutionalFlowAlert // 3:40 PM (New)
         case exitReminder           // 3:50 PM (5 min warning)
         case postTradeAnalysis      // 3:55 PM
         case weeklyReview           // Friday evening
@@ -30,7 +30,7 @@ struct TradingPrompt {
             case .morningWindow: return "Morning Window Check"
             case .lunchWindow: return "Lunch Window Check"
             case .powerHourAnalysis: return "Power Hour Analysis"
-            case .institutionalFlowAlert: return "Institutional Flow Alert ⭐"
+            case .institutionalFlowAlert: return "Institutional Flow Alert"
             case .exitReminder: return "Exit Time Reminder"
             case .postTradeAnalysis: return "Post-Trade Review"
             case .weeklyReview: return "Weekly Review"
@@ -60,7 +60,7 @@ struct TradingPrompt {
             switch self {
             case .crisisMode: return 1               // Highest priority
             case .losingStreak: return 2
-            case .institutionalFlowAlert: return 3   // 90% reliability window ⭐
+            case .institutionalFlowAlert: return 3   // 90% reliability window (Rating: 3)
             case .exitReminder: return 4             // Critical for discipline
             case .powerHourAnalysis: return 5
             case .morningWindow: return 6
@@ -248,13 +248,13 @@ class PromptLibrary {
             LIVE DATA:
             - VXX current: $[VXX_PRICE]
             - VIX current: [VIX_LEVEL]
-            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX] (Need >1.45 minimum, >1.60 premium)
+            - VXX/VIX Ratio: [CALCULATE: VXX / VIX] (Need >1.45 minimum, >1.60 premium)
             - Volume vs average: [VOLUME_PCT]
             - VXX vs VWAP: [VXX_VS_VWAP]
             - 20 SMA: [SMA20_POS]
             - 50 SMA: [SMA50_POS]
 
-            RATIO VALUE FILTER ⭐:
+            RATIO VALUE FILTER:
             - >1.60 = Premium fade (max position $500)
             - 1.55-1.60 = Strong fade ($450)
             - 1.45-1.55 = Normal fade ($350)
@@ -284,7 +284,7 @@ class PromptLibrary {
             CURRENT STATUS:
             - VXX price: $[VXX_PRICE]
             - VIX level: [VIX_LEVEL]
-            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX] (Need >1.45 to trade)
+            - VXX/VIX Ratio: [CALCULATE: VXX / VIX] (Need >1.45 to trade)
             - Morning trade result: [WIN/LOSS/NO TRADE]
             - Volume environment: [VOLUME_PCT]% of average
             - VXX vs VWAP: [VXX_VS_VWAP]
@@ -324,10 +324,10 @@ class PromptLibrary {
             CURRENT LEVELS:
             - VXX current price: $[VXX_PRICE]
             - VIX current level: $[VIX_LEVEL]
-            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX]
+            - VXX/VIX Ratio: [CALCULATE: VXX / VIX]
             - Current volume vs average: [VOLUME_PCT]%
 
-            VXX/VIX RATIO ASSESSMENT ⭐:
+            VXX/VIX RATIO ASSESSMENT:
             - >1.60 = Premium fade (max position $500)
             - 1.55-1.60 = Strong fade ($450)
             - 1.45-1.55 = Normal fade ($350)
@@ -355,12 +355,12 @@ class PromptLibrary {
             dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage, .vxxVsVWAP, .sma20Position, .sma50Position, .currentDate]
         ),
 
-        // Institutional Flow Alert (3:40 PM) ⭐⭐⭐
+        // Institutional Flow Alert (3:40 PM) (Rating: 3)
         TradingPrompt(
             type: .institutionalFlowAlert,
             scheduledTime: .time(hour: 15, minute: 40),
             template: """
-            🚨 INSTITUTIONAL FLOW WINDOW IN 5 MINUTES 🚨
+            --- INSTITUTIONAL FLOW WINDOW IN 5 MINUTES ---
             3:45-4:10 PM | 90% RELIABILITY | SUPREME SETUP
 
             This is your highest probability window. Portfolio rebalancing. Mutual fund NAV. Index rebalancing. Real institutional money flows.
@@ -368,7 +368,7 @@ class PromptLibrary {
             CURRENT DATA:
             - VXX: $[VXX_PRICE]
             - VIX: [VIX_LEVEL]
-            - VXX/VIX Ratio: [CALCULATE: VXX ÷ VIX]
+            - VXX/VIX Ratio: [CALCULATE: VXX / VIX]
             - Current volume: [VOLUME_PCT]%
 
             INSTITUTIONAL FLOW CRITERIA (ALL REQUIRED):
@@ -419,7 +419,7 @@ class PromptLibrary {
             type: .exitReminder,
             scheduledTime: .time(hour: 15, minute: 50),
             template: """
-            ⏰ EXIT TIME REMINDER ⏰
+            --- EXIT TIME REMINDER ---
 
             5 MINUTES TO HARD EXIT (3:55 PM)
 
