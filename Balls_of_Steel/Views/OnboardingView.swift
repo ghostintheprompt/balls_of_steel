@@ -120,7 +120,7 @@ struct OnboardingView: View {
                     number: "3",
                     icon: "checkmark.circle.fill",
                     title: "You Execute The Trade",
-                    description: "Make your decision. Execute on your platform. Not automated—but close.",
+                    description: "Make your decision. Execute on your platform. Not automated--but close.",
                     color: .green
                 )
             }

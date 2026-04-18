@@ -56,7 +56,7 @@ class DailyRiskManager: ObservableObject {
             lockReason = "Daily trade limit reached (\(tradesExecutedToday)/\(maxTradesPerDay) trades)."
         } else if dailyPnL <= -maxDailyDrawdown {
             isTradingLocked = true
-            lockReason = "Daily drawdown limit hit (–$\(String(format: "%.0f", abs(dailyPnL))) of $\(Int(maxDailyDrawdown)) max)."
+            lockReason = "Daily drawdown limit hit (-$\(String(format: "%.0f", abs(dailyPnL))) of $\(Int(maxDailyDrawdown)) max)."
         }
     }
 
