@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("schwabApiKey") private var apiKey = ""
+    @State private var apiKey = AppConfig.apiKey
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @AppStorage("alertVolume") private var alertVolume: Double = 0.7 // Default 70%
     @AppStorage(AppConfig.CloseManagement.generalWarningKey) private var generalWarningTime = AppConfig.CloseManagement.defaultGeneralWarning
@@ -93,6 +93,7 @@ struct SettingsView: View {
 
                 SecureField("API Key", text: $apiKey)
                     .textFieldStyle(.roundedBorder)
+                    .onChange(of: apiKey) { AppConfig.apiKey = $0 }
 
                 Button(connectionManager.isConnected ? "Disconnect" : "Connect") {
                     Task {

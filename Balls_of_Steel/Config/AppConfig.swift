@@ -197,6 +197,17 @@ struct AppConfig {
         }
     }
     
-    // Secure storage key
-    @AppStorage("schwabApiKey") static var apiKey: String = ""
+    // API key stored in Keychain, not UserDefaults
+    private static let apiKeyKeychainKey = "com.ballsofsteel.schwabApiKey"
+
+    static var apiKey: String {
+        get { KeychainService.load(key: apiKeyKeychainKey) ?? "" }
+        set {
+            if newValue.isEmpty {
+                KeychainService.delete(key: apiKeyKeychainKey)
+            } else {
+                KeychainService.save(key: apiKeyKeychainKey, value: newValue)
+            }
+        }
+    }
 }

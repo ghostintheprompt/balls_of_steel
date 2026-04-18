@@ -6,6 +6,12 @@ import SwiftUI
 struct VXXTradingDashboard: View {
     @StateObject private var viewModel = VXXDashboardViewModel()
     @ObservedObject var signalMonitor: SignalMonitor
+    @ObservedObject private var timeManager = TimeManager.shared
+    @ObservedObject private var riskManager = DailyRiskManager.shared
+
+    private var isExecutionBlocked: Bool {
+        !timeManager.isTradingWindowOpen || riskManager.isTradingLocked
+    }
 
     var body: some View {
         NavigationView {
@@ -16,6 +22,15 @@ struct VXXTradingDashboard: View {
                     VStack(spacing: 16) {
                         TestSessionBanner()
                             .padding(.horizontal)
+
+                        if isExecutionBlocked {
+                            TradingLockBanner(
+                                windowOpen: timeManager.isTradingWindowOpen,
+                                lockReason: riskManager.lockReason,
+                                activeWindow: timeManager.activeWindow
+                            )
+                            .padding(.horizontal)
+                        }
 
                         marketStatusSection
 
@@ -191,7 +206,8 @@ struct VXXTradingDashboard: View {
                         Button("Trade") {
                             signalMonitor.startTrade(signal)
                         }
-                        .tint(.green)
+                        .tint(isExecutionBlocked ? .gray : .green)
+                        .disabled(isExecutionBlocked)
 
                         Button("Dismiss") {
                             viewModel.dismissSignal(signal)
@@ -205,6 +221,65 @@ struct VXXTradingDashboard: View {
 
     private var vxxSignals: [Signal] {
         signalMonitor.activeSignals.filter { $0.symbol == "VXX" }
+    }
+}
+
+// MARK: - Trading Lock Banner
+struct TradingLockBanner: View {
+    let windowOpen: Bool
+    let lockReason: String?
+    let activeWindow: VXXTradingWindow?
+
+    private var isRiskLocked: Bool { lockReason != nil }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: isRiskLocked ? "lock.fill" : "clock.fill")
+                .font(.title3)
+                .foregroundColor(isRiskLocked ? DesignSystem.bearishColor : DesignSystem.warningColor)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(isRiskLocked ? "TRADING LOCKED" : "OUTSIDE TRADING WINDOW")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.0)
+                    .foregroundColor(DesignSystem.primaryText)
+
+                Text(bannerMessage)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
+            }
+
+            Spacer()
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill((isRiskLocked ? DesignSystem.bearishColor : DesignSystem.warningColor).opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke((isRiskLocked ? DesignSystem.bearishColor : DesignSystem.warningColor).opacity(0.4), lineWidth: 1)
+                )
+        )
+    }
+
+    private var bannerMessage: String {
+        if let reason = lockReason { return reason }
+        if let window = nextWindowHint() { return "Next window: \(window)" }
+        return "Execution disabled outside defined trading windows."
+    }
+
+    private func nextWindowHint() -> String? {
+        let eastern = TimeZone(identifier: "America/New_York")!
+        let comps = Calendar.current.dateComponents(in: eastern, from: Date())
+        guard let h = comps.hour, let m = comps.minute else { return nil }
+        let t = h * 60 + m
+        let windows: [(String, Int)] = [
+            ("Morning 9:50 AM", 9*60+50),
+            ("Lunch 12:20 PM", 12*60+20),
+            ("Power Hour 3:10 PM", 15*60+10),
+            ("Institutional 3:45 PM", 15*60+45),
+        ]
+        return windows.first(where: { $0.1 > t })?.0
     }
 }
 

@@ -8,6 +8,10 @@ extension Notification.Name {
 class TimeManager: ObservableObject {
     static let shared = TimeManager()
     @Published private(set) var currentPhase: MarketPhase = .regular
+    @Published private(set) var isTradingWindowOpen: Bool = false
+    @Published private(set) var activeWindow: VXXTradingWindow? = nil
+
+    private var windowTimer: Timer?
     
     // Market hours in Eastern Time
     var marketOpen: Date {
@@ -60,6 +64,40 @@ class TimeManager: ObservableObject {
         return ![.preMarket, .afterHours].contains(phase)
     }
     
+    func startWindowMonitor() {
+        updateWindowState()
+        windowTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.updateWindowState()
+            }
+        }
+    }
+
+    func stopWindowMonitor() {
+        windowTimer?.invalidate()
+        windowTimer = nil
+    }
+
+    private func updateWindowState() {
+        let (open, window) = currentTradingWindowStatus()
+        isTradingWindowOpen = open
+        activeWindow = window
+        updatePhase()
+    }
+
+    func currentTradingWindowStatus() -> (Bool, VXXTradingWindow?) {
+        let eastern = TimeZone(identifier: "America/New_York")!
+        let comps = Calendar.current.dateComponents(in: eastern, from: Date())
+        guard let h = comps.hour, let m = comps.minute else { return (false, nil) }
+        let t = h * 60 + m
+
+        if t >= 9*60+50 && t < 10*60+0  { return (true, .morning) }
+        if t >= 12*60+20 && t < 12*60+35 { return (true, .lunch) }
+        if t >= 15*60+10 && t < 15*60+25 { return (true, .powerHour) }
+        if t >= 15*60+45 && t < 16*60+10 { return (true, .institutional) }
+        return (false, nil)
+    }
+
     private func updatePhase() {
         let newPhase = calculateCurrentPhase()
         if currentPhase != newPhase {
