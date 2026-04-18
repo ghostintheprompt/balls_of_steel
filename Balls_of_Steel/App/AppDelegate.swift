@@ -8,6 +8,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             await SignalNotification.shared.prepareForLaunch()
         }
+        Task { @MainActor in
+            TimeManager.shared.startWindowMonitor()
+            DailyRiskManager.shared.resetIfNewDay()
+        }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -30,7 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             do {
                 let token = try await SchwabService.shared.exchangeCodeForToken(code)
-                UserDefaults.standard.setValue(token, forKey: "schwabApiKey")
+                AppConfig.apiKey = token
 
                 NotificationCenter.default.post(
                     name: .schwabConnectionComplete,

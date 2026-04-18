@@ -13,6 +13,11 @@ struct PromptCoachView: View {
                     // Header/Explainer
                     promptCoachHeader
 
+                    // Post-Trade Analysis
+                    if let postTradePrompt = viewModel.postTradeAnalysisPrompt {
+                        postTradeAnalysisCard(postTradePrompt)
+                    }
+
                     // Active/Upcoming Prompts
                     if let activePrompt = viewModel.activePrompt {
                         activePromptCard(activePrompt)
@@ -81,6 +86,72 @@ struct PromptCoachView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+
+    // MARK: - Post-Trade Analysis Card
+    private func postTradeAnalysisCard(_ prompt: String) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.bar.doc.horizontal.fill")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                    .padding(12)
+                    .background(Circle().fill(Color.orange.opacity(0.1)))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("POST-TRADE REVIEW")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+                    Text("Last Trade Analysis")
+                        .font(.headline)
+                }
+
+                Spacer()
+
+                Button(action: {
+                    #if os(macOS)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(prompt, forType: .string)
+                    #else
+                    UIPasteboard.general.string = prompt
+                    #endif
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "doc.on.clipboard")
+                            .font(.title3)
+                        Text("Copy")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.orange)
+                    .cornerRadius(8)
+                }
+            }
+
+            Divider()
+
+            ScrollView {
+                Text(prompt)
+                    .font(.system(.caption, design: .monospaced))
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
+            }
+            .frame(maxHeight: 160)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.orange.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange, lineWidth: 2)
                 )
         )
     }
@@ -407,13 +478,15 @@ class PromptCoachViewModel: ObservableObject {
     @Published var conditionalPrompts: [TradingPrompt] = []
     @Published var promptHistory: [PromptHistoryRecord] = []
     @Published var manualDataEntry: MarketDataEntry?
+    @Published var postTradeAnalysisPrompt: String? = nil
 
     private let promptLibrary = PromptLibrary.shared
+    private let journal = TradeJournal.shared
     private var monitoringTask: Task<Void, Never>?
 
     init() {
-        // Load last manual entry for prompt generation
         loadManualDataEntry()
+        refreshPostTradePrompt()
     }
 
     func startMonitoring() async {
@@ -551,10 +624,28 @@ class PromptCoachViewModel: ObservableObject {
         }
     }
 
+    func refreshPostTradePrompt() {
+        let context = journal.postTradeAnalysisContext()
+        guard !context.isEmpty else {
+            postTradeAnalysisPrompt = nil
+            return
+        }
+        postTradeAnalysisPrompt = """
+        You are a VXX trading coach. Analyze this trade entry against the discipline framework: \
+        only fade when the ratio is stretched, volume confirms, timing is right, no fresh news.
+
+        \(context)
+
+        In 3-4 sentences: did the setup meet all four conditions? What was the actual edge? \
+        What should be reinforced or avoided next time?
+        """
+    }
+
     func refreshPrompts() {
         loadTodayPrompts()
         checkActivePrompt()
         checkConditionalPrompts()
+        refreshPostTradePrompt()
     }
 
     func toggleNotifications() {
