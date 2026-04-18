@@ -44,7 +44,7 @@ class ArcadeEnergyService: ObservableObject {
         }
         #endif
         #if DEBUG
-        print("🔔 INSTITUTIONAL FLOW ALERT")
+        print("INSTITUTIONAL FLOW ALERT")
         #endif
     }
 
@@ -57,7 +57,7 @@ class ArcadeEnergyService: ObservableObject {
         generator.impactOccurred()
         #endif
         #if DEBUG
-        print("✅ STRONG SIGNAL")
+        print("STRONG SIGNAL")
         #endif
     }
 
@@ -70,7 +70,7 @@ class ArcadeEnergyService: ObservableObject {
         generator.impactOccurred()
         #endif
         #if DEBUG
-        print("💰 INSTITUTIONAL VOLUME")
+        print("INSTITUTIONAL VOLUME")
         #endif
     }
 
@@ -83,7 +83,7 @@ class ArcadeEnergyService: ObservableObject {
         generator.impactOccurred()
         #endif
         #if DEBUG
-        print("💾 DATA SAVED")
+        print("DATA SAVED")
         #endif
     }
 
@@ -96,7 +96,7 @@ class ArcadeEnergyService: ObservableObject {
         generator.notificationOccurred(.success)
         #endif
         #if DEBUG
-        print("🎉 UNLOCKED")
+        print("UNLOCKED")
         #endif
     }
 
@@ -129,7 +129,7 @@ class ArcadeEnergyService: ObservableObject {
         generator.impactOccurred()
         #endif
         #if DEBUG
-        print("⏰ WINDOW OPENING: \(window)")
+        print("WINDOW OPENING: \(window)")
         #endif
     }
 

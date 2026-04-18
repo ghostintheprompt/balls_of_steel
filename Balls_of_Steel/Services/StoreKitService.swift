@@ -209,8 +209,7 @@ class StoreKitService: ObservableObject {
         hasUnlocked = true
         UserDefaults.standard.set(true, forKey: unlockKey)
         #if DEBUG
-        print("✅ Full version unlocked!")
-        #endif
+        print("Full version unlocked!")        #endif
     }
 
     // MARK: - Feature Access

@@ -80,7 +80,7 @@ class SignalNotification: ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = "\(exitSignal.action.displayName.uppercased()) \(exitSignal.symbol)"
         content.subtitle = exitSignal.strategy.rawValue
-        content.body = "Price: $\(String(format: "%.2f", exitSignal.exitPrice)) • \(exitSignal.exitReason.displayName)"
+        content.body = "Price: $\(String(format: "%.2f", exitSignal.exitPrice)) - \(exitSignal.exitReason.displayName)"
         content.sound = .default
         scheduleNotification(content)
     }

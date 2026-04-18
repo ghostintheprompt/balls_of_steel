@@ -64,7 +64,7 @@ class TradeJournal: ObservableObject {
         guard let last = lastEntry else { return "" }
         let pnlStr = last.realizedPnL.map { String(format: "%+.2f", $0) } ?? "open"
         return """
-        Trade Journal — Last Entry:
+        Trade Journal - Last Entry:
         Symbol: \(last.symbol) | Strategy: \(last.strategy)
         Entry: $\(String(format: "%.2f", last.entryPrice)) | VWAP: $\(String(format: "%.2f", last.vwap))
         Window: \(last.tradingWindow) | VXX/VIX ratio: \(String(format: "%.3f", last.vxxVixRatio))

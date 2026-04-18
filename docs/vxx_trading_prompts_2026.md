@@ -16,11 +16,11 @@ CURRENT MARKET DATA:
 - SPY current: ____
 
 VXX/VIX RATIO ASSESSMENT:
-- >1.60 = PREMIUM FADE ⭐⭐⭐ (Max position $500)
-- 1.55-1.60 = STRONG FADE ⭐⭐ (Position $400-500)
-- 1.45-1.55 = NORMAL FADE ⭐ (Position $300-400)
+- >1.60 = PREMIUM FADE (Rating: 3) (Max position $500)
+- 1.55-1.60 = STRONG FADE (Rating: 2) (Position $400-500)
+- 1.45-1.55 = NORMAL FADE (Rating: 1) (Position $300-400)
 - 1.35-1.45 = WEAK FADE (Position $150-250 or skip)
-- <1.35 = NO FADE ❌ (Skip puts)
+- <1.35 = NO FADE (None) (Skip puts)
 
 TECHNICAL POSITION:
 - VXX vs 20 SMA (yellow): Above/Below ____
@@ -77,11 +77,11 @@ CURRENT MARKET DATA:
 - SPY current: ____
 
 VXX/VIX RATIO ASSESSMENT:
-- >1.60 = PREMIUM FADE ⭐⭐⭐ (Max aggression, $500)
-- 1.55-1.60 = STRONG FADE ⭐⭐ (Full position, $400-500)
-- 1.45-1.55 = NORMAL FADE ⭐ (Standard, $300-400)
+- >1.60 = PREMIUM FADE (Rating: 3) (Max aggression, $500)
+- 1.55-1.60 = STRONG FADE (Rating: 2) (Full position, $400-500)
+- 1.45-1.55 = NORMAL FADE (Rating: 1) (Standard, $300-400)
 - 1.35-1.45 = WEAK FADE (Half size, $150-250)
-- <1.35 = NO FADE ❌ (Skip)
+- <1.35 = NO FADE (None) (Skip)
 
 TECHNICAL POSITION:
 - VXX vs 20 SMA (yellow): ____
@@ -145,9 +145,9 @@ CURRENT MARKET DATA:
 - Is volume >300%? YES/NO ____
 
 VXX/VIX RATIO ASSESSMENT:
-- >1.60 = MAXIMUM FADE ⭐⭐⭐ (Institutional selling likely)
-- 1.55-1.60 = STRONG FADE ⭐⭐ (Big money fade setup)
-- 1.45-1.55 = NORMAL FADE ⭐ (Standard institutional flow)
+- >1.60 = MAXIMUM FADE (Rating: 3) (Institutional selling likely)
+- 1.55-1.60 = STRONG FADE (Rating: 2) (Big money fade setup)
+- 1.45-1.55 = NORMAL FADE (Rating: 1) (Standard institutional flow)
 - <1.45 = CAUTION (Institutions may be covering)
 
 INSTITUTIONAL SIGNALS:
@@ -235,11 +235,11 @@ GO/NO-GO: ______
 - Down >$500 in week = REVIEW
 
 ### MANDATORY CHECKS (ALL required):
-1. ✅ VXX/VIX Ratio >1.45
-2. ✅ Volume >200% average
-3. ✅ Correct time window
-4. ✅ Technical setup (pattern + level)
-5. ✅ No contradicting news
+1. (Check) VXX/VIX Ratio >1.45
+2. (Check) Volume >200% average
+3. (Check) Correct time window
+4. (Check) Technical setup (pattern + level)
+5. (Check) No contradicting news
 
 **ONE MISSING = NO TRADE**
 
