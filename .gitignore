@@ -57,3 +57,5 @@ Temporary Items
 # IDE
 .vscode/
 .idea/
+.claude/
+.codex-work/

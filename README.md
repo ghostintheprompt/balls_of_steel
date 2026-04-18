@@ -15,7 +15,6 @@ This app is built around a simple truth: the chart setup matters more than a bro
 ## What It Is Not
 
 - Not a black-box auto-trading bot
-- Not dependent on the App Store to make sense as a product
 - Not safe to auto-execute option orders from the underlying price alone without spread and slippage checks
 - Not trying to be a generic retail trading feed
 
@@ -30,8 +29,6 @@ The product direction for 2026 is:
 - Underlying-led setup detection
 - Human-confirmed options execution
 - SPY and VXX only until reliability is brutal and obvious
-
-That keeps the app honest. The underlying is enough to identify timing and setup quality. It is not enough to blindly send option orders without validating spread, liquidity, and slippage.
 
 ## Core Workflow
 
@@ -55,29 +52,16 @@ That keeps the app honest. The underlying is enough to identify timing and setup
 
 ### Run In Xcode
 
-```bash
-open /Users/greenplanet/Documents/balls_of_steel/Balls_of_Steel.xcodeproj
-```
-
-Choose the `Balls_of_Steel` scheme and run on `My Mac`.
-
-### Open The Built App Bundle
-
-The current release-style app bundle lives here:
-
-`/Users/greenplanet/Documents/balls_of_steel/Builds/Balls_of_Steel.app`
-
-That is the easiest way to launch without opening Xcode every time.
+1. Open `Balls_of_Steel.xcodeproj` in Xcode.
+2. Choose the `Balls_of_Steel` scheme.
+3. Run on `My Mac`.
 
 ## Documentation
 
-- [Docs Index](/Users/greenplanet/Documents/balls_of_steel/docs/README.md)
-- [Getting Started For Playtest](/Users/greenplanet/Documents/balls_of_steel/docs/GETTING_STARTED_PLAYTEST.md)
-- [Product Strategy 2026](/Users/greenplanet/Documents/balls_of_steel/docs/PRODUCT_STRATEGY_2026.md)
-- [Testing Guide](/Users/greenplanet/Documents/balls_of_steel/docs/TESTING.md)
-- [Playtest And Direct Release Checklist](/Users/greenplanet/Documents/balls_of_steel/docs/PRE_LAUNCH_CHECKLIST.md)
-- [ThinkOrSwim Setup](/Users/greenplanet/Documents/balls_of_steel/docs/thinkorswim_complete_setup_2026.md)
-- [App Store Checklist (Secondary Path)](/Users/greenplanet/Documents/balls_of_steel/docs/APP_STORE_RELEASE_CHECKLIST.md)
+- [Docs Index](docs/README.md)
+- [ThinkOrSwim Setup](docs/thinkorswim_complete_setup_2026.md)
+- [VXX Trading Philosophy](docs/vxx_trading_philosophy_discipline.md)
+- [VXX Trading Prompts](docs/vxx_trading_prompts_2026.md)
 
 ## Near-Term Optimization Priorities
 
