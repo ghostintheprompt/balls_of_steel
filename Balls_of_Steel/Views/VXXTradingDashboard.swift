@@ -430,7 +430,7 @@ struct OptionContractRow: View {
                     .foregroundColor(DesignSystem.mutedText)
             }
 
-            Text("Δ \(contract.delta, specifier: "%.2f")")
+            Text("Delta \(contract.delta, specifier: "%.2f")")
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(type == .call ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                 .padding(.horizontal, 6)
