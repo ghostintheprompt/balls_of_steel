@@ -40,7 +40,7 @@ struct StrategiesListView: View {
             StrategyRow(
                 strategy: .vxxInstitutionalFlow,
                 winRate: "90%",
-                reliability: "⭐⭐⭐",
+                reliability: "(Rating: 3)",
                 isUnlocked: true
             )
         } header: {
@@ -60,24 +60,24 @@ struct StrategiesListView: View {
     private var premiumStrategiesSection: some View {
         Section("All 16 Strategies Unlocked") {
             // VXX Strategies (5)
-            StrategyRow(strategy: .vxxFadeSetup, winRate: "75%", reliability: "⭐⭐", isUnlocked: true)
-            StrategyRow(strategy: .vxxPowerHour, winRate: "73%", reliability: "⭐⭐", isUnlocked: true)
-            StrategyRow(strategy: .vxxMorningWindow, winRate: "72%", reliability: "⭐⭐", isUnlocked: true)
-            StrategyRow(strategy: .vxxVolumeSpike, winRate: "70%", reliability: "⭐⭐", isUnlocked: true)
-            StrategyRow(strategy: .vxxLunchWindow, winRate: "68%", reliability: "⭐", isUnlocked: true)
+            StrategyRow(strategy: .vxxFadeSetup, winRate: "75%", reliability: "(Rating: 2)", isUnlocked: true)
+            StrategyRow(strategy: .vxxPowerHour, winRate: "73%", reliability: "(Rating: 2)", isUnlocked: true)
+            StrategyRow(strategy: .vxxMorningWindow, winRate: "72%", reliability: "(Rating: 2)", isUnlocked: true)
+            StrategyRow(strategy: .vxxVolumeSpike, winRate: "70%", reliability: "(Rating: 2)", isUnlocked: true)
+            StrategyRow(strategy: .vxxLunchWindow, winRate: "68%", reliability: "(Rating: 1)", isUnlocked: true)
 
             // Additional Strategies (11 more)
-            StrategyRow(strategy: .weeklyOptionsExpiration, winRate: "75%", reliability: "⭐⭐", isUnlocked: true)
-            StrategyRow(strategy: .panicReversal, winRate: "72%", reliability: "⭐⭐", isUnlocked: true)
-            StrategyRow(strategy: .gapAndGo, winRate: "70%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .consolidationBreakout, winRate: "68%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .vwapReversal, winRate: "68%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .powerHour, winRate: "65%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .movingAverageCross, winRate: "65%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .earningsPlay, winRate: "62%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .vixSpike, winRate: "60%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .zeroDTE, winRate: "58%", reliability: "⭐", isUnlocked: true)
-            StrategyRow(strategy: .momentumReversal, winRate: "55%", reliability: "⭐", isUnlocked: true)
+            StrategyRow(strategy: .weeklyOptionsExpiration, winRate: "75%", reliability: "(Rating: 2)", isUnlocked: true)
+            StrategyRow(strategy: .panicReversal, winRate: "72%", reliability: "(Rating: 2)", isUnlocked: true)
+            StrategyRow(strategy: .gapAndGo, winRate: "70%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .consolidationBreakout, winRate: "68%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .vwapReversal, winRate: "68%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .powerHour, winRate: "65%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .movingAverageCross, winRate: "65%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .earningsPlay, winRate: "62%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .vixSpike, winRate: "60%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .zeroDTE, winRate: "58%", reliability: "(Rating: 1)", isUnlocked: true)
+            StrategyRow(strategy: .momentumReversal, winRate: "55%", reliability: "(Rating: 1)", isUnlocked: true)
         }
     }
 

@@ -392,7 +392,7 @@ struct EnhancedSignalRowView: View {
                         .font(DesignSystem.Typography.titleFont)
                         .foregroundColor(DesignSystem.primaryText)
                     StrategyBadge(strategy: signal.strategy)
-                    Text("\(signal.kind.displayName) • \(signal.direction.optionLabel)")
+                    Text("\(signal.kind.displayName) - \(signal.direction.optionLabel)")
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
                 }

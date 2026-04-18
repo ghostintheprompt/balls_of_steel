@@ -73,11 +73,11 @@ struct FirstLaunchDisclaimerView: View {
             Text("""
             **TRADING INVOLVES SUBSTANTIAL RISK OF LOSS**
 
-            • Options trading is highly risky and not suitable for all investors
-            • You can lose your entire investment
-            • Past performance does NOT guarantee future results
-            • Win rates and strategies shown are educational examples
-            • Market conditions change - no system guarantees profits
+            - Options trading is highly risky and not suitable for all investors
+            - You can lose your entire investment
+            - Past performance does NOT guarantee future results
+            - Win rates and strategies shown are educational examples
+            - Market conditions change - no system guarantees profits
 
             Only trade with money you can afford to lose.
             """)
@@ -93,11 +93,11 @@ struct FirstLaunchDisclaimerView: View {
             Text("""
             **THIS IS NOT FINANCIAL ADVICE**
 
-            • All content is for educational and informational purposes only
-            • We do not provide investment, tax, or legal advice
-            • Strategies shown are examples, not recommendations
-            • Consult a licensed financial advisor before trading
-            • You are solely responsible for your trading decisions
+            - All content is for educational and informational purposes only
+            - We do not provide investment, tax, or legal advice
+            - Strategies shown are examples, not recommendations
+            - Consult a licensed financial advisor before trading
+            - You are solely responsible for your trading decisions
 
             The creator got a 74 on the Series 7. This is a learning tool, not advice.
             """)
@@ -114,16 +114,16 @@ struct FirstLaunchDisclaimerView: View {
             **YOU EXECUTE ALL TRADES**
 
             This app does NOT:
-            • Connect to broker APIs for live trading
-            • Execute trades automatically
-            • Provide real-time market data
-            • Make trading decisions for you
+            - Connect to broker APIs for live trading
+            - Execute trades automatically
+            - Provide real-time market data
+            - Make trading decisions for you
 
             You must:
-            • Enter market data manually from your platform
-            • Analyze setups using the educational tools
-            • Make your own trading decisions
-            • Execute trades on your own platform (ThinkOrSwim, Schwab, etc.)
+            - Enter market data manually from your platform
+            - Analyze setups using the educational tools
+            - Make your own trading decisions
+            - Execute trades on your own platform (ThinkOrSwim, Schwab, etc.)
             """)
         }
     }
@@ -142,13 +142,13 @@ struct FirstLaunchDisclaimerView: View {
                     Text("I agree that:")
                         .font(DesignSystem.Typography.bodyFont)
                         .foregroundColor(DesignSystem.primaryText)
-                    Text("• This is an educational tool only")
+                    Text("- This is an educational tool only")
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
-                    Text("• I trade at my own risk")
+                    Text("- I trade at my own risk")
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
-                    Text("• I will not hold the creator liable for losses")
+                    Text("- I will not hold the creator liable for losses")
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
                 }
@@ -349,22 +349,22 @@ struct TermsOfServiceView: View {
 
                 By downloading, installing, or using Balls of Steel ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **1. EDUCATIONAL TOOL ONLY**
 
                 1.1 The App is an educational tool designed to teach VXX trading strategies and systematic analysis techniques.
 
                 1.2 The App is NOT:
-                • A licensed trading platform
-                • A broker-dealer or financial advisor
-                • An investment service
-                • A source of financial advice
-                • A guarantee of profits or trading success
+                - A licensed trading platform
+                - A broker-dealer or financial advisor
+                - An investment service
+                - A source of financial advice
+                - A guarantee of profits or trading success
 
                 1.3 All strategies, win rates, and examples provided are for educational purposes only and do not constitute recommendations to buy or sell any security.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **2. NO AUTOMATED TRADING**
 
@@ -376,7 +376,7 @@ struct TermsOfServiceView: View {
 
                 2.4 You must execute all trades manually on your own trading platform.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **3. USER RESPONSIBILITY**
 
@@ -394,7 +394,7 @@ struct TermsOfServiceView: View {
 
                 3.6 Understanding options trading risks before trading.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **4. RISK DISCLOSURE**
 
@@ -410,47 +410,47 @@ struct TermsOfServiceView: View {
 
                 4.6 Only trade with money you can afford to lose.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **5. NO WARRANTY**
 
                 5.1 The App is provided "AS IS" without warranty of any kind, express or implied.
 
                 5.2 We make no guarantees about:
-                • Accuracy of strategies or win rates
-                • Availability or reliability of the App
-                • Suitability for any particular purpose
-                • Freedom from errors or bugs
+                - Accuracy of strategies or win rates
+                - Availability or reliability of the App
+                - Suitability for any particular purpose
+                - Freedom from errors or bugs
 
                 5.3 We do not warrant that the App will meet your requirements or expectations.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **6. LIMITATION OF LIABILITY**
 
                 6.1 To the maximum extent permitted by law, we shall not be liable for:
-                • Trading losses of any kind
-                • Lost profits or opportunities
-                • Data loss or corruption
-                • Indirect, incidental, or consequential damages
-                • Any damages arising from use or inability to use the App
+                - Trading losses of any kind
+                - Lost profits or opportunities
+                - Data loss or corruption
+                - Indirect, incidental, or consequential damages
+                - Any damages arising from use or inability to use the App
 
                 6.2 Our maximum liability shall not exceed the amount you paid for the App.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **7. NO BROKER AFFILIATION**
 
                 7.1 The App is not affiliated with, endorsed by, or sponsored by any broker including:
-                • Charles Schwab
-                • TD Ameritrade
-                • ThinkOrSwim
-                • Interactive Brokers
-                • Any other trading platform
+                - Charles Schwab
+                - TD Ameritrade
+                - ThinkOrSwim
+                - Interactive Brokers
+                - Any other trading platform
 
                 7.2 All trademarks belong to their respective owners.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **8. PURCHASES & REFUNDS**
 
@@ -462,7 +462,7 @@ struct TermsOfServiceView: View {
 
                 8.4 We do not have access to your payment information.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **9. DATA & PRIVACY**
 
@@ -472,7 +472,7 @@ struct TermsOfServiceView: View {
 
                 9.3 See our Privacy Policy for full details.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **10. PROHIBITED USES**
 
@@ -488,7 +488,7 @@ struct TermsOfServiceView: View {
 
                 10.5 Claim the App provides financial advice or guarantees profits.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **11. CHANGES TO TERMS**
 
@@ -498,7 +498,7 @@ struct TermsOfServiceView: View {
 
                 11.3 Major changes will be communicated through the App.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **12. TERMINATION**
 
@@ -508,7 +508,7 @@ struct TermsOfServiceView: View {
 
                 12.3 These Terms survive termination where applicable.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **13. GOVERNING LAW**
 
@@ -518,23 +518,23 @@ struct TermsOfServiceView: View {
 
                 13.3 If any provision is found invalid, the remaining provisions continue in effect.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **14. CONTACT**
 
                 For questions about these Terms, contact us through the App's support channels.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **ACKNOWLEDGMENT**
 
                 By using this App, you acknowledge that:
-                • You have read and understood these Terms
-                • You agree to be bound by these Terms
-                • You understand the risks of trading
-                • You are using this App as an educational tool only
-                • You will execute all trades manually on your own platform
-                • You accept full responsibility for your trading decisions
+                - You have read and understood these Terms
+                - You agree to be bound by these Terms
+                - You understand the risks of trading
+                - You are using this App as an educational tool only
+                - You will execute all trades manually on your own platform
+                - You accept full responsibility for your trading decisions
 
                 74 on the Series 7. This is a learning tool. Trade at your own risk.
                 """)
@@ -562,129 +562,129 @@ struct PrivacyPolicyView: View {
                 Text("""
                 Balls of Steel ("we", "us", "the App") is committed to protecting your privacy. This Privacy Policy explains what information we collect (spoiler: almost nothing) and how we use it.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **1. INFORMATION WE DO NOT COLLECT**
 
                 The App does NOT collect, store, transmit, or sell:
 
                 1.1 Personal Information
-                • Name, email, phone number, address
-                • Date of birth, gender, demographic info
-                • Social security number or tax ID
-                • Any personally identifiable information
+                - Name, email, phone number, address
+                - Date of birth, gender, demographic info
+                - Social security number or tax ID
+                - Any personally identifiable information
 
                 1.2 Financial Information
-                • Trading account credentials
-                • Brokerage account numbers
-                • Bank account information
-                • Credit card or payment details
-                • Trading history or P&L data
+                - Trading account credentials
+                - Brokerage account numbers
+                - Bank account information
+                - Credit card or payment details
+                - Trading history or P&L data
 
                 1.3 Trading Data
-                • Market data you enter manually
-                • Strategies you view or use
-                • Signals you generate
-                • Prompts you copy
-                • Trading decisions you make
+                - Market data you enter manually
+                - Strategies you view or use
+                - Signals you generate
+                - Prompts you copy
+                - Trading decisions you make
 
                 1.4 Device Information
-                • Device IDs or advertising identifiers
-                • IP address
-                • Location data
-                • Device fingerprinting
+                - Device IDs or advertising identifiers
+                - IP address
+                - Location data
+                - Device fingerprinting
 
                 1.5 Usage Analytics
-                • App usage patterns
-                • Feature usage statistics
-                • Screen views or interactions
-                • Crash reports or diagnostics
+                - App usage patterns
+                - Feature usage statistics
+                - Screen views or interactions
+                - Crash reports or diagnostics
 
                 **We collect NOTHING. Zero. Nada. Your privacy is 100% protected.**
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **2. LOCAL STORAGE ONLY**
 
                 2.1 The App stores data locally on YOUR device using:
-                • UserDefaults (iOS system storage)
-                • Local file storage
-                • No cloud sync
-                • No remote servers
+                - UserDefaults (iOS system storage)
+                - Local file storage
+                - No cloud sync
+                - No remote servers
 
                 2.2 Data stored locally includes:
-                • Manual data entries (VXX price, volume, etc.)
-                • Unlock status (if you purchased full version)
-                • App preferences (haptic settings, platform choice)
-                • Onboarding completion status
+                - Manual data entries (VXX price, volume, etc.)
+                - Unlock status (if you purchased full version)
+                - App preferences (haptic settings, platform choice)
+                - Onboarding completion status
 
                 2.3 This data:
-                • Never leaves your device
-                • Is not transmitted to us or any third party
-                • Is deleted when you delete the App
-                • Cannot be accessed by us
+                - Never leaves your device
+                - Is not transmitted to us or any third party
+                - Is deleted when you delete the App
+                - Cannot be accessed by us
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **3. NO THIRD-PARTY SERVICES**
 
                 3.1 The App does NOT use:
-                • Analytics services (no Google Analytics, Mixpanel, etc.)
-                • Advertising networks
-                • Social media SDKs
-                • Cloud storage services
-                • External APIs for data collection
-                • Tracking pixels or beacons
+                - Analytics services (no Google Analytics, Mixpanel, etc.)
+                - Advertising networks
+                - Social media SDKs
+                - Cloud storage services
+                - External APIs for data collection
+                - Tracking pixels or beacons
 
                 3.2 The ONLY third-party service we use:
-                • Apple's StoreKit for in-app purchases
-                • Managed entirely by Apple
-                • We never see your payment information
+                - Apple's StoreKit for in-app purchases
+                - Managed entirely by Apple
+                - We never see your payment information
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **4. NO ACCOUNT REQUIRED**
 
                 4.1 The App does not require:
-                • Account creation
-                • Login credentials
-                • Email verification
-                • User profiles
+                - Account creation
+                - Login credentials
+                - Email verification
+                - User profiles
 
                 4.2 You can use the App completely anonymously.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **5. APPLE APP STORE**
 
                 5.1 In-App Purchases:
-                • Processed entirely through Apple's App Store
-                • We never see your payment information
-                • Apple's privacy policy applies to purchase data
-                • Apple may collect transaction information
+                - Processed entirely through Apple's App Store
+                - We never see your payment information
+                - Apple's privacy policy applies to purchase data
+                - Apple may collect transaction information
 
                 5.2 Apple ID:
-                • Required for App Store downloads
-                • Managed by Apple, not us
-                • Subject to Apple's Privacy Policy
+                - Required for App Store downloads
+                - Managed by Apple, not us
+                - Subject to Apple's Privacy Policy
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **6. DATA SECURITY**
 
                 6.1 Since we don't collect data, there's no data to secure on our end.
 
                 6.2 Local data on your device is protected by:
-                • iOS encryption (if enabled on your device)
-                • iOS app sandboxing
-                • Your device passcode/biometric lock
+                - iOS encryption (if enabled on your device)
+                - iOS app sandboxing
+                - Your device passcode/biometric lock
 
                 6.3 Best practices:
-                • Use a strong device passcode
-                • Enable device encryption
-                • Don't store sensitive info in the App's manual entry fields
+                - Use a strong device passcode
+                - Enable device encryption
+                - Don't store sensitive info in the App's manual entry fields
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **7. CHILDREN'S PRIVACY**
 
@@ -694,17 +694,17 @@ struct PrivacyPolicyView: View {
 
                 7.3 Options trading is not appropriate for minors.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **8. DATA DELETION**
 
                 8.1 To delete all your data:
-                • Delete the App from your device
-                • All local data is automatically deleted
+                - Delete the App from your device
+                - All local data is automatically deleted
 
                 8.2 Since we don't collect data remotely, there's nothing for us to delete on our end.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **9. INTERNATIONAL USERS**
 
@@ -715,11 +715,11 @@ struct PrivacyPolicyView: View {
                 9.3 No data crosses borders because no data is transmitted.
 
                 9.4 GDPR, CCPA, and other privacy laws:
-                • Fully compliant because we collect nothing
-                • No data = no privacy concerns
-                • No need for consent forms or opt-outs
+                - Fully compliant because we collect nothing
+                - No data = no privacy concerns
+                - No need for consent forms or opt-outs
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **10. CHANGES TO THIS POLICY**
 
@@ -731,30 +731,30 @@ struct PrivacyPolicyView: View {
 
                 10.4 Material changes will be communicated clearly.
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **11. YOUR RIGHTS**
 
                 11.1 Since we don't collect data, there's no data to:
-                • Access (it's on your device already)
-                • Correct (you control it locally)
-                • Delete (delete the App)
-                • Export (it's in your device's storage)
-                • Opt-out of (there's no collection to opt out of)
+                - Access (it's on your device already)
+                - Correct (you control it locally)
+                - Delete (delete the App)
+                - Export (it's in your device's storage)
+                - Opt-out of (there's no collection to opt out of)
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **12. CONTACT US**
 
                 12.1 If you have questions about this Privacy Policy:
-                • Use the App's support channels
-                • We'll respond as quickly as possible
+                - Use the App's support channels
+                - We'll respond as quickly as possible
 
                 12.2 For Apple-related privacy concerns:
-                • Contact Apple directly
-                • Review Apple's Privacy Policy
+                - Contact Apple directly
+                - Review Apple's Privacy Policy
 
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                ------------------------------------
 
                 **SUMMARY**
 
@@ -792,36 +792,36 @@ struct RiskDisclaimerView: View {
                     .fontWeight(.bold)
 
                 Text("""
-                **⚠️ TRADING INVOLVES SUBSTANTIAL RISK OF LOSS ⚠️**
+                **WARNING: TRADING INVOLVES SUBSTANTIAL RISK OF LOSS WARNING:**
 
                 **Options Trading Risks:**
-                • Options can expire worthless
-                • High volatility can cause rapid losses
-                • Leverage amplifies both gains and losses
-                • Time decay (theta) works against option buyers
-                • Implied volatility crush can cause instant losses
+                - Options can expire worthless
+                - High volatility can cause rapid losses
+                - Leverage amplifies both gains and losses
+                - Time decay (theta) works against option buyers
+                - Implied volatility crush can cause instant losses
 
                 **VXX-Specific Risks:**
-                • VXX is a volatility product, not a stock
-                • Subject to contango and roll costs
-                • Can lose value even when VIX rises
-                • Highly volatile and unpredictable
-                • Not suitable for long-term holding
+                - VXX is a volatility product, not a stock
+                - Subject to contango and roll costs
+                - Can lose value even when VIX rises
+                - Highly volatile and unpredictable
+                - Not suitable for long-term holding
 
                 **System Limitations:**
-                • Past performance does not guarantee future results
-                • Win rates are historical examples, not promises
-                • Market conditions change constantly
-                • No system eliminates risk
-                • You can lose your entire investment
+                - Past performance does not guarantee future results
+                - Win rates are historical examples, not promises
+                - Market conditions change constantly
+                - No system eliminates risk
+                - You can lose your entire investment
 
                 **Your Responsibility:**
-                • Only trade with risk capital you can afford to lose
-                • Understand options before trading them
-                • Start small and scale gradually
-                • Use proper position sizing
-                • Never risk more than 1-2% per trade
-                • Consult a licensed financial advisor
+                - Only trade with risk capital you can afford to lose
+                - Understand options before trading them
+                - Start small and scale gradually
+                - Use proper position sizing
+                - Never risk more than 1-2% per trade
+                - Consult a licensed financial advisor
 
                 This educational tool does not reduce trading risk. You are 100% responsible for your \
                 trading decisions and any losses incurred.

@@ -17,8 +17,8 @@ struct ArrowSignal {
 
         var displayName: String {
             switch self {
-            case .bullish: return "Bullish Arrow ↑"
-            case .bearish: return "Bearish Arrow ↓"
+            case .bullish: return "Bullish Arrow (Up)"
+            case .bearish: return "Bearish Arrow (Down)"
             }
         }
 
@@ -59,10 +59,10 @@ struct ArrowSignal {
 
         var displayName: String {
             switch self {
-            case .none: return "No Confirmation ❌"
-            case .standard: return "Standard (200%+) ✅"
-            case .institutional: return "Institutional (300%+) ⭐"
-            case .majorInstitution: return "Major Institution (400%+) ⭐⭐"
+            case .none: return "No Confirmation"
+            case .standard: return "Standard (200%+) (Confirmed)"
+            case .institutional: return "Institutional (300%+) (Rating: 1)"
+            case .majorInstitution: return "Major Institution (400%+) (Rating: 2)"
             }
         }
     }
@@ -95,7 +95,7 @@ struct ArrowSignal {
 
     // MARK: - Time Window Context (Reliability Factor)
     enum TimeWindow {
-        case institutionalFlow  // 3:45-4:10 PM - 90% reliability ⭐⭐⭐
+        case institutionalFlow  // 3:45-4:10 PM - 90% reliability (Rating: 3)
         case morningFade        // 9:50-10:15 AM - 85% reliability
         case powerHourCrush     // 3:10-3:25 PM - 80% reliability
         case afternoonFlex      // 1:30-3:45 PM - real tape can build before anchor windows
@@ -167,9 +167,9 @@ struct ArrowSignal {
 
         var displayName: String {
             switch self {
-            case .strong: return "STRONG ⭐⭐⭐"
-            case .moderate: return "MODERATE ⭐⭐"
-            case .weak: return "WEAK (Skip) ❌"
+            case .strong: return "STRONG (Rating: 3)"
+            case .moderate: return "MODERATE (Rating: 2)"
+            case .weak: return "WEAK (Skip)"
             }
         }
 

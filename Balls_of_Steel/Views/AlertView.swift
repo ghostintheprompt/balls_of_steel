@@ -55,7 +55,7 @@ struct AlertView: View {
                     
                     Spacer()
                     
-                    Text("R:R \(signal.riskRewardRatio, specifier: "%.1f") • \(signal.confidence * 100, specifier: "%.0f")% confidence")
+                    Text("R:R \(signal.riskRewardRatio, specifier: "%.1f") | \(signal.confidence * 100, specifier: "%.0f")% confidence")
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(signal.riskRewardRatio >= 2.0 ? DesignSystem.bullishColor : DesignSystem.warningColor)
                 }

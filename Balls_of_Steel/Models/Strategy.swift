@@ -2,7 +2,7 @@ import Foundation
 
 enum Strategy: String, CaseIterable {
     // v3.0: Institutional Flow Edition (FREE)
-    case vxxInstitutionalFlow = "VXX Institutional Flow (3:45 PM)" // 90% reliability ⭐⭐⭐
+    case vxxInstitutionalFlow = "VXX Institutional Flow (3:45 PM)" // 90% reliability (Rating: 3)
 
     // VXX-specific strategies (5 core VXX strategies)
     case vxxFadeSetup = "VXX Fade Setup"
@@ -362,7 +362,7 @@ enum Strategy: String, CaseIterable {
     var historicalWinRate: Double {
         switch self {
         // v3.0: Institutional Flow (FREE) - The Supreme Window
-        case .vxxInstitutionalFlow: return 0.90      // 90% reliability ⭐⭐⭐
+        case .vxxInstitutionalFlow: return 0.90      // 90% reliability (Rating: 3)
 
         // VXX strategies (core 5)
         case .vxxFadeSetup: return 0.75              // Strong pattern-based fade
