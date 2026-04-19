@@ -177,7 +177,7 @@ struct OnboardingView: View {
 
                 RealityCheckPoint(
                     icon: "person.fill.checkmark",
-                    text: "74 on the Series 7. NYC cold caller. **This is a learning tool.**",
+                    text: "**Disciplined Analysis.** Built for traders who value systematic execution over emotional impulse.",
                     color: .purple
                 )
             }

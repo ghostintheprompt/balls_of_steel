@@ -5,7 +5,7 @@ struct AppConfig {
     // API Configuration
     static let baseURL = "https://api.schwab.com/v1"
     static let streamURL = "wss://api.schwab.com/v1/stream"
-    static let clientId = "YOUR_SCHWAB_CLIENT_ID" // Replace with actual client ID
+    static let clientId = "" // Required for Schwab API connection
     
     // Strategy Parameters
     struct Thresholds {
@@ -112,7 +112,7 @@ struct AppConfig {
     }
 
     struct Testing {
-        static let nextTradingTestDate = "April 8, 2026"
+        static let nextTradingTestDate = "v1.0.0 Release"
     }
 
     struct CloseManagement {

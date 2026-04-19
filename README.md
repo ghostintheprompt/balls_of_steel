@@ -1,51 +1,54 @@
 # Balls of Steel
 
-Native macOS trading desk for discretionary SPY and VXX options trading.
+<p align="center">
+  <img src="balls_of_steel.png" width="256" height="256">
+</p>
 
-Balls of Steel is a local-first desk for traders who require precise timing, clear safeguards, and rigorous entry/exit discipline. It is designed to bridge the gap between chart analysis and disciplined execution, focusing on the high-probability windows around the market open and close.
+![License](https://img.shields.io/github/license/ghostintheprompt/balls-of-steel)
+![Platform](https://img.shields.io/badge/platform-macOS-blue)
+![Release](https://img.shields.io/github/v/release/ghostintheprompt/balls-of-steel)
 
-## Core Capabilities
+Native macOS trading desk for discretionary SPY and VXX options trading. Built for disciplined traders who value systematic execution over emotional impulse.
 
-### Setup Validation
-- Native macOS interface for SPY and VXX setup monitoring.
-- Manual-first data entry: Input chart context directly from your primary brokerage platform (e.g., ThinkOrSwim, Schwab).
-- Multi-factor validation: Automated checks for time windows, volume confirmation, VWAP alignment, and volatility context.
+Balls of Steel is a local-first, manual-entry desk designed to bridge the gap between chart analysis and rigorous trade management. It focuses on high-probability institutional windows around the market open and close.
 
-### Signal Intelligence
-- Direction-aware alerting system (WATCH, ENTRY, EXIT).
-- Real-time trade monitoring with dynamic targets and stops.
-- Built-in timing safeguards and close-management alerts to prevent emotional overrides.
+## Core Features
 
-### Execution Discipline
-- Designed for aggressive, small-position trading with strict risk management.
-- Local-first architecture ensures data privacy and zero latency from external feeds.
-- Explicit focus on setup detection rather than automated black-box execution.
+| Feature | Description |
+| :--- | :--- |
+| **Setup Validation** | Multi-factor checks for time windows, volume, VWAP, and volatility. |
+| **Signal Intelligence** | Direction-aware alerting (WATCH, ENTRY, EXIT) with real-time monitoring. |
+| **Prompt Coach** | Context-aware AI analysis prompts pre-filled with your manual market data. |
+| **Close Management** | Automated discipline warnings and hard-exit rules for the market close. |
+| **Local-First** | Zero telemetry. Zero latency. All data stays on your hardware. |
 
-## Operational Workflow
+## Installation
 
-1. Analysis: Perform technical analysis on your primary brokerage platform.
-2. Integration: Feed the current chart state into the desk via the Manual Feed.
-3. Validation: The desk validates the setup against institutional flow requirements and historical reliability.
-4. Action: Utilize the signal system to confirm entry or exit timing.
-5. Management: Monitor active trades with automated discipline warnings and hard-exit rules.
+### DMG Download
+1. Go to the [Releases](https://github.com/ghostintheprompt/balls-of-steel/releases) page.
+2. Download the latest `Balls_of_Steel.dmg`.
+3. Drag `Balls of Steel.app` to your Applications folder.
 
-## Technical Requirements
+### Build from Source
+1. Clone the repository: `git clone https://github.com/ghostintheprompt/balls-of-steel.git`
+2. Open `Balls_of_Steel.xcodeproj` in Xcode.
+3. Select the **Balls_of_Steel** scheme and target **My Mac**.
+4. Press `Cmd + R` to Build and Run.
 
-### Installation
-1. Open Balls_of_Steel.xcodeproj in Xcode.
-2. Select the Balls_of_Steel scheme.
-3. Target: My Mac.
-4. Build and Run.
+## Usage
 
-## Documentation
+1. **Analyze:** Perform technical analysis on your primary brokerage platform (ThinkOrSwim, Schwab, etc.).
+2. **Input:** Feed the current chart state (Price, Volume%, VIX, Arrow) into the **Manual** tab.
+3. **Validate:** Check the **Desk** or **VXX** dashboards for setup validation and signal strength.
+4. **Prompt:** Use the **Prompt Coach** to copy pre-filled analysis prompts into your AI of choice.
+5. **Execute:** Make your decision and execute manually on your primary platform.
+6. **Manage:** Monitor active risk with the **Live** tab and follow close-management alerts.
 
-- [Documentation Index](docs/README.md)
-- [ThinkOrSwim Integration Guide](docs/thinkorswim_complete_setup_2026.md)
-- [Trading Philosophy and Discipline](docs/vxx_trading_philosophy_discipline.md)
-- [System Prompts and Checklists](docs/vxx_trading_prompts_2026.md)
+## Privacy Statement
 
-## Principles
+**Local-only. No telemetry. No bullshit.**
+Balls of Steel does not collect, store, or transmit any of your personal information or trading data. All data entered manually remains in your macOS local storage and is deleted when the app is removed.
 
-- Local-first: All data and logic remain on your hardware.
-- Manual-first: Maintains the trader's connection to the tape; no automated orders.
-- Integrity: No black-box indicators; every signal is based on transparent, verifiable criteria.
+---
+
+Built by MDRN Corp — [mdrn.app](https://ghostintheprompt.com/articles/balls-of-steel)
