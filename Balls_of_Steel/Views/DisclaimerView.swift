@@ -42,7 +42,7 @@ struct FirstLaunchDisclaimerView: View {
             )
             .multilineTextAlignment(.center)
 
-            Text("Read this carefully before you touch the tape.")
+            Text("Built for disciplined traders. Use with caution.")
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.bearishColor)
         }
@@ -56,10 +56,10 @@ struct FirstLaunchDisclaimerView: View {
             color: .blue
         ) {
             Text("""
-            This app is designed as an educational tool to teach the VXX trading system. \
+            This app is designed as an educational tool for SPY and VXX trading analysis. \
             It does NOT provide live trading, automated execution, or real-time market data.
 
-            You must manually enter data from your own trading platform and execute all trades yourself.
+            You must manually enter data from your primary brokerage platform and execute all trades yourself.
             """)
         }
     }
@@ -98,8 +98,6 @@ struct FirstLaunchDisclaimerView: View {
             - Strategies shown are examples, not recommendations
             - Consult a licensed financial advisor before trading
             - You are solely responsible for your trading decisions
-
-            The creator got a 74 on the Series 7. This is a learning tool, not advice.
             """)
         }
     }
@@ -293,7 +291,7 @@ struct AboutLegalView: View {
                         Text("Institutional Flow Edition")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Text("\nCreated by someone who got a 74 on the Series 7. NYC cold caller energy. Educational tool for learning the VXX system.")
+                        Text("\nFree and Open Source. Educational tool for learning systematic SPY and VXX trading.")
                             .font(.caption)
                     }
                     .padding(.vertical, 8)
@@ -452,15 +450,11 @@ struct TermsOfServiceView: View {
 
                 ------------------------------------
 
-                **8. PURCHASES & REFUNDS**
+                **8. NO PURCHASES**
 
-                8.1 In-app purchases are processed through Apple's App Store.
+                8.1 The App is free and open source.
 
-                8.2 Purchases are final and non-refundable except as required by law.
-
-                8.3 Apple's refund policy applies. Contact Apple for refund requests.
-
-                8.4 We do not have access to your payment information.
+                8.2 There are no in-app purchases or subscriptions.
 
                 ------------------------------------
 
@@ -536,7 +530,7 @@ struct TermsOfServiceView: View {
                 - You will execute all trades manually on your own platform
                 - You accept full responsibility for your trading decisions
 
-                74 on the Series 7. This is a learning tool. Trade at your own risk.
+                Built for disciplined traders. Trade at your own risk.
                 """)
                 .font(.subheadline)
             }
@@ -607,14 +601,13 @@ struct PrivacyPolicyView: View {
                 **2. LOCAL STORAGE ONLY**
 
                 2.1 The App stores data locally on YOUR device using:
-                - UserDefaults (iOS system storage)
+                - UserDefaults (macOS system storage)
                 - Local file storage
                 - No cloud sync
                 - No remote servers
 
                 2.2 Data stored locally includes:
                 - Manual data entries (VXX price, volume, etc.)
-                - Unlock status (if you purchased full version)
                 - App preferences (haptic settings, platform choice)
                 - Onboarding completion status
 
@@ -636,11 +629,6 @@ struct PrivacyPolicyView: View {
                 - External APIs for data collection
                 - Tracking pixels or beacons
 
-                3.2 The ONLY third-party service we use:
-                - Apple's StoreKit for in-app purchases
-                - Managed entirely by Apple
-                - We never see your payment information
-
                 ------------------------------------
 
                 **4. NO ACCOUNT REQUIRED**
@@ -655,50 +643,35 @@ struct PrivacyPolicyView: View {
 
                 ------------------------------------
 
-                **5. APPLE APP STORE**
+                **5. DATA SECURITY**
 
-                5.1 In-App Purchases:
-                - Processed entirely through Apple's App Store
-                - We never see your payment information
-                - Apple's privacy policy applies to purchase data
-                - Apple may collect transaction information
+                5.1 Since we don't collect data, there's no data to secure on our end.
 
-                5.2 Apple ID:
-                - Required for App Store downloads
-                - Managed by Apple, not us
-                - Subject to Apple's Privacy Policy
-
-                ------------------------------------
-
-                **6. DATA SECURITY**
-
-                6.1 Since we don't collect data, there's no data to secure on our end.
-
-                6.2 Local data on your device is protected by:
-                - iOS encryption (if enabled on your device)
-                - iOS app sandboxing
+                5.2 Local data on your device is protected by:
+                - macOS encryption (if enabled on your device)
+                - macOS app sandboxing
                 - Your device passcode/biometric lock
 
-                6.3 Best practices:
+                5.3 Best practices:
                 - Use a strong device passcode
                 - Enable device encryption
                 - Don't store sensitive info in the App's manual entry fields
 
                 ------------------------------------
 
-                **7. CHILDREN'S PRIVACY**
+                **6. CHILDREN'S PRIVACY**
 
-                7.1 The App is rated 17+ and is not intended for children under 17.
+                6.1 The App is rated 17+ and is not intended for children under 17.
 
-                7.2 We do not knowingly collect information from anyone under 17.
+                6.2 We do not knowingly collect information from anyone under 17.
 
-                7.3 Options trading is not appropriate for minors.
+                6.3 Options trading is not appropriate for minors.
 
                 ------------------------------------
 
-                **8. DATA DELETION**
+                **7. DATA DELETION**
 
-                8.1 To delete all your data:
+                7.1 To delete all your data:
                 - Delete the App from your device
                 - All local data is automatically deleted
 
@@ -706,36 +679,36 @@ struct PrivacyPolicyView: View {
 
                 ------------------------------------
 
-                **9. INTERNATIONAL USERS**
+                **8. INTERNATIONAL USERS**
 
-                9.1 The App can be used worldwide.
+                8.1 The App can be used worldwide.
 
-                9.2 All data stays on YOUR device, regardless of location.
+                8.2 All data stays on YOUR device, regardless of location.
 
-                9.3 No data crosses borders because no data is transmitted.
+                8.3 No data crosses borders because no data is transmitted.
 
-                9.4 GDPR, CCPA, and other privacy laws:
+                8.4 GDPR, CCPA, and other privacy laws:
                 - Fully compliant because we collect nothing
                 - No data = no privacy concerns
                 - No need for consent forms or opt-outs
 
                 ------------------------------------
 
-                **10. CHANGES TO THIS POLICY**
+                **9. CHANGES TO THIS POLICY**
 
-                10.1 We may update this Privacy Policy from time to time.
+                9.1 We may update this Privacy Policy from time to time.
 
-                10.2 Changes will be posted within the App.
+                9.2 Changes will be posted within the App.
 
-                10.3 Continued use after changes constitutes acceptance.
+                9.3 Continued use after changes constitutes acceptance.
 
-                10.4 Material changes will be communicated clearly.
+                9.4 Material changes will be communicated clearly.
 
                 ------------------------------------
 
-                **11. YOUR RIGHTS**
+                **10. YOUR RIGHTS**
 
-                11.1 Since we don't collect data, there's no data to:
+                10.1 Since we don't collect data, there's no data to:
                 - Access (it's on your device already)
                 - Correct (you control it locally)
                 - Delete (delete the App)
@@ -744,15 +717,11 @@ struct PrivacyPolicyView: View {
 
                 ------------------------------------
 
-                **12. CONTACT US**
+                **11. CONTACT US**
 
-                12.1 If you have questions about this Privacy Policy:
+                11.1 If you have questions about this Privacy Policy:
                 - Use the App's support channels
                 - We'll respond as quickly as possible
-
-                12.2 For Apple-related privacy concerns:
-                - Contact Apple directly
-                - Review Apple's Privacy Policy
 
                 ------------------------------------
 
@@ -764,7 +733,7 @@ struct PrivacyPolicyView: View {
 
                 **Who we share with:** NO ONE
 
-                **Third-party services:** Apple StoreKit only (for purchases)
+                **Third-party services:** NONE
 
                 **Analytics/tracking:** NONE
 
@@ -772,7 +741,7 @@ struct PrivacyPolicyView: View {
 
                 This is the simplest privacy policy you'll ever read because we genuinely don't collect your data. Your trading strategies, manual entries, and app usage stay private on YOUR device.
 
-                74 on the Series 7. Your privacy is respected. Trade with confidence.
+                Your privacy is respected. Trade with confidence.
                 """)
                 .font(.subheadline)
             }

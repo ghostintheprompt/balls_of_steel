@@ -95,7 +95,7 @@ struct TestSessionBanner: View {
                     BallsOfSteelMark(size: 62)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("TEST SESSION")
+                        Text("MDRN RELEASE")
                             .font(DesignSystem.Typography.labelFont)
                             .tracking(1.2)
                             .foregroundColor(DesignSystem.mutedText)
@@ -107,7 +107,7 @@ struct TestSessionBanner: View {
 
                 Spacer()
 
-                Text("OPEN FIRST")
+                Text("LOCAL FIRST")
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.1)
                     .padding(.horizontal, 10)
