@@ -8,6 +8,7 @@ SCHEME="Balls_of_Steel"
 CONFIGURATION="Release"
 BUILD_DIR="./Builds"
 DMG_NAME="${APP_NAME}.dmg"
+ICON_PATH="balls_of_steel.png"
 
 echo "🚀 Starting build for ${APP_NAME}..."
 
@@ -35,6 +36,15 @@ echo "📦 Creating DMG..."
 TMP_DIR=$(mktemp -d)
 cp -R "$APP_PATH" "$TMP_DIR/"
 ln -s /Applications "$TMP_DIR/Applications"
+
+# Copy Documentation
+cp -R docs "$TMP_DIR/Documentation"
+
+# Copy Icon if it exists
+if [ -f "$ICON_PATH" ]; then
+    cp "$ICON_PATH" "$TMP_DIR/.VolumeIcon.png"
+    cp "$ICON_PATH" "$TMP_DIR/icon.png"
+fi
 
 # Remove existing DMG if it exists
 rm -f "${DMG_NAME}"

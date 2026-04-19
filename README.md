@@ -35,6 +35,9 @@ Balls of Steel is a local-first, manual-entry desk designed to bridge the gap be
 3. Select the **Balls_of_Steel** scheme and target **My Mac**.
 4. Press `Cmd + R` to Build and Run.
 
+## Documentation
+- [Broker Integration & Setup Guide](docs/SETUP.md)
+
 ## Usage
 
 1. **Analyze:** Perform technical analysis on your primary brokerage platform (ThinkOrSwim, Schwab, etc.).
