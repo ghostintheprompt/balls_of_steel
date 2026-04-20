@@ -1,4 +1,6 @@
-<img src="balls_of_steel.png" width="200">
+<p align="center">
+  <img src="balls_of_steel.png" width="520">
+</p>
 
 # Balls of Steel
 Native macOS trading desk for discretionary SPY and VXX options trading. — v1.0
