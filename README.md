@@ -1,14 +1,11 @@
-# Balls of Steel
+<img src="balls_of_steel.png" width="200">
 
-<p align="center">
-  <img src="balls_of_steel.png" width="256" height="256">
-</p>
+# Balls of Steel
+Native macOS trading desk for discretionary SPY and VXX options trading. — v1.0
 
 ![License](https://img.shields.io/github/license/ghostintheprompt/balls-of-steel)
 ![Platform](https://img.shields.io/badge/platform-macOS-blue)
 ![Release](https://img.shields.io/github/v/release/ghostintheprompt/balls-of-steel)
-
-Native macOS trading desk for discretionary SPY and VXX options trading. Built for disciplined traders who value systematic execution over emotional impulse.
 
 Balls of Steel is a local-first, manual-entry desk designed to bridge the gap between chart analysis and rigorous trade management. It focuses on high-probability institutional windows around the market open and close.
 
