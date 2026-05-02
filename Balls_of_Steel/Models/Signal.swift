@@ -13,6 +13,8 @@ struct Signal: Identifiable {
     let setupQuality: Strategy.SetupQuality
     let positionSizePercent: Double
     let kind: SignalKind
+    let vix: Double
+    let vxxVixRatio: Double
     
     var winRate: Double {
         strategy.historicalWinRate
@@ -143,7 +145,9 @@ extension Strategy {
                 confidence: 0.75,
                 setupQuality: .good,
                 positionSizePercent: 2.0,
-                kind: .entry
+                kind: .entry,
+                vix: data.vix,
+                vxxVixRatio: data.vxxVixRatioValue
             )
 
         case .vwapReversal:
@@ -164,7 +168,9 @@ extension Strategy {
                 confidence: 0.70,
                 setupQuality: .good,
                 positionSizePercent: 2.0,
-                kind: .entry
+                kind: .entry,
+                vix: data.vix,
+                vxxVixRatio: data.vxxVixRatioValue
             )
 
         case .powerHour:
@@ -185,7 +191,9 @@ extension Strategy {
                 confidence: 0.80,
                 setupQuality: .perfect,
                 positionSizePercent: 2.5,
-                kind: .entry
+                kind: .entry,
+                vix: data.vix,
+                vxxVixRatio: data.vxxVixRatioValue
             )
 
         case .panicReversal:
@@ -207,7 +215,9 @@ extension Strategy {
                 confidence: 0.65,
                 setupQuality: .good,
                 positionSizePercent: 1.5,
-                kind: .entry
+                kind: .entry,
+                vix: data.vix,
+                vxxVixRatio: data.vxxVixRatioValue
             )
         default:
             // Handle all other strategies with default values

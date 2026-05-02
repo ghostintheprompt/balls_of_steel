@@ -513,7 +513,7 @@ class PromptCoachViewModel: ObservableObject {
     func checkConditionalPrompts() {
         // Check VIX level from manual entry
         let vix = manualDataEntry?.vixLevel ?? 0
-        let losingStreak = 0 // User can track manually
+        let losingStreak = journal.calculateLosingStreak()
 
         conditionalPrompts = promptLibrary.checkConditionalPrompts(
             vix: vix,
@@ -538,25 +538,49 @@ class PromptCoachViewModel: ObservableObject {
         guard let entry = manualDataEntry else {
             return prompt.template + "\n\nWARNING: No manual data entered. Go to Manual Data Entry to input current market conditions."
         }
+        
+        // Convert MarketDataEntry to MarketData for the prompt system
+        // This leverages the centralized logic in PromptSystem
+        let marketData = MarketData(
+            quote: Quote(
+                symbol: "VXX", // Assuming VXX as primary focus
+                price: entry.price,
+                change: 0,
+                changePercent: 0,
+                previousClose: entry.price / (1 + entry.volumePercent/100), // Mocked for conversion
+                timestamp: entry.timestamp,
+                recentCandles: []
+            ),
+            vwap: entry.vwapPosition == .above ? entry.price * 0.99 : entry.price * 1.01,
+            volume: Int(entry.volumePercent * 10000), // Scaled
+            trades: 0,
+            ivRank: 0,
+            daysToEarnings: 0,
+            hasFundamentalNews: false,
+            vix: entry.vixLevel,
+            vixDailyChange: 0,
+            spyDailyChange: 0,
+            newsRisk: .none,
+            hasZDTEOptions: false,
+            averageVolume: 1000000,
+            averageOptionsVolume: 0,
+            optionsVolume: 0,
+            rsi: 0,
+            emaBreakout: false,
+            vwapBreakout: false,
+            isWeeklyExpiration: false,
+            otmProbability: 0,
+            minutesSinceMarketOpen: 0,
+            marketOpen: 0,
+            detectedPattern: nil,
+            technicalIndicators: nil,
+            detectedArrowSignal: nil
+        )
 
-        return generatePromptWithManualData(prompt, entry: entry)
-    }
+        let stats = TradingStats.current()
+        var filledPrompt = prompt.generateWithLiveData(marketData: marketData, tradingStats: stats)
 
-    private func generatePromptWithManualData(_ prompt: TradingPrompt, entry: MarketDataEntry) -> String {
-        var filledPrompt = prompt.template
-
-        // Replace placeholders with manual entry data
-        let priceValue = String(format: "$%.2f", entry.price)
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[VXX_PRICE]", with: priceValue)
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[SPY_PRICE]", with: priceValue)
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[VIX_LEVEL]", with: String(format: "%.2f", entry.vixLevel))
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[VOLUME_PCT]", with: String(format: "%.0f%%", entry.volumePercent))
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[VWAP_POSITION]", with: entry.vwapPosition.displayName)
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[ARROW_SIGNAL]", with: entry.arrowSignal.displayName)
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[TIME_WINDOW]", with: entry.timeWindow.displayName)
-        filledPrompt = filledPrompt.replacingOccurrences(of: "[ENTRY_TIME]", with: formatTime(entry.timestamp))
-
-        // Add volume classification
+        // Add volume classification (specialized for manual entry context)
         let volumeLevel = volumeClassification(entry.volumePercent)
         filledPrompt = filledPrompt.replacingOccurrences(of: "[VOLUME_LEVEL]", with: volumeLevel)
 
@@ -607,9 +631,6 @@ class PromptCoachViewModel: ObservableObject {
         #else
         UIPasteboard.general.string = filledPrompt
         #endif
-
-        // Show success feedback
-        // Could trigger a toast/alert here
     }
 
     func markAsUsed(_ prompt: TradingPrompt) {
@@ -618,7 +639,6 @@ class PromptCoachViewModel: ObservableObject {
             at: 0
         )
 
-        // Clear active prompt
         if activePrompt?.id == prompt.id {
             activePrompt = nil
         }

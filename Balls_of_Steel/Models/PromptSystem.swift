@@ -140,8 +140,10 @@ struct TradingPrompt {
                     let volumePct = (Double(data.volume) / Double(data.averageVolume)) * 100
                     filledPrompt = filledPrompt.replacingOccurrences(of: "[VOLUME_PCT]", with: String(format: "%.0f%%", volumePct))
                 case .vxxVsVWAP:
-                    let position = data.currentPrice > data.vwap ? "ABOVE" : "BELOW"
-                    filledPrompt = filledPrompt.replacingOccurrences(of: "[VXX_VS_VWAP]", with: position)
+                    let diff = data.currentPrice - data.vwap
+                    let percent = (diff / data.vwap) * 100
+                    let position = diff > 0 ? "ABOVE" : "BELOW"
+                    filledPrompt = filledPrompt.replacingOccurrences(of: "[VXX_VS_VWAP]", with: "\(position) ($\(String(format: "%.2f", abs(diff))) / \(String(format: "%.1f%%", abs(percent))))")
                 case .sma20Position, .sma50Position, .supportLevel, .resistanceLevel:
                     if let indicators = data.technicalIndicators {
                         switch field {
@@ -158,6 +160,12 @@ struct TradingPrompt {
                 default:
                     break
                 }
+            }
+            
+            // Handle ratio calculation tag
+            if data.vix > 0 {
+                let ratio = data.currentPrice / data.vix
+                filledPrompt = filledPrompt.replacingOccurrences(of: "[CALCULATE: VXX / VIX]", with: String(format: "%.3f", ratio))
             }
         }
 
@@ -182,19 +190,38 @@ struct TradingStats {
     let dailyPnL: Double
     let weeklyPnL: Double
     let monthlyPnL: Double
+    let losingStreak: Int
 
     var winRate: Double {
         totalTrades > 0 ? Double(wins) / Double(totalTrades) : 0
     }
 
-    var losingStreak: Int {
-        // Calculate current losing streak
-        0 // Would be calculated from trade history
+    @MainActor
+    static func current() -> TradingStats {
+        let journal = TradeJournal.shared
+        let risk = DailyRiskManager.shared
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        let todayEntries = journal.entries.filter { Calendar.current.startOfDay(for: $0.timestamp) == today }
+        
+        let wins = todayEntries.filter { $0.outcome == "win" }.count
+        let losses = todayEntries.filter { $0.outcome == "loss" }.count
+        
+        return TradingStats(
+            totalTrades: todayEntries.count,
+            wins: wins,
+            losses: losses,
+            dailyPnL: risk.dailyPnL,
+            weeklyPnL: 0, // Would need weekly filter
+            monthlyPnL: 0, // Would need monthly filter
+            losingStreak: journal.calculateLosingStreak()
+        )
     }
 }
 
 // MARK: - Prompt Library
 class PromptLibrary {
+...
     static let shared = PromptLibrary()
 
     // All trading prompts

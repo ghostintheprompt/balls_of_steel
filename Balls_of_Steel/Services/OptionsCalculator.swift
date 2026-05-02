@@ -65,10 +65,11 @@ class OptionsCalculator {
         case let panic as PanicParams:
             return stockPrice * (1 + panic.stopLoss/100)
         default:
-            fatalError("Unknown strategy parameters")
+            // Elite Fallback: Use standard 1% stop if strategy is unknown
+            return stockPrice * 0.99
         }
     }
-    
+
     private func calculateTargetPrice(_ stockPrice: Double, params: any StrategyParameters) -> Double {
         switch params {
         case let gap as GapAndGoParams:
@@ -80,9 +81,11 @@ class OptionsCalculator {
         case let panic as PanicParams:
             return stockPrice * (1 - panic.target/100)
         default:
-            fatalError("Unknown strategy parameters")
+            // Elite Fallback: Use standard 2% target if strategy is unknown
+            return stockPrice * 1.02
         }
     }
+
 }
 
 struct OptionsEntry {

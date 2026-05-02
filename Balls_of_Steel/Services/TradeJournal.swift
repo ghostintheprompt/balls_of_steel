@@ -35,8 +35,8 @@ class TradeJournal: ObservableObject {
             strategy: signal.strategy.rawValue,
             entryPrice: signal.entry,
             vwap: bands.vwap,
-            vxxVixRatio: signal.entry > 0 ? signal.entry / max(bands.vwap, 1) : 0,
-            vixLevel: 0,
+            vxxVixRatio: signal.vxxVixRatio,
+            vixLevel: signal.vix,
             tradingWindow: TimeManager.shared.activeWindow?.displayName ?? "Outside window",
             idempotencyKey: idempotencyKey,
             exitPrice: nil,
@@ -60,6 +60,19 @@ class TradeJournal: ObservableObject {
 
     var lastEntry: JournalEntry? { entries.first }
 
+    func calculateLosingStreak() -> Int {
+        var streak = 0
+        for entry in entries {
+            if entry.outcome == "loss" {
+                streak += 1
+            } else if entry.outcome == "win" {
+                break
+            }
+            // Ignore "open" trades for streak calculation
+        }
+        return streak
+    }
+
     func postTradeAnalysisContext() -> String {
         guard let last = lastEntry else { return "" }
         let pnlStr = last.realizedPnL.map { String(format: "%+.2f", $0) } ?? "open"
@@ -67,7 +80,7 @@ class TradeJournal: ObservableObject {
         Trade Journal - Last Entry:
         Symbol: \(last.symbol) | Strategy: \(last.strategy)
         Entry: $\(String(format: "%.2f", last.entryPrice)) | VWAP: $\(String(format: "%.2f", last.vwap))
-        Window: \(last.tradingWindow) | VXX/VIX ratio: \(String(format: "%.3f", last.vxxVixRatio))
+        Window: \(last.tradingWindow) | VXX/VIX ratio: \(String(format: "%.3f", last.vxxVixRatio)) | VIX: \(String(format: "%.2f", last.vixLevel))
         Outcome: \(last.outcome.uppercased()) | P&L: \(pnlStr)
         Time: \(DateFormatter.localizedString(from: last.timestamp, dateStyle: .none, timeStyle: .short))
         """
