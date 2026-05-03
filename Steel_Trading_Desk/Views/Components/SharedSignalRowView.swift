@@ -2,31 +2,31 @@ import SwiftUI
 
 struct SharedSignalRowView: View {
     let signal: Signal
-    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         InfoCard(glow: kindColor.opacity(0.18)) {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top) {
-                    HStack(alignment: .top, spacing: 12) {
+                    HStack(alignment: .top, spacing: 14) {
                         DeskSignalGlyph(
                             symbol: signal.symbol,
                             accent: kindColor,
                             secondaryAccent: directionColor
                         )
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
                                 Text(signal.symbol)
                                     .font(DesignSystem.Typography.titleFont)
+                                    .fontWeight(.black)
                                     .foregroundColor(DesignSystem.primaryText)
 
                                 Text(signal.kind.displayName.uppercased())
                                     .font(DesignSystem.Typography.labelFont)
-                                    .tracking(1)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(kindColor.opacity(0.15))
+                                    .tracking(1.5)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(kindColor.opacity(0.18))
                                     .overlay(
                                         Capsule().stroke(kindColor.opacity(0.4), lineWidth: 1)
                                     )
@@ -34,35 +34,36 @@ struct SharedSignalRowView: View {
                                     .foregroundColor(kindColor)
                             }
 
-                            HStack(spacing: 8) {
+                            HStack(spacing: 10) {
                                 StrategyBadge(strategy: signal.strategy)
                                 DirectionPill(direction: signal.direction)
                             }
 
                             Text(signalSummary)
-                                .font(DesignSystem.Typography.captionFont)
+                                .font(DesignSystem.Typography.bodyFont)
                                 .foregroundColor(DesignSystem.mutedText)
+                                .italic()
                         }
                     }
 
                     Spacer()
 
-                    VStack(alignment: .trailing, spacing: 8) {
+                    VStack(alignment: .trailing, spacing: 10) {
                         Text(signal.timestamp, style: .time)
-                            .font(DesignSystem.Typography.captionFont)
-                            .foregroundColor(DesignSystem.mutedText)
-                        Text("R:R")
                             .font(DesignSystem.Typography.labelFont)
-                            .tracking(1)
                             .foregroundColor(DesignSystem.mutedText)
-                        Text("\(signal.riskRewardRatio, specifier: "%.1f")")
-                            .font(DesignSystem.Typography.monospacedFont)
-                            .foregroundColor(DesignSystem.primaryText)
-                        Text("\(signal.confidence * 100, specifier: "%.0f")% confidence")
-                            .font(DesignSystem.Typography.captionFont)
-                            .foregroundColor(DesignSystem.mutedText)
+                        
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("R:R \(signal.riskRewardRatio, specifier: "%.1f")")
+                                .font(DesignSystem.Typography.monospacedFont)
+                                .foregroundColor(DesignSystem.primaryText)
+                            Text("\(signal.confidence * 100, specifier: "%.0f")% CONFIDENCE")
+                                .font(DesignSystem.Typography.labelFont)
+                                .foregroundColor(kindColor)
+                        }
+                        
                         DeskMeterBar(value: signal.confidence, accent: kindColor)
-                            .frame(width: 92)
+                            .frame(width: 100)
                     }
                 }
 
@@ -131,20 +132,24 @@ private struct PriceTile: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
                 .font(DesignSystem.Typography.labelFont)
-                .tracking(0.8)
+                .tracking(1.0)
                 .foregroundColor(DesignSystem.mutedText)
             Text("$\(value, specifier: "%.2f")")
                 .font(DesignSystem.Typography.monospacedFont)
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.04))
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
         )
     }
 }

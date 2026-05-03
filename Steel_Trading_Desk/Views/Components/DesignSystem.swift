@@ -5,27 +5,27 @@ import AppKit
 #endif
 
 struct DesignSystem {
-    // MARK: - Brand Colors
-    static let backgroundTop = Color(red: 0.07, green: 0.05, blue: 0.04)
-    static let backgroundBottom = Color(red: 0.12, green: 0.09, blue: 0.07)
-    static let panelTop = Color(red: 0.20, green: 0.15, blue: 0.11)
-    static let panelBottom = Color(red: 0.11, green: 0.08, blue: 0.07)
-    static let panelStroke = Color.white.opacity(0.08)
+    // MARK: - Brand Colors (Boiler Room Aesthetic - Obsidian & Electric)
+    static let backgroundTop = Color(red: 0.01, green: 0.01, blue: 0.01) // #030303
+    static let backgroundBottom = Color(red: 0.04, green: 0.04, blue: 0.05) // #0A0A0D
+    static let panelTop = Color(red: 0.10, green: 0.11, blue: 0.13) // #1A1C21
+    static let panelBottom = Color(red: 0.05, green: 0.05, blue: 0.06) // #0D0D0F
+    static let panelStroke = Color.white.opacity(0.14)
 
-    static let primaryColor = Color(red: 0.84, green: 0.68, blue: 0.43)
-    static let successColor = Color(red: 0.43, green: 0.95, blue: 0.58)
-    static let dangerColor = Color(red: 0.97, green: 0.40, blue: 0.30)
-    static let warningColor = Color(red: 0.95, green: 0.71, blue: 0.28)
-    static let secondaryColor = Color(red: 0.58, green: 0.53, blue: 0.49)
+    static let primaryColor = Color(red: 0.00, green: 0.95, blue: 1.00) // Electric Cyan
+    static let successColor = Color(red: 0.15, green: 1.00, blue: 0.40) // Sharp Neon Green
+    static let dangerColor = Color(red: 1.00, green: 0.25, blue: 0.25) // Sharp Neon Red
+    static let warningColor = Color(red: 1.00, green: 0.90, blue: 0.00) // Sharp Neon Yellow
+    static let secondaryColor = Color(red: 0.60, green: 0.65, blue: 0.70) // Metallic Silver
 
-    static let primaryText = Color(red: 0.95, green: 0.92, blue: 0.88)
-    static let mutedText = Color(red: 0.70, green: 0.65, blue: 0.60)
-    static let edgeGlow = Color(red: 0.97, green: 0.71, blue: 0.28)
+    static let primaryText = Color.white
+    static let mutedText = Color(red: 0.55, green: 0.60, blue: 0.65)
+    static let edgeGlow = Color(red: 0.00, green: 0.95, blue: 1.00).opacity(0.15)
 
     // MARK: - Trading Colors
-    static let bullishColor = Color(red: 0.45, green: 0.96, blue: 0.60)
-    static let bearishColor = Color(red: 0.99, green: 0.43, blue: 0.34)
-    static let neutralColor = Color(red: 0.84, green: 0.68, blue: 0.43)
+    static let bullishColor = successColor
+    static let bearishColor = dangerColor
+    static let neutralColor = secondaryColor
 
     // MARK: - Spacing
     static let spacing: CGFloat = 16
@@ -33,19 +33,19 @@ struct DesignSystem {
     static let largeSpacing: CGFloat = 24
 
     // MARK: - Corner Radius
-    static let cornerRadius: CGFloat = 12
-    static let smallCornerRadius: CGFloat = 8
-    static let largeCornerRadius: CGFloat = 16
+    static let cornerRadius: CGFloat = 10
+    static let smallCornerRadius: CGFloat = 6
+    static let largeCornerRadius: CGFloat = 14
 
-    // MARK: - Typography
+    // MARK: - Typography (Sharp & Industrial)
     struct Typography {
-        static let heroFont = Font.system(size: 28, weight: .semibold, design: .serif)
-        static let titleFont = Font.system(size: 21, weight: .semibold, design: .serif)
-        static let headlineFont = Font.system(size: 14, weight: .semibold, design: .rounded)
-        static let bodyFont = Font.system(size: 13, weight: .regular, design: .default)
-        static let captionFont = Font.system(size: 11, weight: .medium, design: .default)
-        static let labelFont = Font.system(size: 10, weight: .semibold, design: .default)
-        static let monospacedFont = Font.system(size: 13, weight: .semibold, design: .monospaced)
+        static let heroFont = Font.system(size: 32, weight: .black, design: .default)
+        static let titleFont = Font.system(size: 22, weight: .bold, design: .default)
+        static let headlineFont = Font.system(size: 14, weight: .bold, design: .monospaced)
+        static let bodyFont = Font.system(size: 13, weight: .medium, design: .default)
+        static let captionFont = Font.system(size: 11, weight: .bold, design: .default)
+        static let labelFont = Font.system(size: 10, weight: .black, design: .monospaced)
+        static let monospacedFont = Font.system(size: 13, weight: .bold, design: .monospaced)
     }
 
     // MARK: - Shadows
@@ -362,7 +362,7 @@ struct PriceDisplay: View {
     }
 }
 
-struct BallsOfSteelMark: View {
+struct SteelDeskMark: View {
     var size: CGFloat = 72
     var primaryAccent: Color = DesignSystem.primaryColor
     var bullishAccent: Color = DesignSystem.bullishColor
@@ -370,12 +370,12 @@ struct BallsOfSteelMark: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
                             DesignSystem.panelTop,
-                            Color.black.opacity(0.82),
+                            Color.black,
                             DesignSystem.panelBottom
                         ],
                         startPoint: .topLeading,
@@ -383,69 +383,57 @@ struct BallsOfSteelMark: View {
                     )
                 )
 
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .stroke(primaryAccent.opacity(0.34), lineWidth: size * 0.025)
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .stroke(primaryAccent.opacity(0.4), lineWidth: size * 0.02)
 
-            Circle()
-                .stroke(primaryAccent.opacity(0.18), lineWidth: size * 0.075)
-                .padding(size * 0.2)
+            // Sharp industrial elements
+            Rectangle()
+                .fill(primaryAccent.opacity(0.1))
+                .frame(width: size, height: 1)
+                .offset(y: -size * 0.1)
+            
+            Rectangle()
+                .fill(primaryAccent.opacity(0.1))
+                .frame(width: 1, height: size)
+                .offset(x: size * 0.1)
 
             Capsule(style: .continuous)
                 .fill(primaryAccent)
-                .frame(width: size * 0.68, height: size * 0.12)
-                .rotationEffect(.degrees(-28))
-                .offset(x: -size * 0.02, y: -size * 0.08)
-                .shadow(color: primaryAccent.opacity(0.35), radius: size * 0.08, y: size * 0.03)
+                .frame(width: size * 0.7, height: size * 0.08)
+                .rotationEffect(.degrees(-45))
+                .shadow(color: primaryAccent.opacity(0.5), radius: size * 0.05)
 
-            Capsule(style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [bullishAccent, primaryAccent.opacity(0.7)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(width: size * 0.48, height: size * 0.1)
-                .rotationEffect(.degrees(28))
-                .offset(x: size * 0.1, y: size * 0.14)
-
-            Capsule(style: .continuous)
-                .fill(bearishAccent.opacity(0.92))
-                .frame(width: size * 0.28, height: size * 0.08)
-                .rotationEffect(.degrees(-28))
-                .offset(x: size * 0.2, y: size * 0.2)
-
-            Text("B/S")
-                .font(.system(size: size * 0.22, weight: .black, design: .serif))
-                .kerning(size * 0.01)
+            Text("STEEL")
+                .font(.system(size: size * 0.16, weight: .black, design: .monospaced))
                 .foregroundColor(DesignSystem.primaryText)
-                .shadow(color: Color.black.opacity(0.45), radius: 8, y: 3)
+                .offset(y: size * 0.25)
 
             Circle()
                 .fill(primaryAccent)
-                .frame(width: size * 0.1, height: size * 0.1)
-                .offset(x: size * 0.28, y: -size * 0.28)
-                .shadow(color: primaryAccent.opacity(0.55), radius: 10)
+                .frame(width: size * 0.08, height: size * 0.08)
+                .offset(x: size * 0.35, y: -size * 0.35)
+                .shadow(color: primaryAccent, radius: 8)
         }
         .frame(width: size, height: size)
     }
 }
 
-struct BallsOfSteelWordmark: View {
+struct SteelDeskWordmark: View {
     var alignment: HorizontalAlignment = .leading
-    var title: String = "BALLS OF STEEL"
+    var title: String = "STEEL TRADING DESK"
     var subtitle: String = "No fantasy fills."
 
     var body: some View {
-        VStack(alignment: alignment, spacing: 6) {
+        VStack(alignment: alignment, spacing: 4) {
             Text(title)
                 .font(DesignSystem.Typography.titleFont)
-                .tracking(1.1)
+                .fontWeight(.black)
+                .tracking(1.5)
                 .foregroundColor(DesignSystem.primaryText)
             Text(subtitle.uppercased())
                 .font(DesignSystem.Typography.labelFont)
-                .tracking(1.3)
-                .foregroundColor(DesignSystem.mutedText)
+                .tracking(2.0)
+                .foregroundColor(DesignSystem.primaryColor)
         }
     }
 }
@@ -458,44 +446,32 @@ struct LaunchOverlayView: View {
         ZStack {
             TradingBackdrop()
 
-            VStack(spacing: 18) {
-                BallsOfSteelMark(size: 104)
-                    .scaleEffect(reveal ? 1 : 0.86)
-                    .opacity(reveal ? 1 : 0.18)
+            VStack(spacing: 24) {
+                SteelDeskMark(size: 120)
+                    .scaleEffect(reveal ? 1 : 0.9)
+                    .opacity(reveal ? 1 : 0)
 
-                BallsOfSteelWordmark(
+                SteelDeskWordmark(
                     alignment: .center,
-                    title: "BALLS OF STEEL",
+                    title: "STEEL TRADING DESK",
                     subtitle: "Open first. Close honest."
                 )
                 .multilineTextAlignment(.center)
                 .opacity(reveal ? 1 : 0)
-                .offset(y: reveal ? 0 : 8)
+                .offset(y: reveal ? 0 : 10)
 
-                VStack(spacing: 10) {
-                    launchLine("SPY + VXX")
-                    launchLine("Small size. Sharp reads. No fantasy fills.")
+                VStack(spacing: 8) {
+                    launchLine("AGGRESSIVE TAPE READING")
+                    launchLine("INSTITUTIONAL FLOW ONLY")
                 }
                 .opacity(tagLineVisible ? 1 : 0)
-                .offset(y: tagLineVisible ? 0 : 10)
             }
-            .padding(28)
-            .background(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black.opacity(0.16))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                    )
-            )
-            .shadow(color: DesignSystem.primaryColor.opacity(0.22), radius: 40, y: 12)
         }
         .onAppear {
-            withAnimation(.spring(response: 0.58, dampingFraction: 0.84)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 reveal = true
             }
-
-            withAnimation(.easeOut(duration: 0.45).delay(0.14)) {
+            withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
                 tagLineVisible = true
             }
         }
@@ -504,8 +480,9 @@ struct LaunchOverlayView: View {
     private func launchLine(_ text: String) -> some View {
         Text(text)
             .font(DesignSystem.Typography.captionFont)
-            .tracking(0.6)
-            .foregroundColor(DesignSystem.mutedText)
+            .fontWeight(.bold)
+            .tracking(1.5)
+            .foregroundColor(DesignSystem.primaryColor)
     }
 }
 
@@ -516,64 +493,59 @@ enum BrandIconFactory {
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size, height: size)
-        let background = NSBezierPath(roundedRect: rect, xRadius: size * 0.24, yRadius: size * 0.24)
+        let background = NSBezierPath(roundedRect: rect, xRadius: size * 0.22, yRadius: size * 0.22)
         let backgroundGradient = NSGradient(
             colors: [
-                NSColor(calibratedRed: 0.20, green: 0.15, blue: 0.11, alpha: 1),
-                NSColor(calibratedRed: 0.05, green: 0.04, blue: 0.04, alpha: 1),
-                NSColor(calibratedRed: 0.11, green: 0.08, blue: 0.07, alpha: 1)
+                NSColor(calibratedRed: 0.09, green: 0.10, blue: 0.11, alpha: 1),
+                NSColor(calibratedRed: 0.02, green: 0.02, blue: 0.02, alpha: 1),
+                NSColor(calibratedRed: 0.06, green: 0.06, blue: 0.07, alpha: 1)
             ]
         )
         backgroundGradient?.draw(in: background, angle: 300)
 
-        NSColor(calibratedRed: 0.84, green: 0.68, blue: 0.43, alpha: 0.28).setStroke()
-        background.lineWidth = size * 0.026
+        NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 0.4).setStroke()
+        background.lineWidth = size * 0.02
         background.stroke()
 
-        let ringRect = rect.insetBy(dx: size * 0.18, dy: size * 0.18)
-        let ring = NSBezierPath(ovalIn: ringRect)
-        NSColor(calibratedRed: 0.84, green: 0.68, blue: 0.43, alpha: 0.18).setStroke()
-        ring.lineWidth = size * 0.06
-        ring.stroke()
+        // Industrial crosshairs
+        let lineLength = size * 0.1
+        let horizontal = NSBezierPath()
+        horizontal.move(to: NSPoint(x: size * 0.5 - lineLength, y: size * 0.5))
+        horizontal.line(to: NSPoint(x: size * 0.5 + lineLength, y: size * 0.5))
+        let vertical = NSBezierPath()
+        vertical.move(to: NSPoint(x: size * 0.5, y: size * 0.5 - lineLength))
+        vertical.line(to: NSPoint(x: size * 0.5, y: size * 0.5 + lineLength))
+        
+        NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 0.15).setStroke()
+        horizontal.lineWidth = 1
+        vertical.lineWidth = 1
+        horizontal.stroke()
+        vertical.stroke()
 
         drawSlash(
-            center: CGPoint(x: size * 0.43, y: size * 0.59),
-            length: size * 0.54,
-            thickness: size * 0.1,
-            angle: -28,
-            color: NSColor(calibratedRed: 0.84, green: 0.68, blue: 0.43, alpha: 1)
-        )
-        drawSlash(
-            center: CGPoint(x: size * 0.58, y: size * 0.38),
-            length: size * 0.38,
-            thickness: size * 0.085,
-            angle: 28,
-            color: NSColor(calibratedRed: 0.45, green: 0.96, blue: 0.60, alpha: 1)
-        )
-        drawSlash(
-            center: CGPoint(x: size * 0.67, y: size * 0.3),
-            length: size * 0.2,
-            thickness: size * 0.065,
-            angle: -28,
-            color: NSColor(calibratedRed: 0.99, green: 0.43, blue: 0.34, alpha: 0.95)
+            center: CGPoint(x: size * 0.5, y: size * 0.5),
+            length: size * 0.7,
+            thickness: size * 0.08,
+            angle: -45,
+            color: NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 1)
         )
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
-        let title = "B/S" as NSString
-        let titleRect = NSRect(x: size * 0.27, y: size * 0.42, width: size * 0.46, height: size * 0.14)
+        let title = "STEEL" as NSString
+        let titleRect = NSRect(x: 0, y: size * 0.15, width: size, height: size * 0.15)
         title.draw(
             in: titleRect,
             withAttributes: [
-                .font: NSFont.systemFont(ofSize: size * 0.13, weight: .black),
-                .foregroundColor: NSColor(calibratedWhite: 0.95, alpha: 1),
+                .font: NSFont.monospacedSystemFont(ofSize: size * 0.1, weight: .black),
+                .foregroundColor: NSColor.white,
                 .paragraphStyle: paragraph
             ]
         )
 
-        let pulseRect = NSRect(x: size * 0.72, y: size * 0.72, width: size * 0.08, height: size * 0.08)
+        let pulseRect = NSRect(x: size * 0.8, y: size * 0.8, width: size * 0.08, height: size * 0.08)
         let pulse = NSBezierPath(ovalIn: pulseRect)
-        NSColor(calibratedRed: 0.84, green: 0.68, blue: 0.43, alpha: 1).setFill()
+        NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 1).setFill()
         pulse.fill()
 
         image.unlockFocus()

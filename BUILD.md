@@ -12,10 +12,10 @@
    ```
 2. Open the project:
    ```bash
-   open Balls_of_Steel.xcodeproj
+   open Steel_Trading_Desk.xcodeproj
    ```
 3. Build and Run:
-   - Select the **Balls_of_Steel** scheme.
+   - Select the **Steel_Trading_Desk** scheme.
    - Set destination to **My Mac**.
    - Press `Cmd + R`.
 
@@ -26,7 +26,7 @@ To package the app for distribution:
    ```bash
    ./make_dmg.sh
    ```
-   This will generate `Balls_of_Steel.dmg` in the project root.
+   This will generate `Steel_Trading_Desk.dmg` in the project root.
 
 ## Troubleshooting
 - **Code Signing:** If you encounter code signing errors, go to the **Signing & Capabilities** tab in Xcode and select your personal development team.

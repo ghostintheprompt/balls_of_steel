@@ -2,6 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:Balls_of_Steel.xcodeproj">
+      location = "self:Steel_Trading_Desk.xcodeproj">
    </FileRef>
 </Workspace>

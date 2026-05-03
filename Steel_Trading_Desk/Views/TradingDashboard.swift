@@ -26,7 +26,7 @@ struct TradingDashboard: View {
                     .padding(20)
                 }
             }
-            .navigationTitle("Balls of Steel")
+            .navigationTitle("Steel Trading Desk")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -89,16 +89,16 @@ struct TradingDashboard: View {
 
 struct TestSessionBanner: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
-                HStack(alignment: .center, spacing: 14) {
-                    BallsOfSteelMark(size: 62)
+                HStack(alignment: .center, spacing: 16) {
+                    SteelDeskMark(size: 58)
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("MDRN RELEASE")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("STEEL TRADING DESK")
                             .font(DesignSystem.Typography.labelFont)
-                            .tracking(1.2)
-                            .foregroundColor(DesignSystem.mutedText)
+                            .tracking(1.5)
+                            .foregroundColor(DesignSystem.primaryColor)
                         Text(AppConfig.Testing.nextTradingTestDate)
                             .font(DesignSystem.Typography.heroFont)
                             .foregroundColor(DesignSystem.primaryText)
@@ -107,40 +107,47 @@ struct TestSessionBanner: View {
 
                 Spacer()
 
-                Text("LOCAL FIRST")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.06))
-                    .overlay(
-                        Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-                    .clipShape(Capsule())
-                    .foregroundColor(DesignSystem.primaryColor)
+                HStack(spacing: 8) {
+                    sessionTag("LOCAL FIRST", color: DesignSystem.primaryColor)
+                    sessionTag("IOS + MAC", color: .purple)
+                }
             }
 
-            Text("Open first. Close honest. Small size. If the chart wants aggression, it can earn it.")
+            Text("Open first. Close honest. Small size. If the tape wants aggression, it has to earn it.")
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
+                .italic()
 
             HStack(spacing: 8) {
                 sessionPill("SPY + VXX")
-                sessionPill("Extended Hours Aware")
+                sessionPill("Institutional Flow")
                 sessionPill("No Fantasy Fills")
             }
         }
-        .deskPanel(glow: DesignSystem.edgeGlow.opacity(0.16))
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12), padding: 20)
+    }
+
+    private func sessionTag(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(DesignSystem.Typography.labelFont)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(color.opacity(0.12))
+            .overlay(
+                Capsule().stroke(color.opacity(0.3), lineWidth: 1)
+            )
+            .clipShape(Capsule())
+            .foregroundColor(color)
     }
 
     private func sessionPill(_ text: String) -> some View {
         Text(text.uppercased())
             .font(DesignSystem.Typography.labelFont)
-            .tracking(0.8)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(Color.white.opacity(0.04))
-            .clipShape(Capsule())
+            .tracking(1.0)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
             .foregroundColor(DesignSystem.primaryText)
     }
 }
@@ -165,20 +172,21 @@ private struct PulseTile: View {
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                DeskPulseDot(accent: accent, size: 7)
+                DeskPulseDot(accent: accent, size: 6)
                 Text(title.uppercased())
                     .font(DesignSystem.Typography.labelFont)
-                    .tracking(1)
+                    .tracking(1.2)
                     .foregroundColor(DesignSystem.mutedText)
             }
             Text(value)
-                .font(DesignSystem.Typography.headlineFont)
+                .font(DesignSystem.Typography.titleFont)
+                .fontWeight(.black)
                 .foregroundColor(DesignSystem.primaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .deskPanel(glow: accent.opacity(0.12), padding: 14)
+        .deskPanel(glow: accent.opacity(0.15), padding: 16)
     }
 }
 
@@ -229,29 +237,27 @@ struct MarketStatusView: View {
     let phase: MarketPhase
     
     var body: some View {
-        HStack(spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Market Phase".uppercased())
+        HStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("MARKET PHASE")
                     .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.1)
+                    .tracking(1.5)
                     .foregroundColor(DesignSystem.mutedText)
                 Text(phase.displayName)
                     .font(DesignSystem.Typography.titleFont)
+                    .fontWeight(.black)
                     .foregroundColor(DesignSystem.primaryText)
                 Text("Good tape pays. Dead tape wastes attention.")
-                    .font(DesignSystem.Typography.captionFont)
+                    .font(DesignSystem.Typography.bodyFont)
                     .foregroundColor(DesignSystem.mutedText)
+                    .italic()
             }
 
             Spacer()
 
-            phaseIndicator
+            DeskPulseDot(accent: phase.color, size: 16)
         }
-        .deskPanel(glow: phase.color.opacity(0.12))
-    }
-    
-    private var phaseIndicator: some View {
-        DeskPulseDot(accent: phase.color, size: 14)
+        .deskPanel(glow: phase.color.opacity(0.18), padding: 20)
     }
 }
 
@@ -259,13 +265,14 @@ struct TradeRowView: View {
     let trade: Trade
     
     var body: some View {
-        InfoCard(glow: pnlColor.opacity(0.16)) {
-            HStack(alignment: .center, spacing: 12) {
+        InfoCard(glow: pnlColor.opacity(0.18)) {
+            HStack(alignment: .center, spacing: 16) {
                 DeskSignalGlyph(symbol: trade.symbol, accent: pnlColor, secondaryAccent: directionColor)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(trade.symbol)
                         .font(DesignSystem.Typography.titleFont)
+                        .fontWeight(.black)
                         .foregroundColor(DesignSystem.primaryText)
                     StrategyBadge(strategy: trade.strategy)
                     Text(trade.direction.optionLabel)
@@ -275,19 +282,25 @@ struct TradeRowView: View {
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 6) {
+                VStack(alignment: .trailing, spacing: 8) {
                     HStack(spacing: 6) {
-                        DeskPulseDot(accent: pnlColor, size: 7)
+                        DeskPulseDot(accent: pnlColor, size: 6)
                         Text("LIVE P/L")
                             .font(DesignSystem.Typography.labelFont)
-                            .tracking(0.8)
+                            .tracking(1.2)
                             .foregroundColor(DesignSystem.mutedText)
                     }
                     Text(String(format: "$%.2f", trade.unrealizedPnL / 100))
                         .font(DesignSystem.Typography.monospacedFont)
                         .foregroundColor(pnlColor)
-                    DeskMeterBar(value: progressToTarget, accent: pnlColor)
-                        .frame(width: 86)
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        DeskMeterBar(value: progressToTarget, accent: pnlColor)
+                            .frame(width: 100)
+                        Text("\(progressToTarget * 100, specifier: "%.0f")% TO TARGET")
+                            .font(DesignSystem.Typography.labelFont)
+                            .foregroundColor(DesignSystem.mutedText)
+                    }
                 }
             }
         }
@@ -362,16 +375,16 @@ struct SPYTradingDashboard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("SPY TAPE")
                     .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.1)
-                    .foregroundColor(DesignSystem.mutedText)
+                    .tracking(1.5)
+                    .foregroundColor(DesignSystem.primaryColor)
 
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("$\(viewModel.spyPrice, specifier: "%.2f")")
                         .font(DesignSystem.Typography.heroFont)
                         .foregroundColor(DesignSystem.primaryText)
 
                     Text("\(viewModel.spyChangePercent, specifier: "%+.2f")%")
-                        .font(DesignSystem.Typography.headlineFont)
+                        .font(DesignSystem.Typography.monospacedFont)
                         .foregroundColor(viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
                 }
 
@@ -380,13 +393,13 @@ struct SPYTradingDashboard: View {
                     .foregroundColor(DesignSystem.mutedText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .deskPanel(glow: viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor.opacity(0.16) : DesignSystem.bearishColor.opacity(0.16))
+            .deskPanel(glow: viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor.opacity(0.18) : DesignSystem.bearishColor.opacity(0.18), padding: 20)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("CONTEXT")
                     .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.1)
-                    .foregroundColor(DesignSystem.mutedText)
+                    .tracking(1.5)
+                    .foregroundColor(DesignSystem.primaryColor)
 
                 Text(viewModel.contextLabel)
                     .font(DesignSystem.Typography.headlineFont)
@@ -397,17 +410,17 @@ struct SPYTradingDashboard: View {
                     .foregroundColor(DesignSystem.mutedText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
+            .deskPanel(glow: DesignSystem.primaryColor.opacity(0.15), padding: 20)
         }
         .padding(.horizontal)
     }
 
     private var spyChecklistSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             DeskSectionHeader(title: "SPY Discipline", systemImage: "scope", accent: DesignSystem.primaryColor)
             .padding(.horizontal)
 
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 spyFocusRow(title: "Open Drive", detail: "9:35-10:05. Arrow first. VWAP agreement. Volume there. No begging.")
                 spyFocusRow(
                     title: "Close Drive",
@@ -420,17 +433,17 @@ struct SPYTradingDashboard: View {
     }
 
     private func spyFocusRow(title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
                 .font(DesignSystem.Typography.labelFont)
-                .tracking(1)
+                .tracking(1.5)
                 .foregroundColor(DesignSystem.primaryText)
             Text(detail)
-                .font(DesignSystem.Typography.captionFont)
+                .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.08), padding: 14)
+        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.10), padding: 16)
     }
 
     private var spySignalsSection: some View {

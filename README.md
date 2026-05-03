@@ -2,14 +2,14 @@
   <img src="balls_of_steel.png" width="520">
 </p>
 
-# Balls of Steel
+# Steel Trading Desk
 Native macOS trading desk for discretionary SPY and VXX options trading. — v1.0
 
 ![License](https://img.shields.io/github/license/ghostintheprompt/balls-of-steel)
 ![Platform](https://img.shields.io/badge/platform-macOS-blue)
 ![Release](https://img.shields.io/github/v/release/ghostintheprompt/balls-of-steel)
 
-Balls of Steel is a local-first, manual-entry desk designed to bridge the gap between chart analysis and rigorous trade management. It focuses on high-probability institutional windows around the market open and close.
+Steel Trading Desk is a local-first, manual-entry desk designed to bridge the gap between chart analysis and rigorous trade management. It focuses on high-probability institutional windows around the market open and close.
 
 ## Core Features
 
@@ -25,13 +25,13 @@ Balls of Steel is a local-first, manual-entry desk designed to bridge the gap be
 
 ### DMG Download
 1. Go to the [Releases](https://github.com/ghostintheprompt/balls-of-steel/releases) page.
-2. Download the latest `Balls_of_Steel.dmg`.
-3. Drag `Balls of Steel.app` to your Applications folder.
+2. Download the latest `Steel_Trading_Desk.dmg`.
+3. Drag `Steel Trading Desk.app` to your Applications folder.
 
 ### Build from Source
 1. Clone the repository: `git clone https://github.com/ghostintheprompt/balls-of-steel.git`
-2. Open `Balls_of_Steel.xcodeproj` in Xcode.
-3. Select the **Balls_of_Steel** scheme and target **My Mac**.
+2. Open `Steel_Trading_Desk.xcodeproj` in Xcode.
+3. Select the **Steel_Trading_Desk** scheme and target **My Mac**.
 4. Press `Cmd + R` to Build and Run.
 
 ## Documentation
@@ -49,7 +49,7 @@ Balls of Steel is a local-first, manual-entry desk designed to bridge the gap be
 ## Privacy Statement
 
 **Local-only. No telemetry. No bullshit.**
-Balls of Steel does not collect, store, or transmit any of your personal information or trading data. All data entered manually remains in your macOS local storage and is deleted when the app is removed.
+Steel Trading Desk does not collect, store, or transmit any of your personal information or trading data. All data entered manually remains in your macOS local storage and is deleted when the app is removed.
 
 ---
 

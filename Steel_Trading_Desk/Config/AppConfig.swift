@@ -198,7 +198,7 @@ struct AppConfig {
     }
     
     // API key stored in Keychain, not UserDefaults
-    private static let apiKeyKeychainKey = "com.ballsofsteel.schwabApiKey"
+    private static let apiKeyKeychainKey = "com.steeltradingdesk.schwabApiKey"
 
     static var apiKey: String {
         get { KeychainService.load(key: apiKeyKeychainKey) ?? "" }

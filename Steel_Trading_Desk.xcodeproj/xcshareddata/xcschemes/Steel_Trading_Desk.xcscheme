@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1A000063000000000000001A"
-               BuildableName = "Balls_of_Steel.app"
-               BlueprintName = "Balls_of_Steel"
-               ReferencedContainer = "container:Balls_of_Steel.xcodeproj">
+               BuildableName = "Steel_Trading_Desk.app"
+               BlueprintName = "Steel_Trading_Desk"
+               ReferencedContainer = "container:Steel_Trading_Desk.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -44,9 +44,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1A000063000000000000001A"
-            BuildableName = "Balls_of_Steel.app"
-            BlueprintName = "Balls_of_Steel"
-            ReferencedContainer = "container:Balls_of_Steel.xcodeproj">
+            BuildableName = "Steel_Trading_Desk.app"
+            BlueprintName = "Steel_Trading_Desk"
+            ReferencedContainer = "container:Steel_Trading_Desk.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -61,9 +61,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1A000063000000000000001A"
-            BuildableName = "Balls_of_Steel.app"
-            BlueprintName = "Balls_of_Steel"
-            ReferencedContainer = "container:Balls_of_Steel.xcodeproj">
+            BuildableName = "Steel_Trading_Desk.app"
+            BlueprintName = "Steel_Trading_Desk"
+            ReferencedContainer = "container:Steel_Trading_Desk.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

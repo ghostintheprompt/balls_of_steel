@@ -3,8 +3,8 @@
 # MDRN Corp DMG Build Script
 # usage: ./make_dmg.sh
 
-APP_NAME="Balls_of_Steel"
-SCHEME="Balls_of_Steel"
+APP_NAME="Steel_Trading_Desk"
+SCHEME="Steel_Trading_Desk"
 CONFIGURATION="Release"
 BUILD_DIR="./Builds"
 DMG_NAME="${APP_NAME}.dmg"

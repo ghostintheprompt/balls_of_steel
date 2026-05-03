@@ -33,11 +33,11 @@ struct FirstLaunchDisclaimerView: View {
 
     private var disclaimerHeader: some View {
         VStack(spacing: 12) {
-            BallsOfSteelMark(size: 104, primaryAccent: DesignSystem.warningColor)
+            SteelDeskMark(size: 104, primaryAccent: DesignSystem.warningColor)
 
-            BallsOfSteelWordmark(
+            SteelDeskWordmark(
                 alignment: .center,
-                title: "BALLS OF STEEL",
+                title: "STEEL TRADING DESK",
                 subtitle: "Educational desk. Manual execution."
             )
             .multilineTextAlignment(.center)
@@ -286,7 +286,7 @@ struct AboutLegalView: View {
             List {
                 Section(header: Text("About")) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("BALLS OF STEEL v3.0")
+                        Text("STEEL TRADING DESK v3.0")
                             .font(.headline)
                         Text("Institutional Flow Edition")
                             .font(.subheadline)
@@ -345,7 +345,7 @@ struct TermsOfServiceView: View {
                 Text("""
                 **IMPORTANT: READ CAREFULLY BEFORE USING THIS APPLICATION**
 
-                By downloading, installing, or using Balls of Steel ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.
+                By downloading, installing, or using Steel Trading Desk ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.
 
                 ------------------------------------
 
@@ -554,7 +554,7 @@ struct PrivacyPolicyView: View {
                     .foregroundColor(.secondary)
 
                 Text("""
-                Balls of Steel ("we", "us", "the App") is committed to protecting your privacy. This Privacy Policy explains what information we collect (spoiler: almost nothing) and how we use it.
+                Steel Trading Desk ("we", "us", "the App") is committed to protecting your privacy. This Privacy Policy explains what information we collect (spoiler: almost nothing) and how we use it.
 
                 ------------------------------------
 

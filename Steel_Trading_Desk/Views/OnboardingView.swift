@@ -47,12 +47,12 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            BallsOfSteelMark(size: 124)
+            SteelDeskMark(size: 124)
 
             VStack(spacing: 16) {
-                BallsOfSteelWordmark(
+                SteelDeskWordmark(
                     alignment: .center,
-                    title: "BALLS OF STEEL",
+                    title: "STEEL TRADING DESK",
                     subtitle: "Open first. Close honest."
                 )
                 .multilineTextAlignment(.center)
@@ -150,7 +150,7 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            BallsOfSteelMark(size: 92, primaryAccent: DesignSystem.warningColor, bullishAccent: DesignSystem.primaryColor, bearishAccent: DesignSystem.bearishColor)
+            SteelDeskMark(size: 92, primaryAccent: DesignSystem.warningColor, bullishAccent: DesignSystem.primaryColor, bearishAccent: DesignSystem.bearishColor)
 
             Text("Reality Check")
                 .font(DesignSystem.Typography.heroFont)

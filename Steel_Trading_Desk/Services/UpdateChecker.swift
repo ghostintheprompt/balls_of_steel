@@ -11,8 +11,8 @@ class UpdateChecker: ObservableObject {
     @Published var downloadURL: URL?
     
     private let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
-    private let repoURL = "https://api.github.com/repos/ghostintheprompt/balls-of-steel/releases/latest"
-    private let publicRepoURL = "https://github.com/ghostintheprompt/balls-of-steel/releases"
+    private let repoURL = "https://api.github.com/repos/ghostintheprompt/steel-trading-desk/releases/latest"
+    private let publicRepoURL = "https://github.com/ghostintheprompt/steel-trading-desk/releases"
     
     func checkForUpdates(silent: Bool = true) async {
         guard let url = URL(string: repoURL) else { return }
@@ -68,7 +68,7 @@ class UpdateChecker: ObservableObject {
     private func showUpToDateAlert() {
         let alert = NSAlert()
         alert.messageText = "App is Up to Date"
-        alert.informativeText = "You are running the latest version of Balls of Steel (\(currentVersion))."
+        alert.informativeText = "You are running the latest version of Steel Trading Desk (\(currentVersion))."
         alert.alertStyle = .informative
         alert.addButton(withTitle: "OK")
         alert.runModal()

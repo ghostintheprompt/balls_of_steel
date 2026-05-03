@@ -71,7 +71,7 @@
 /* Begin PBXFileReference section */
 		1AES0001000000000000001A /* ExitSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitSignal.swift; sourceTree = "<group>"; };
 		1AOR0001000000000000001A /* Order.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Order.swift; sourceTree = "<group>"; };
-		1A000001000000000000001B /* Balls_of_Steel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Balls_of_Steel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A000001000000000000001B /* Steel_Trading_Desk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Steel_Trading_Desk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000002000000000000001A /* MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainApp.swift; sourceTree = "<group>"; };
 		1A000006000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A000008000000000000001A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -111,7 +111,7 @@
 		1A000050000000000000001A /* TradingDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradingDashboard.swift; sourceTree = "<group>"; };
 		1A000052000000000000001A /* StrategyBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyBadge.swift; sourceTree = "<group>"; };
 		1A000054000000000000001A /* signal_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = signal_alert.wav; sourceTree = "<group>"; };
-		1A000055000000000000001A /* Balls_of_Steel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Balls_of_Steel.entitlements; sourceTree = "<group>"; };
+		1A000055000000000000001A /* Steel_Trading_Desk.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steel_Trading_Desk.entitlements; sourceTree = "<group>"; };
 		1A000056000000000000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00000000000000001A000072 /* ArrowSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrowSignal.swift; sourceTree = "<group>"; };
 		00000000000000001A000074 /* CandlestickPattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandlestickPattern.swift; sourceTree = "<group>"; };
@@ -147,7 +147,7 @@
 		1A000058000000000000001A = {
 			isa = PBXGroup;
 			children = (
-				1A000059000000000000001A /* Balls_of_Steel */,
+				1A000059000000000000001A /* Steel_Trading_Desk */,
 				1A00005A000000000000001A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -155,15 +155,15 @@
 		1A00005A000000000000001A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1A000001000000000000001B /* Balls_of_Steel.app */,
+				1A000001000000000000001B /* Steel_Trading_Desk.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1A000059000000000000001A /* Balls_of_Steel */ = {
+		1A000059000000000000001A /* Steel_Trading_Desk */ = {
 			isa = PBXGroup;
 			children = (
-				1A000055000000000000001A /* Balls_of_Steel.entitlements */,
+				1A000055000000000000001A /* Steel_Trading_Desk.entitlements */,
 				1A000056000000000000001A /* Info.plist */,
 				1A000002000000000000001A /* MainApp.swift */,
 				1A00005B000000000000001A /* App */,
@@ -176,7 +176,7 @@
 				1A000061000000000000001A /* Resources */,
 				1A00006F000000000000001B /* Widget */,
 			);
-			path = Balls_of_Steel;
+			path = Steel_Trading_Desk;
 			sourceTree = "<group>";
 		};
 		1A00005B000000000000001A /* App */ = {
@@ -311,9 +311,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1A000063000000000000001A /* Balls_of_Steel */ = {
+		1A000063000000000000001A /* Steel_Trading_Desk */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1A000064000000000000001A /* Build configuration list for PBXNativeTarget "Balls_of_Steel" */;
+			buildConfigurationList = 1A000064000000000000001A /* Build configuration list for PBXNativeTarget "Steel_Trading_Desk" */;
 			buildPhases = (
 				1A000065000000000000001A /* Sources */,
 				1A000057000000000000001A /* Frameworks */,
@@ -323,9 +323,9 @@
 			);
 			dependencies = (
 			);
-			name = Balls_of_Steel;
-			productName = Balls_of_Steel;
-			productReference = 1A000001000000000000001B /* Balls_of_Steel.app */;
+			name = Steel_Trading_Desk;
+			productName = Steel_Trading_Desk;
+			productReference = 1A000001000000000000001B /* Steel_Trading_Desk.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -343,7 +343,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 1A000068000000000000001A /* Build configuration list for PBXProject "Balls_of_Steel" */;
+			buildConfigurationList = 1A000068000000000000001A /* Build configuration list for PBXProject "Steel_Trading_Desk" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -356,7 +356,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1A000063000000000000001A /* Balls_of_Steel */,
+				1A000063000000000000001A /* Steel_Trading_Desk */,
 			);
 		};
 /* End PBXProject section */
@@ -564,21 +564,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Balls_of_Steel/Balls_of_Steel.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Steel_Trading_Desk/Steel_Trading_Desk.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Balls_of_Steel/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Steel_Trading_Desk/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Balls_of_Steel/Info.plist;
+				INFOPLIST_FILE = Steel_Trading_Desk/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.greenplanet.Balls-of-Steel";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.greenplanet.Steel-Trading-Desk";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -590,21 +590,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Balls_of_Steel/Balls_of_Steel.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Steel_Trading_Desk/Steel_Trading_Desk.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Balls_of_Steel/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Steel_Trading_Desk/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Balls_of_Steel/Info.plist;
+				INFOPLIST_FILE = Steel_Trading_Desk/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.greenplanet.Balls-of-Steel";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.greenplanet.Steel-Trading-Desk";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -614,7 +614,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A000068000000000000001A /* Build configuration list for PBXProject "Balls_of_Steel" */ = {
+		1A000068000000000000001A /* Build configuration list for PBXProject "Steel_Trading_Desk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000069000000000000001A /* Debug */,
@@ -623,7 +623,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1A000064000000000000001A /* Build configuration list for PBXNativeTarget "Balls_of_Steel" */ = {
+		1A000064000000000000001A /* Build configuration list for PBXNativeTarget "Steel_Trading_Desk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A00006B000000000000001A /* Debug */,
