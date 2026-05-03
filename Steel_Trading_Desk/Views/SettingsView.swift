@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @StateObject private var storeKit = StoreKitService.shared
+    @State private var showingUnlockView = false
     @State private var apiKey = AppConfig.apiKey
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @AppStorage("alertVolume") private var alertVolume: Double = 0.7 // Default 70%
@@ -18,8 +20,11 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     settingsHeader
+                    accessCard
                     playtestCard
-                    brokerCard
+                    if storeKit.hasProUnlock {
+                        brokerCard
+                    }
                     monitoringCard
                     notificationsCard
                     closeManagementCard
@@ -207,6 +212,41 @@ struct SettingsView: View {
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
             }
+        }
+    }
+
+    private var accessCard: some View {
+        InfoCard(glow: storeKit.hasProUnlock ? DesignSystem.successColor.opacity(0.12) : DesignSystem.primaryColor.opacity(0.12)) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("INSTITUTIONAL PRO")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(DesignSystem.mutedText)
+                    Text(storeKit.hasProUnlock ? "ACCESS GRANTED" : "LOCKED")
+                        .font(DesignSystem.Typography.titleFont)
+                        .fontWeight(.black)
+                        .foregroundColor(storeKit.hasProUnlock ? DesignSystem.successColor : DesignSystem.primaryText)
+                }
+                
+                Spacer()
+                
+                Button(action: { showingUnlockView = true }) {
+                    Text(storeKit.hasProUnlock ? "VIEW" : "UNLOCK")
+                        .font(DesignSystem.Typography.labelFont)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(DesignSystem.primaryColor.opacity(0.12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6).stroke(DesignSystem.primaryColor, lineWidth: 1)
+                        )
+                        .foregroundColor(DesignSystem.primaryColor)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showingUnlockView) {
+            UnlockView()
         }
     }
 

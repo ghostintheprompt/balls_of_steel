@@ -10,7 +10,7 @@
 	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.steeltradingdesk.signalrefresh</string>
+		<string>app.mdrn.steel.signalrefresh</string>
 	</array>
 	<key>NSExtension</key>
 	<dict>
@@ -33,7 +33,7 @@
 				<string>steeltradingdesk</string>
 			</array>
 			<key>CFBundleURLName</key>
-			<string>com.steeltradingdesk.trading</string>
+			<string>app.mdrn.steel</string>
 		</dict>
 	</array>
 </dict>

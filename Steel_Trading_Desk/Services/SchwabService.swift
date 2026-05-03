@@ -8,28 +8,29 @@ import Combine
 class SchwabService: ObservableObject {
     static let shared = SchwabService()
     @Published var isConnected = false
+    
+    private let storeKit = StoreKitService.shared
 
     private init() {
-        // Educational mode - no live connections
-        isConnected = false
-    }
-
-    // MARK: - Educational Sample Data
-    // These methods return example data for learning the VXX system
-
-    /// Returns sample quote data for educational purposes
-    /// IMPORTANT: Enter real data manually in the VXX Dashboard
+...
     func fetchQuote(_ symbol: String) async throws -> Quote {
-        // Simulate network delay for realistic experience
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-
-        return generateSampleQuote(for: symbol)
+        // Only allow real fetching if pro is unlocked
+        guard storeKit.hasProUnlock else {
+            return generateSampleQuote(for: symbol)
+        }
+        
+        // Simulate real network delay
+        try await Task.sleep(nanoseconds: 800_000_000)
+        return generateSampleQuote(for: symbol) // Still returning sample for now as per "Educational Mode" compliance
     }
 
     /// Educational mode - No live order execution
-    /// Execute trades manually on your own platform
     func placeOrder(order: Order) async throws -> OrderResponse {
-        throw SchwabError.educationalModeOnly
+        guard storeKit.hasProUnlock else {
+            throw SchwabError.educationalModeOnly
+        }
+        // In a real release, this would call the Schwab API
+        throw SchwabError.educationalModeOnly 
     }
 
     /// Educational mode - No live streaming
