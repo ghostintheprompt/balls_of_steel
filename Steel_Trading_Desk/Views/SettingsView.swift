@@ -98,7 +98,7 @@ struct SettingsView: View {
 
                 SecureField("API Key", text: $apiKey)
                     .textFieldStyle(.roundedBorder)
-                    .onChange(of: apiKey) { AppConfig.apiKey = $0 }
+                    .onChange(of: apiKey) { _, newValue in AppConfig.apiKey = newValue }
 
                 Button(connectionManager.isConnected ? "Disconnect" : "Connect") {
                     Task {

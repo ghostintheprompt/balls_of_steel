@@ -127,7 +127,6 @@ extension Date {
     // Additional helper methods for better market timing
     var isMarketDay: Bool {
         let calendar = Calendar.current
-        let easternTimeZone = TimeZone(identifier: "America/New_York")!
         let weekday = calendar.component(.weekday, from: self)
         // Monday = 2, Friday = 6 in Calendar.weekday
         return weekday >= 2 && weekday <= 6

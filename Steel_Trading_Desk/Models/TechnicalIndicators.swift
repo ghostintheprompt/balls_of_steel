@@ -262,7 +262,7 @@ struct SupportResistance {
         guard !levels.isEmpty else { return [] }
 
         var clustered: [Double] = []
-        var sorted = levels.sorted()
+        let sorted = levels.sorted()
 
         var currentCluster: [Double] = [sorted[0]]
 
