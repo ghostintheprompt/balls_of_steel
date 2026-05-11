@@ -266,7 +266,9 @@ enum Strategy: String, CaseIterable {
             confidence: confidence,
             setupQuality: setupQuality,
             positionSizePercent: getPositionSize(vix: data.vix, setupQuality: setupQuality),
-            kind: .entry
+            kind: .entry,
+            vix: data.vix,
+            vxxVixRatio: data.vxxVixRatioValue
         )
     }
 

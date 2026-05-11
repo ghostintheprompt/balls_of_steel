@@ -1,10 +1,14 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#endif
 import Foundation
 
 @main
 struct MainApp: App {
+    #if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    #endif
     @StateObject private var updateChecker = UpdateChecker.shared
 
     var body: some Scene {
@@ -16,6 +20,7 @@ struct MainApp: App {
                     await updateChecker.checkForUpdates(silent: true)
                 }
         }
+        #if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
@@ -27,5 +32,6 @@ struct MainApp: App {
                 }
             }
         }
+        #endif
     }
 }

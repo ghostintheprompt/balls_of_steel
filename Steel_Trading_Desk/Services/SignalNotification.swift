@@ -1,7 +1,6 @@
 import Foundation
 import UserNotifications
 import AVFoundation
-import AppKit
 
 enum NotificationError: Error {
     case soundFileNotFound

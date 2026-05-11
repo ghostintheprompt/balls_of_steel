@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import AppKit  // For macOS
 
 @MainActor
 class SignalMonitor: ObservableObject {

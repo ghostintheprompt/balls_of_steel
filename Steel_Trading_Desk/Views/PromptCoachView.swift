@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 
 // MARK: - Prompt Coach View
 // Your personal AI prompt assistant - delivers the right analysis prompt at the right time
@@ -11,75 +16,34 @@ struct PromptCoachView: View {
     var body: some View {
         NavigationView {
             ZStack {
+                TradingBackdrop()
+
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Header/Explainer
                         promptCoachHeader
-...
+
+                        if let postTradePrompt = viewModel.postTradeAnalysisPrompt {
+                            postTradeAnalysisCard(postTradePrompt)
+                        }
+
+                        if let activePrompt = viewModel.activePrompt {
+                            activePromptCard(activePrompt)
+                        }
+
+                        todayScheduleSection
+
+                        if !viewModel.conditionalPrompts.isEmpty {
+                            conditionalAlertsSection
+                        }
+
+                        promptHistorySection
+                    }
+                    .padding()
+                }
+
                 if !storeKit.hasProUnlock {
                     premiumOverlay
                 }
-            }
-            .navigationTitle("Prompt Coach")
-...
-    private var premiumOverlay: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 48))
-                .foregroundColor(DesignSystem.primaryColor)
-            
-            VStack(spacing: 8) {
-                Text("PRO LIBRARY LOCKED")
-                    .font(DesignSystem.Typography.titleFont)
-                    .fontWeight(.black)
-                    .foregroundColor(DesignSystem.primaryText)
-                Text("Unlock Supreme prompts & Institutional Flow analysis.")
-                    .font(DesignSystem.Typography.bodyFont)
-                    .foregroundColor(DesignSystem.mutedText)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 40)
-            
-            Button(action: { showingUnlockView = true }) {
-                Text("UNLOCK INSTITUTIONAL PRO")
-                    .font(DesignSystem.Typography.labelFont)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(DesignSystem.primaryColor)
-                    .foregroundColor(.black)
-                    .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.backgroundTop.opacity(0.85))
-        .sheet(isPresented: $showingUnlockView) {
-            UnlockView()
-        }
-    }
-
-                    // Post-Trade Analysis
-                    if let postTradePrompt = viewModel.postTradeAnalysisPrompt {
-                        postTradeAnalysisCard(postTradePrompt)
-                    }
-
-                    // Active/Upcoming Prompts
-                    if let activePrompt = viewModel.activePrompt {
-                        activePromptCard(activePrompt)
-                    }
-
-                    // Today's Schedule
-                    todayScheduleSection
-
-                    // Conditional Alerts
-                    if !viewModel.conditionalPrompts.isEmpty {
-                        conditionalAlertsSection
-                    }
-
-                    // Prompt History
-                    promptHistorySection
-                }
-                .padding()
             }
             .navigationTitle("Prompt Coach")
             .toolbar {
@@ -99,6 +63,42 @@ struct PromptCoachView: View {
         }
         .task {
             await viewModel.startMonitoring()
+        }
+    }
+
+    private var premiumOverlay: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 48))
+                .foregroundColor(DesignSystem.primaryColor)
+
+            VStack(spacing: 8) {
+                Text("PRO LIBRARY LOCKED")
+                    .font(DesignSystem.Typography.titleFont)
+                    .fontWeight(.black)
+                    .foregroundColor(DesignSystem.primaryText)
+                Text("Unlock the complete prompt library and institutional flow analysis.")
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.mutedText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 40)
+
+            Button(action: { showingUnlockView = true }) {
+                Text("UNLOCK INSTITUTIONAL PRO")
+                    .font(DesignSystem.Typography.labelFont)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(DesignSystem.primaryColor)
+                    .foregroundColor(.black)
+                    .cornerRadius(12)
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.backgroundTop.opacity(0.88))
+        .sheet(isPresented: $showingUnlockView) {
+            UnlockView()
         }
     }
 
@@ -590,9 +590,9 @@ class PromptCoachViewModel: ObservableObject {
             quote: Quote(
                 symbol: "VXX", // Assuming VXX as primary focus
                 price: entry.price,
-                change: 0,
-                changePercent: 0,
-                previousClose: entry.price / (1 + entry.volumePercent/100), // Mocked for conversion
+                volume: Int(entry.volumePercent * 10_000),
+                vwap: entry.vwapPosition == .above ? entry.price * 0.99 : entry.price * 1.01,
+                previousClose: entry.price,
                 timestamp: entry.timestamp,
                 recentCandles: []
             ),

@@ -221,7 +221,6 @@ struct TradingStats {
 
 // MARK: - Prompt Library
 class PromptLibrary {
-...
     static let shared = PromptLibrary()
 
     // All trading prompts

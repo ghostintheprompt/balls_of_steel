@@ -67,6 +67,10 @@
 		00000000000000001A00008F /* ArrowSignalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000090 /* ArrowSignalViews.swift */; };
 		00000000000000001A000091 /* PatternIndicatorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000092 /* PatternIndicatorViews.swift */; };
 		00000000000000001A000093 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000094 /* DesignSystem.swift */; };
+		B000000000000001A000002 /* DailyRiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000001 /* DailyRiskManager.swift */; };
+		B000000000000001A000004 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000003 /* KeychainService.swift */; };
+		B000000000000001A000006 /* TradeJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000005 /* TradeJournal.swift */; };
+		B000000000000001A00000A /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000009 /* UpdateChecker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -135,6 +139,11 @@
 		00000000000000001A000090 /* ArrowSignalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrowSignalViews.swift; sourceTree = "<group>"; };
 		00000000000000001A000092 /* PatternIndicatorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternIndicatorViews.swift; sourceTree = "<group>"; };
 		00000000000000001A000094 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		B000000000000001A000001 /* DailyRiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRiskManager.swift; sourceTree = "<group>"; };
+		B000000000000001A000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		B000000000000001A000005 /* TradeJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeJournal.swift; sourceTree = "<group>"; };
+		B000000000000001A000007 /* VXXTradingWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VXXTradingWindow.swift; sourceTree = "<group>"; };
+		B000000000000001A000009 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +178,7 @@
 			children = (
 				1A000055000000000000001A /* Steel_Trading_Desk.entitlements */,
 				1A000056000000000000001A /* Info.plist */,
+				00000000000000001A000055 /* PrivacyInfo.xcprivacy */,
 				1A000002000000000000001A /* MainApp.swift */,
 				1A00005B000000000000001A /* App */,
 				1A000006000000000000001A /* Assets.xcassets */,
@@ -232,6 +242,7 @@
 				00000000000000001A000076 /* EventDay.swift */,
 				00000000000000001A000078 /* PromptSystem.swift */,
 				00000000000000001A00007A /* TechnicalIndicators.swift */,
+				B000000000000001A000007 /* VXXTradingWindow.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -251,6 +262,10 @@
 				1A000042000000000000001A /* SignalScanner.swift */,
 				1A000044000000000000001A /* TimeManager.swift */,
 				1A000046000000000000001A /* VWAPCalculator.swift */,
+				B000000000000001A000001 /* DailyRiskManager.swift */,
+				B000000000000001A000003 /* KeychainService.swift */,
+				B000000000000001A000005 /* TradeJournal.swift */,
+				B000000000000001A000009 /* UpdateChecker.swift */,
 				00000000000000001A00007C /* StoreKitService.swift */,
 				00000000000000001A00007E /* ArcadeEnergyService.swift */,
 			);
@@ -293,7 +308,6 @@
 			isa = PBXGroup;
 			children = (
 				1A000054000000000000001A /* signal_alert.wav */,
-				00000000000000001A000055 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -441,6 +455,11 @@
 				00000000000000001A00008F /* ArrowSignalViews.swift in Sources */,
 				00000000000000001A000091 /* PatternIndicatorViews.swift in Sources */,
 				00000000000000001A000093 /* DesignSystem.swift in Sources */,
+				B000000000000001A000002 /* DailyRiskManager.swift in Sources */,
+				B000000000000001A000004 /* KeychainService.swift in Sources */,
+				B000000000000001A000006 /* TradeJournal.swift in Sources */,
+				B000000000000001A000008 /* VXXTradingWindow.swift in Sources */,
+				B000000000000001A00000A /* UpdateChecker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

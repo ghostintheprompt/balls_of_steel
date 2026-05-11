@@ -273,7 +273,9 @@ extension Strategy {
             confidence: confidence,
             setupQuality: setupQuality,
             positionSizePercent: 0.5,
-            kind: .watch
+            kind: .watch,
+            vix: data.vix,
+            vxxVixRatio: data.vxxVixRatioValue
         )
     }
 

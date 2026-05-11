@@ -110,7 +110,9 @@ struct AlertView_Previews: PreviewProvider {
             confidence: 0.85,
             setupQuality: .perfect,
             positionSizePercent: 2.0,
-            kind: .entry
+            kind: .entry,
+            vix: 18.5,
+            vxxVixRatio: 1.52
         ))
         .frame(width: 400)
         .preferredColorScheme(.dark)

@@ -1,4 +1,5 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -48,6 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
+#endif
 
 extension Notification.Name {
     static let schwabConnectionComplete = Notification.Name("schwabConnectionComplete")

@@ -1,5 +1,7 @@
 import Foundation
+#if os(macOS)
 import AppKit
+#endif
 
 @MainActor
 class UpdateChecker: ObservableObject {
@@ -15,6 +17,7 @@ class UpdateChecker: ObservableObject {
     private let publicRepoURL = "https://github.com/ghostintheprompt/steel-trading-desk/releases"
     
     func checkForUpdates(silent: Bool = true) async {
+        #if os(macOS)
         guard let url = URL(string: repoURL) else { return }
         
         var request = URLRequest(url: url)
@@ -44,17 +47,19 @@ class UpdateChecker: ObservableObject {
                 showErrorAlert()
             }
         }
+        #endif
     }
     
     private func isVersion(_ v1: String, newerThan v2: String) -> Bool {
         return v1.compare(v2, options: .numeric) == .orderedDescending
     }
     
+    #if os(macOS)
     private func showUpdateAlert() {
         let alert = NSAlert()
         alert.messageText = "Update Available"
         alert.informativeText = "A new version (\(latestVersion ?? "")) is available. Would you like to download it now?"
-        alert.alertStyle = .informative
+        alert.alertStyle = .informational
         alert.addButton(withTitle: "Download")
         alert.addButton(withTitle: "Later")
         
@@ -69,7 +74,7 @@ class UpdateChecker: ObservableObject {
         let alert = NSAlert()
         alert.messageText = "App is Up to Date"
         alert.informativeText = "You are running the latest version of Steel Trading Desk (\(currentVersion))."
-        alert.alertStyle = .informative
+        alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
         alert.runModal()
     }
@@ -88,6 +93,7 @@ class UpdateChecker: ObservableObject {
             }
         }
     }
+    #endif
 }
 
 struct GitHubRelease: Codable {

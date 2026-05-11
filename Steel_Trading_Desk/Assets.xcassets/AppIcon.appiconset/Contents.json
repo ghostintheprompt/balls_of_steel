@@ -1,68 +1,176 @@
 {
   "images" : [
     {
-      "idiom" : "mac",
-      "size" : "16x16",
-      "scale" : "1x",
-      "filename": "icon_16x16.png"
-    },
-    {
-      "idiom" : "mac",
-      "size" : "16x16",
+      "filename" : "iphone_20@2x.png",
+      "idiom" : "iphone",
       "scale" : "2x",
-      "filename": "icon_16x16@2x.png"
+      "size" : "20x20"
     },
     {
-      "idiom" : "mac",
-      "size" : "32x32",
-      "scale" : "1x",
-      "filename": "icon_32x32.png"
+      "filename" : "iphone_20@3x.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "20x20"
     },
     {
-      "idiom" : "mac",
-      "size" : "32x32",
+      "filename" : "iphone_29@2x.png",
+      "idiom" : "iphone",
       "scale" : "2x",
-      "filename": "icon_32x32@2x.png"
+      "size" : "29x29"
     },
     {
-      "idiom" : "mac",
-      "size" : "128x128",
-      "scale" : "1x",
-      "filename": "icon_128x128.png"
+      "filename" : "iphone_29@3x.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "29x29"
     },
     {
-      "idiom" : "mac",
-      "size" : "128x128",
+      "filename" : "iphone_40@2x.png",
+      "idiom" : "iphone",
       "scale" : "2x",
-      "filename": "icon_128x128@2x.png"
+      "size" : "40x40"
     },
     {
-      "idiom" : "mac",
-      "size" : "256x256",
-      "scale" : "1x",
-      "filename": "icon_256x256.png"
+      "filename" : "iphone_40@3x.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "40x40"
     },
     {
-      "idiom" : "mac",
-      "size" : "256x256",
+      "filename" : "iphone_60@2x.png",
+      "idiom" : "iphone",
       "scale" : "2x",
-      "filename": "icon_256x256@2x.png"
+      "size" : "60x60"
     },
     {
-      "idiom" : "mac",
-      "size" : "512x512",
+      "filename" : "iphone_60@3x.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "60x60"
+    },
+    {
+      "filename" : "ipad_20.png",
+      "idiom" : "ipad",
       "scale" : "1x",
-      "filename": "icon_512x512.png"
+      "size" : "20x20"
     },
     {
-      "idiom" : "mac",
-      "size" : "512x512",
+      "filename" : "ipad_20@2x.png",
+      "idiom" : "ipad",
       "scale" : "2x",
-      "filename": "icon_512x512@2x.png"
+      "size" : "20x20"
+    },
+    {
+      "filename" : "ipad_29.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "29x29"
+    },
+    {
+      "filename" : "ipad_29@2x.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "29x29"
+    },
+    {
+      "filename" : "ipad_40.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "40x40"
+    },
+    {
+      "filename" : "ipad_40@2x.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "40x40"
+    },
+    {
+      "filename" : "ipad_76.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "76x76"
+    },
+    {
+      "filename" : "ipad_76@2x.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "76x76"
+    },
+    {
+      "filename" : "ipad_83_5@2x.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "83.5x83.5"
+    },
+    {
+      "filename" : "steel_trading_desk.png",
+      "idiom" : "ios-marketing",
+      "scale" : "1x",
+      "size" : "1024x1024"
+    },
+    {
+      "filename" : "icon_16x16.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "16x16"
+    },
+    {
+      "filename" : "icon_16x16@2x.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "16x16"
+    },
+    {
+      "filename" : "icon_32x32.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "32x32"
+    },
+    {
+      "filename" : "icon_32x32@2x.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "32x32"
+    },
+    {
+      "filename" : "icon_128x128.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "128x128"
+    },
+    {
+      "filename" : "icon_128x128@2x.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "128x128"
+    },
+    {
+      "filename" : "icon_256x256.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "256x256"
+    },
+    {
+      "filename" : "icon_256x256@2x.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "256x256"
+    },
+    {
+      "filename" : "icon_512x512.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "512x512"
+    },
+    {
+      "filename" : "icon_512x512@2x.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "512x512"
     }
   ],
   "info" : {
-    "version" : 1,
-    "author" : "xcode"
+    "author" : "xcode",
+    "version" : 1
   }
 }

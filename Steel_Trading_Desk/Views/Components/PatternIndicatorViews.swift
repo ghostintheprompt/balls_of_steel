@@ -349,35 +349,6 @@ struct TradingWindowAlertView: View {
     }
 }
 
-// MARK: - VXX Trading Window Enum
-enum VXXTradingWindow {
-    case morning
-    case lunch
-    case powerHour
-
-    var displayName: String {
-        switch self {
-        case .morning:
-            return "Morning Window"
-        case .lunch:
-            return "Lunch Window"
-        case .powerHour:
-            return "Power Hour Window"
-        }
-    }
-
-    var timeRange: String {
-        switch self {
-        case .morning:
-            return "9:50-10:00 AM"
-        case .lunch:
-            return "12:20-12:35 PM"
-        case .powerHour:
-            return "3:10-3:25 PM"
-        }
-    }
-}
-
 // MARK: - Enhanced Signal Row with Patterns
 struct EnhancedSignalRowView: View {
     let signal: Signal

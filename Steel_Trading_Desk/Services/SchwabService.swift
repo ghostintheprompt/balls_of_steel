@@ -11,8 +11,7 @@ class SchwabService: ObservableObject {
     
     private let storeKit = StoreKitService.shared
 
-    private init() {
-...
+    private init() {}
     func fetchQuote(_ symbol: String) async throws -> Quote {
         // Only allow real fetching if pro is unlocked
         guard storeKit.hasProUnlock else {
