@@ -70,6 +70,7 @@
 		B000000000000001A000002 /* DailyRiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000001 /* DailyRiskManager.swift */; };
 		B000000000000001A000004 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000003 /* KeychainService.swift */; };
 		B000000000000001A000006 /* TradeJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000005 /* TradeJournal.swift */; };
+		B000000000000001A000008 /* VXXTradingWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000007 /* VXXTradingWindow.swift */; };
 		B000000000000001A00000A /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000009 /* UpdateChecker.swift */; };
 /* End PBXBuildFile section */
 
