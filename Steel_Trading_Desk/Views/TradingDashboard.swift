@@ -11,6 +11,10 @@ struct TradingDashboard: View {
         guard !lastMarketDataEntryData.isEmpty else { return nil }
         return try? JSONDecoder().decode(MarketDataEntry.self, from: lastMarketDataEntryData)
     }
+
+    private var phoneStrategyState: VXXStrategyState {
+        VXXStrategyState(entry: lastMarketDataEntry)
+    }
     
     var body: some View {
         NavigationView {
@@ -57,14 +61,13 @@ struct TradingDashboard: View {
     private var phoneDeskContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             PhoneDeskHeader(phase: marketPulse.currentPhase)
-            PhoneStrategyRail(signalMonitor: signalMonitor, entry: lastMarketDataEntry)
-            PhoneDeskReadout(
-                signalCount: signalMonitor.activeSignals.count,
-                tradeCount: signalMonitor.activeTrades.count,
-                phase: marketPulse.currentPhase
-            )
-            activeSignalsSection
-            activeTradesSection
+            PhoneCommandCard(state: phoneStrategyState, signalMonitor: signalMonitor)
+            PhoneTapeSnapshot(entry: lastMarketDataEntry, state: phoneStrategyState)
+            PhoneStrategyRail(entry: lastMarketDataEntry)
+
+            if !signalMonitor.activeTrades.isEmpty {
+                activeTradesSection
+            }
         }
     }
 
@@ -123,12 +126,12 @@ private struct PhoneDeskHeader: View {
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.0)
                     .foregroundColor(DesignSystem.primaryColor)
-                Text("VXX / VWAP / WINDOW")
+                Text("VXX / VIX / VWAP")
                     .font(DesignSystem.Typography.titleFont)
                     .foregroundColor(DesignSystem.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
-                Text("Read tape. Check rules. Execute elsewhere.")
+                Text("Find the entry. Skip the rest. Execute on broker.")
                     .font(DesignSystem.Typography.bodyFont)
                     .foregroundColor(DesignSystem.mutedText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -146,13 +149,169 @@ private struct PhoneDeskHeader: View {
     }
 }
 
-private struct PhoneStrategyRail: View {
+private struct PhoneCommandCard: View {
+    let state: VXXStrategyState
     @ObservedObject var signalMonitor: SignalMonitor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("NEXT MOVE")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(DesignSystem.mutedText)
+                    Text(state.commandTitle)
+                        .font(.system(size: 31, weight: .black, design: .default))
+                        .foregroundColor(state.commandColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Text(state.commandDetail)
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: state.commandIcon)
+                    .font(.system(size: 25, weight: .black))
+                    .foregroundColor(state.commandColor)
+                    .frame(width: 42, height: 42)
+                    .background(state.commandColor.opacity(0.14))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            if state.ready {
+                HStack(spacing: 10) {
+                    NavigationLink {
+                        PromptCoachView()
+                    } label: {
+                        Label("Prompt", systemImage: "doc.on.clipboard")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    NavigationLink {
+                        ActiveTradesView(signalMonitor: signalMonitor)
+                    } label: {
+                        Label("Risk", systemImage: "shield.lefthalf.filled")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            } else {
+                NavigationLink {
+                    ManualDataEntryView()
+                } label: {
+                    Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .deskPanel(glow: .clear, padding: 16)
+    }
+}
+
+private struct PhoneTapeSnapshot: View {
+    let entry: MarketDataEntry?
+    let state: VXXStrategyState
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DeskSectionHeader(title: "Current Tape", systemImage: "rectangle.and.text.magnifyingglass", accent: DesignSystem.secondaryColor)
+
+            if let entry {
+                LazyVGrid(columns: columns, spacing: 8) {
+                    TapeMetric(title: entry.instrument.displayName, value: String(format: "$%.2f", entry.price), accent: DesignSystem.primaryColor)
+                    TapeMetric(title: "Volume", value: "\(Int(entry.volumePercent))%", accent: state.volumePass ? DesignSystem.bullishColor : DesignSystem.dangerColor)
+                    TapeMetric(title: "Ratio", value: entry.instrument == .vxx ? String(format: "%.2f", entry.ratio) : "N/A", accent: state.ratioStatus.color)
+                    TapeMetric(title: "Window", value: entry.timeWindow.shortName, accent: state.windowPass ? DesignSystem.bullishColor : DesignSystem.dangerColor)
+                    TapeMetric(title: "VWAP", value: entry.vwapPosition.shortName, accent: state.levelStatus.color)
+                    TapeMetric(title: "Pattern", value: entry.patternConfirmed ? "YES" : "NO", accent: state.patternStatus.color)
+                }
+
+                HStack {
+                    Text("Posted \(entry.timestamp.formatted(date: .omitted, time: .shortened))")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                    Spacer()
+                    NavigationLink {
+                        ManualDataEntryView()
+                    } label: {
+                        Text("Update")
+                            .font(DesignSystem.Typography.labelFont)
+                    }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("No tape posted yet.")
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                    Text("Start with VXX, VIX, volume, VWAP, level, pattern, and window.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    NavigationLink {
+                        ManualDataEntryView()
+                    } label: {
+                        Label("Open Tape", systemImage: "slider.horizontal.3")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .deskPanel(glow: .clear, padding: 14)
+    }
+}
+
+private struct TapeMetric: View {
+    let title: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(0.8)
+                .foregroundColor(DesignSystem.mutedText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(value)
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .padding(10)
+        .background(accent.opacity(0.08))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(accent.opacity(0.28), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct PhoneStrategyRail: View {
     let entry: MarketDataEntry?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             DeskSectionHeader(title: "VXX Sequence", systemImage: "checklist", accent: DesignSystem.primaryColor)
+            Text("Follow it in order. If one gate fails, there is no trade yet.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 8) {
                 NavigationLink {
@@ -194,8 +353,6 @@ private struct PhoneStrategyRail: View {
                     systemImage: "candlestickchart",
                     accent: DesignSystem.bullishColor
                 )
-
-                StrategyDecisionRow(state: state, signalMonitor: signalMonitor)
             }
         }
     }
@@ -338,7 +495,7 @@ private struct VXXStrategyState {
 
     var windowPass: Bool {
         guard let entry else { return false }
-        return [.morning, .lunch, .powerHour, .institutional].contains(entry.timeWindow)
+        return entry.timeWindow.isVXXEntryWindow
     }
 
     var volumeWindowPass: Bool {
@@ -401,6 +558,7 @@ private struct VXXStrategyState {
     var ratioDetail: String {
         guard let entry else { return "Locked until tape is entered." }
         if !volumeWindowPass { return "Locked until volume and time pass." }
+        if entry.instrument != .vxx { return "This desk is for VXX. Switch the tape to VXX." }
         return ratioPass
             ? "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
             : "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >1.45."
@@ -429,6 +587,57 @@ private struct VXXStrategyState {
             return "All five are live. Size by ratio: \(entry.ratioTier). Execute on broker. Time stop still rules."
         }
         return "One failed gate means skip or wait. Do not average your way into a trade."
+    }
+
+    var commandTitle: String {
+        guard let entry else { return "ENTER TAPE" }
+        if entry.instrument != .vxx { return "SWITCH TO VXX" }
+        if ready { return "CLEARED" }
+        if !volumeWindowPass { return "NO TRADE" }
+        if !ratioPass { return "NO TRADE" }
+        if !levelPass { return "WAIT LEVEL" }
+        if !patternPass { return "WAIT PATTERN" }
+        return "WAIT"
+    }
+
+    var commandDetail: String {
+        guard entry != nil else {
+            return "Post the current VXX read before judging anything."
+        }
+        if ready {
+            return decisionDetail
+        }
+        if !volumeWindowPass {
+            return volumeWindowDetail
+        }
+        if !ratioPass {
+            return ratioDetail
+        }
+        if !levelPass {
+            return levelDetail
+        }
+        if !patternPass {
+            return patternDetail
+        }
+        return decisionDetail
+    }
+
+    var commandColor: Color {
+        if ready { return DesignSystem.bullishColor }
+        guard entry != nil else { return DesignSystem.primaryColor }
+        if !volumeWindowPass || !ratioPass { return DesignSystem.dangerColor }
+        return DesignSystem.warningColor
+    }
+
+    var commandIcon: String {
+        if ready { return "checkmark.seal.fill" }
+        guard entry != nil else { return "slider.horizontal.3" }
+        if !volumeWindowPass || !ratioPass { return "xmark.octagon.fill" }
+        return "clock.badge.exclamationmark"
+    }
+
+    var primaryActionTitle: String {
+        entry == nil ? "Enter Tape" : "Fix Tape"
     }
 }
 

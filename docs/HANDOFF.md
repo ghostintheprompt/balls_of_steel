@@ -28,12 +28,18 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 - Changed the installed display name to `Steel Desk` so the home screen is not the underscored target name.
 - Replaced the fake release banner value `v1.0.0 Release` with `Field Test`.
 - Added a compact phone Desk surface with a direct strategy rail: tape, VXX rules, prompt, risk.
+- Reworked the compact phone Desk into a trader command surface:
+  - Big `NEXT MOVE` card says `ENTER TAPE`, `NO TRADE`, `WAIT LEVEL`, `WAIT PATTERN`, or `CLEARED`.
+  - Current tape snapshot shows price, volume, ratio, window, VWAP, and pattern.
+  - Phone Desk no longer leads with generic signal/dashboard sections when there is no active risk.
+- Reworked Tape entry around the strategy order. It now shows `ORDER OF ATTACK` before the form and moves the trading window next to volume so gate 1 is visually non-negotiable.
 - Moved Settings out of the primary phone tab bar and into a gear on the Desk.
 - Stripped decorative hover/pulse behavior and reduced the visual system toward a flatter obsidian/steel utility.
 - Rewrote key copy away from generic AI/product language:
   - Manual feed now explicitly says ThinkOrSwim/Schwab are the execution platforms.
   - Prompt Coach is now framed as a window prompt desk, not an AI authority surface.
-- Removed premium gating posture for the current app direction. `StoreKitService.hasProUnlock` now defaults to true, and Settings presents the app as a free full desk.
+- Removed the paywall release path. `StoreKitService.swift` and `UnlockView.swift` were removed from the target/repo, Prompt Desk no longer checks purchase state, and Settings presents the app as a free full desk.
+- Added `docs/APP_STORE_CONNECT_COPY.md` as the paste-ready App Store Connect version `1.0` copy sheet. SKU is `MDRN-STEEL-DESK-001`; bundle id is `app.mdrn.steel`.
 - Built and installed signed Release builds on the paired iPhone `ZZZ`. The latest installed build uses the three-tab strategy rail direction. The final launch command disconnected after install, but the install completed successfully.
 
 ## Important Findings
@@ -45,7 +51,8 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 - The visual system should feel like wealth, grit, and balls through utility, not through hype. Avoid website/video-game treatment, decorative cards, novelty motion, and fake authority copy.
 - Remaining orange/purple accents should be audited because they read off-brand and can make the app feel like an AI template.
 - There are multiple launch/metadata docs with stronger internal language than App Review should see.
-- StoreKit code still exists, but the release direction is no paywall. It should be removed or isolated later rather than shipped as a monetization promise.
+- The release direction is no paywall. Keep it that way unless monetization returns later as patronage, support, or serious investor interest earned by usefulness.
+- Internal monetization note: VXX stays free. If a paid trading product exists later, the SPY version is the candidate, as a separate serious offer. Do not put this in public App Store copy.
 - There is no test target.
 - watchOS belongs on the future punch list only.
 
@@ -54,10 +61,11 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 1. Test the installed Release build on `ZZZ` during market hours. Judge it by speed, legibility, and whether it helps with VXX/VWAP/time-window decisions.
 2. Continue stripping any UI that has no function. Big text, direct controls, fewer surfaces.
 3. Collapse old inherited screens into the strategy rail where possible. The app should not feel like many pages.
-4. Audit VXX, Tape, Prompts, and Risk screens for phone readability and remove decorative/card-heavy sections that do not help the trade workflow.
-5. Scrub public-facing copy in UI and docs for App Review safety, including removal of premium/pro/unlock promises.
-6. Add a test target and cover time windows, VXX/VIX ratio thresholds, VWAP logic, prompt substitution, daily risk, and persistence.
-7. Prepare App Store metadata and screenshots only after the phone workflow feels like a real desk.
+4. Test whether the new `NEXT MOVE` card is readable at a glance while ThinkOrSwim/Schwab is open beside it.
+5. Audit VXX, Tape, Prompts, and Risk screens for phone readability and remove decorative/card-heavy sections that do not help the trade workflow.
+6. Scrub public-facing copy in UI and docs for App Review safety, including removal of premium/pro/unlock promises.
+7. Add a test target and cover time windows, VXX/VIX ratio thresholds, VWAP logic, prompt substitution, daily risk, and persistence.
+8. Prepare App Store metadata and screenshots only after the phone workflow feels like a real desk.
 
 ## Files To Start With
 

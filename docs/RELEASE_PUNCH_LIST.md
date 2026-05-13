@@ -12,6 +12,8 @@ The app is not a website, game, generic trading dashboard, or AI authority produ
 
 Monetization posture: no paywall for the trading desk. The strategy and core tools should be free. If serious users want to support or fund deeper work later, earn that through usefulness rather than luring small users into a locked system.
 
+Internal product note: VXX is the free desk and proof of craft. If a paid trading product exists later, make it the SPY version as a separate serious offer. Keep this out of public App Store copy for the VXX release.
+
 ## Current Release Posture
 
 The current app is not App Store ready, but it is now organized enough to move into a focused release pass. Generic iOS Debug, generic iOS Release, and macOS Debug builds pass with code signing disabled. Signed iPhone Release builds have been installed on `ZZZ` for market-hours testing. There is still no watchOS target, no dedicated test target, and no completed App Store submission package.
@@ -23,6 +25,8 @@ Practical estimate: closer to 50-60% release-ready than 75%. The build/signing p
 1. iPhone-first UX pass
    - Treat iPhone as the primary product surface.
    - Keep the primary phone model focused on `Desk`, `Tape`, and `Risk`.
+   - Keep the Desk led by the `NEXT MOVE` command card, not a marketing/dashboard layout.
+   - Make the first screen answer: enter tape, no trade, wait for level, wait for pattern, or cleared.
    - Keep VXX rules and prompt copy inside the desk workflow unless testing proves they need top-level placement.
    - Every visible control must have a job in the trading workflow.
    - Remove UI that feels like a website, video game, AI demo, or decorative dashboard.
@@ -92,13 +96,18 @@ Practical estimate: closer to 50-60% release-ready than 75%. The build/signing p
    - No brown/beige theme is present in the design system.
    - There are still many `.orange` warning accents and setup-doc references to the 50 SMA as orange. Audit whether orange should remain as a market convention or be replaced with the brand warning yellow/cyan system.
 
-4. Phone information architecture
+4. Live chart north star
+   - Research the correct data path for VXX, VIX, and VWAP on phone.
+   - Define the minimum viable live chart: VXX price, VWAP, volume, ratio, level, pattern/arrow marker.
+   - Do not add a decorative chart. The chart must directly improve entry timing.
+
+5. Phone information architecture
    - Current phone tab model is `Desk`, `Tape`, `Risk`.
    - Settings should stay off the primary phone tab bar unless market-hours testing proves it needs to be first-class.
    - SPY remains available on larger layouts, but VXX/VWAP/time-window flow is the lead phone workflow for now.
    - Keep iPad/macOS denser if useful.
 
-5. Data lifecycle
+6. Data lifecycle
    - Document what is stored locally.
    - Add clear reset/delete-local-data controls if needed.
    - Confirm uninstall behavior and privacy policy match.

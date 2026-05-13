@@ -62,6 +62,11 @@ The VXX/VIX/VWAP desk ships free. No Lite/Pro split, no locked prompts, no fake 
 ### 4.2 Long-Term Support
 If monetization returns, it should be patronage, enterprise support, or serious investor/supporter interest earned by the product's usefulness. No subscription bait and no locked trading workflow.
 
+### 4.3 Internal Product Ladder
+VXX is the free desk: the gift, proof of craft, and cleanest way to show the MDRN trading style without charging people for another fake system.
+
+The future paid product, if we build one, is the SPY version. That should be treated as a separate serious product line with deeper workflow, stronger tooling, and enough value to justify payment. Do not leak this into App Store copy for the free VXX release.
+
 ---
 
 ## Critical Risks to Monitor

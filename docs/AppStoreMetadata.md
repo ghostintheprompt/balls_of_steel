@@ -2,38 +2,60 @@
 
 ## App Information
 *   **App Name:** Steel Trading Desk
-*   **Subtitle:** Native Volatility Analysis
+*   **Subtitle:** VXX VWAP Trading Desk
 *   **Category:** Finance / Education
+*   **SKU:** `MDRN-STEEL-DESK-001`
 *   **Bundle ID:** `app.mdrn.steel`
 *   **Copyright:** © 2026 MDRN Corporation
 
 ## Marketing Text
-*   **Keywords:** trading, SPY, VXX, volatility, VIX, VWAP, journal, institutional flow, tape reading, discipline, options
+*   **Promotional Text:** A lean VXX/VIX/VWAP desk for traders who want discipline before execution. Enter the tape, check the gates, and keep the trade honest.
+*   **Keywords:** VXX,VIX,VWAP,SPY,options,trading,volatility,tape,risk,journal,finance,stocks
 *   **Support URL:** https://github.com/ghostintheprompt/steel-trading-desk/issues
 *   **Marketing URL:** https://mdrn.app/steel
 
 ## App Description
-**Steel Trading Desk** is a local-first, native iPhone, iPad, and Mac utility for traders who want a clean VXX/VIX/VWAP discipline layer between chart analysis and broker execution.
+Steel Trading Desk is a local-first iPhone, iPad, and Mac utility for traders who want a clean VXX/VIX/VWAP discipline layer between chart analysis and broker execution.
 
-**NO FANTASY FILLS.**
-Most trading tools encourage over-trading. Steel Trading Desk does the opposite. It keeps the setup in order: volume and window, VXX/VIX ratio, VWAP/key level, rejection pattern, then manual execution on your broker.
+This is not a signal seller, broker, trading bot, or magic system. Steel keeps the trade in order:
 
-**KEY FEATURES:**
-*   **VXX Sequence:** Check volume/window, VXX/VIX ratio, VWAP/key level, and pattern gates in order.
-*   **Tape Entry:** Enter chart values from ThinkOrSwim, Schwab, or your preferred platform.
-*   **Prompt Desk:** Copy structured market questions when a second read is useful.
-*   **Manual-First Discipline:** Execute trades manually on your broker.
-*   **Zero Telemetry:** Your data never leaves your device. No accounts. No tracking. No bullshit.
+1. Volume and VXX time window
+2. VXX/VIX ratio
+3. VWAP or key level
+4. Rejection pattern
+5. Manual execution and risk management
 
-**FULL DESK, NO PAYWALL:**
-The VXX/VIX/VWAP workflow, prompt support, and risk tools are available without an in-app purchase.
+Enter the tape from your charting or brokerage platform, check the gates in sequence, copy a structured prompt when a second read helps, and execute manually on your broker.
+
+Built for a simple purpose: fewer forced trades, cleaner entries, stricter exits.
+
+Key features:
+
+- VXX sequence: volume/window, VXX/VIX ratio, VWAP/key level, and pattern gates in order.
+- Tape entry: fast manual input for the chart values that matter.
+- Prompt Desk: structured market questions when you want a second read; no autopilot.
+- Risk discipline: active-risk and close-management surfaces for keeping the trade honest.
+- Local-first privacy: no accounts, no telemetry, no tracking.
+
+The full VXX/VIX/VWAP workflow, prompt support, and risk tools are available without an in-app purchase.
+
+Important: Steel Trading Desk is an educational utility. It does not execute trades, manage funds, provide financial advice, or connect as a brokerage service. You are responsible for your own trading decisions and risk.
 
 ## Reviewer Notes
-**IMPORTANT:** This app is an **Educational Utility** for market analysis and trading discipline. It does **not** manage funds, provide financial advice, or execute automated trades. 
+Steel Trading Desk is an educational market-analysis and trading-discipline utility. It does not manage funds, provide financial advice, execute trades, or automate brokerage activity.
 
-All trading data is entered manually by the user. All logic is educational.
+The app is manual-first. Users enter chart context themselves, including VXX, VIX, volume, VWAP/key level, time window, and pattern confirmation. The app then presents a local checklist-style workflow and risk-management reminders.
 
-**DEMO MODE:** To review the full desk without a brokerage account, the app includes sample educational data and manual-entry flows. No purchase is required to inspect the workflow.
+No account is required. No purchase is required. No brokerage credentials are required for review.
+
+Suggested review path:
+1. Open the app.
+2. Go to Tape and enter sample VXX/VIX/VWAP values.
+3. Return to Desk and verify the sequence gates update.
+4. Open Risk to inspect active-risk and close-management behavior.
+
+## App Store Connect Paste Sheet
+Use `docs/APP_STORE_CONNECT_COPY.md` for the field-by-field paste sheet matching the version page.
 
 ## Privacy Manifest (PrivacyInfo.xcprivacy)
 *   **Tracking:** No

@@ -15,6 +15,7 @@ struct ManualDataEntryView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         educationalHeader
+                        tapeOrderCard
                         dataEntryForm
                         quickFillSection
                         actionButtons
@@ -75,6 +76,44 @@ struct ManualDataEntryView: View {
             }
         }
         .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
+    }
+
+    private var tapeOrderCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ORDER OF ATTACK")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.mutedText)
+
+            TapeOrderRow(
+                index: 1,
+                title: "Volume + window",
+                detail: viewModel.volumeWindowGateDetail,
+                state: viewModel.volumeWindowGateState
+            )
+
+            TapeOrderRow(
+                index: 2,
+                title: "Ratio",
+                detail: viewModel.ratioGateDetail,
+                state: viewModel.ratioGateState
+            )
+
+            TapeOrderRow(
+                index: 3,
+                title: "VWAP / key level",
+                detail: viewModel.levelGateDetail,
+                state: viewModel.levelGateState
+            )
+
+            TapeOrderRow(
+                index: 4,
+                title: "Pattern now",
+                detail: viewModel.patternGateDetail,
+                state: viewModel.patternGateState
+            )
+        }
+        .deskPanel(glow: .clear)
     }
 
     private var dataEntryForm: some View {
@@ -144,6 +183,24 @@ struct ManualDataEntryView: View {
                 }
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Trading Window", systemImage: "clock.fill")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                Picker("Window", selection: $viewModel.timeWindow) {
+                    Text("Open (9:35-10:05)").tag(TimeWindowInput.open)
+                    Text("Pre-Market").tag(TimeWindowInput.preMarket)
+                    Text("Morning (9:50-10:15)").tag(TimeWindowInput.morning)
+                    Text("Lunch (12:20-12:40)").tag(TimeWindowInput.lunch)
+                    Text("Afternoon Flex (1:30-3:45)").tag(TimeWindowInput.afternoonFlex)
+                    Text("Power Hour (3:10-3:25)").tag(TimeWindowInput.powerHour)
+                    Text("Close (3:30-3:55)").tag(TimeWindowInput.close)
+                    Text("Institutional (3:45-4:10)").tag(TimeWindowInput.institutional)
+                    Text("After Hours").tag(TimeWindowInput.afterHours)
+                }
+                .pickerStyle(.menu)
+            }
+
             Divider()
 
             if viewModel.instrument == .vxx {
@@ -201,24 +258,6 @@ struct ManualDataEntryView: View {
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
                 }
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Trading Window", systemImage: "clock.fill")
-                    .font(DesignSystem.Typography.headlineFont)
-                    .foregroundColor(DesignSystem.primaryText)
-                Picker("Window", selection: $viewModel.timeWindow) {
-                    Text("Open (9:35-10:05)").tag(TimeWindowInput.open)
-                    Text("Pre-Market").tag(TimeWindowInput.preMarket)
-                    Text("Morning (9:50-10:15)").tag(TimeWindowInput.morning)
-                    Text("Lunch (12:20-12:40)").tag(TimeWindowInput.lunch)
-                    Text("Afternoon Flex (1:30-3:45)").tag(TimeWindowInput.afternoonFlex)
-                    Text("Power Hour (3:10-3:25)").tag(TimeWindowInput.powerHour)
-                    Text("Close (3:30-3:55)").tag(TimeWindowInput.close)
-                    Text("Institutional (3:45-4:10)").tag(TimeWindowInput.institutional)
-                    Text("After Hours").tag(TimeWindowInput.afterHours)
-                }
-                .pickerStyle(.menu)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -537,6 +576,69 @@ struct ManualDataEntryView: View {
     }
 }
 
+enum TapeGateState: Equatable {
+    case pass
+    case fail
+    case locked
+
+    var icon: String {
+        switch self {
+        case .pass: return "checkmark.circle.fill"
+        case .fail: return "xmark.circle.fill"
+        case .locked: return "lock.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .pass: return DesignSystem.bullishColor
+        case .fail: return DesignSystem.dangerColor
+        case .locked: return DesignSystem.mutedText
+        }
+    }
+}
+
+private struct TapeOrderRow: View {
+    let index: Int
+    let title: String
+    let detail: String
+    let state: TapeGateState
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text("\(index)")
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
+                .frame(width: 28, height: 28)
+                .background(state.color.opacity(0.16))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                Text(detail)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: state.icon)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(state.color)
+        }
+        .padding(12)
+        .background(DesignSystem.panelBottom)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(state.color.opacity(state == .locked ? 0.16 : 0.32), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
 // MARK: - View Model
 @MainActor
 class ManualDataEntryViewModel: ObservableObject {
@@ -567,6 +669,73 @@ class ManualDataEntryViewModel: ObservableObject {
             return nil
         }
         return VXXVIXRatio(vxx: vxxValue, vix: vixValue)
+    }
+
+    var volumeWindowGateState: TapeGateState {
+        guard let volumeValue = Double(volumePercent), volumeValue > 0 else { return .fail }
+        return volumeValue >= 200 && timeWindow.isVXXEntryWindow ? .pass : .fail
+    }
+
+    var ratioGateState: TapeGateState {
+        guard volumeWindowGateState == .pass else { return .locked }
+        guard instrument == .vxx, let ratio = calculatedRatio?.ratio else { return .fail }
+        return ratio >= 1.45 ? .pass : .fail
+    }
+
+    var levelGateState: TapeGateState {
+        guard ratioGateState == .pass else { return .locked }
+        return keyLevelConfirmed ? .pass : .fail
+    }
+
+    var patternGateState: TapeGateState {
+        guard levelGateState == .pass else { return .locked }
+        return patternConfirmed ? .pass : .fail
+    }
+
+    var volumeWindowGateDetail: String {
+        guard let volumeValue = Double(volumePercent), volumeValue > 0 else {
+            return "Start here. Need volume >200% and a valid VXX window."
+        }
+        if volumeValue < 200 {
+            return "Volume \(Int(volumeValue))%. Need >200% before anything else."
+        }
+        if !timeWindow.isVXXEntryWindow {
+            return "\(timeWindow.displayName) is not in the VXX playbook."
+        }
+        return "\(Int(volumeValue))% volume inside \(timeWindow.displayName)."
+    }
+
+    var ratioGateDetail: String {
+        guard volumeWindowGateState == .pass else {
+            return "Locked until volume and time pass."
+        }
+        guard instrument == .vxx else {
+            return "Switch instrument to VXX for this desk read."
+        }
+        guard let ratio = calculatedRatio?.ratio else {
+            return "Enter VXX and VIX to calculate the ratio."
+        }
+        return ratio >= 1.45
+            ? "\(String(format: "%.2f", ratio)) passes. Size by tier."
+            : "\(String(format: "%.2f", ratio)) fails. Need >1.45."
+    }
+
+    var levelGateDetail: String {
+        guard ratioGateState == .pass else {
+            return "Locked until ratio passes."
+        }
+        return keyLevelConfirmed
+            ? "Level confirmed. VWAP read: \(vwapPosition.displayName)."
+            : "Need VWAP, 50 SMA, round number, prior high, or support break."
+    }
+
+    var patternGateDetail: String {
+        guard levelGateState == .pass else {
+            return "Locked until level passes."
+        }
+        return patternConfirmed
+            ? "Rejection is visible now. Do not chase after it moves."
+            : "Wait for the rejection candle. No early entry."
     }
 
     var isValidEntry: Bool {
@@ -817,6 +986,14 @@ enum VWAPPosition: String, Codable, CaseIterable {
         case .at: return "At VWAP"
         }
     }
+
+    var shortName: String {
+        switch self {
+        case .above: return "ABOVE"
+        case .below: return "BELOW"
+        case .at: return "AT"
+        }
+    }
 }
 
 enum ArrowSignalInput: String, Codable, CaseIterable {
@@ -853,6 +1030,29 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         case .close: return "Close (3:30-3:55)"
         case .institutional: return "Institutional (3:45-4:10)"
         case .afterHours: return "After Hours"
+        }
+    }
+
+    var shortName: String {
+        switch self {
+        case .open: return "OPEN"
+        case .preMarket: return "PRE"
+        case .morning: return "MORN"
+        case .lunch: return "LUNCH"
+        case .afternoonFlex: return "FLEX"
+        case .powerHour: return "POWER"
+        case .close: return "CLOSE"
+        case .institutional: return "FLOW"
+        case .afterHours: return "AFTER"
+        }
+    }
+
+    var isVXXEntryWindow: Bool {
+        switch self {
+        case .morning, .lunch, .powerHour, .institutional:
+            return true
+        case .open, .preMarket, .afternoonFlex, .close, .afterHours:
+            return false
         }
     }
 
