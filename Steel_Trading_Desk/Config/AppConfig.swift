@@ -112,7 +112,7 @@ struct AppConfig {
     }
 
     struct Testing {
-        static let nextTradingTestDate = "v1.0.0 Release"
+        static let nextTradingTestDate = "Field Test"
     }
 
     struct CloseManagement {

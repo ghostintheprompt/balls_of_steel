@@ -8,6 +8,7 @@ struct VXXTradingDashboard: View {
     @ObservedObject var signalMonitor: SignalMonitor
     @ObservedObject private var timeManager = TimeManager.shared
     @ObservedObject private var riskManager = DailyRiskManager.shared
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var isExecutionBlocked: Bool {
         !timeManager.isTradingWindowOpen || riskManager.isTradingLocked
@@ -20,8 +21,13 @@ struct VXXTradingDashboard: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        TestSessionBanner()
-                            .padding(.horizontal)
+                        if horizontalSizeClass == .compact {
+                            VXXPhoneHeader()
+                                .padding(.horizontal)
+                        } else {
+                            TestSessionBanner()
+                                .padding(.horizontal)
+                        }
 
                         if isExecutionBlocked {
                             TradingLockBanner(
@@ -105,54 +111,70 @@ struct VXXTradingDashboard: View {
 
     // MARK: - Market Status Section
     private var marketStatusSection: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("VXX TAPE")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.1)
-                    .foregroundColor(DesignSystem.mutedText)
-
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("$\(viewModel.vxxPrice, specifier: "%.2f")")
-                        .font(DesignSystem.Typography.heroFont)
-                        .foregroundColor(DesignSystem.primaryText)
-
-                    Text("\(viewModel.vxxChangePercent, specifier: "%+.2f")%")
-                        .font(DesignSystem.Typography.headlineFont)
-                        .foregroundColor(viewModel.vxxChangePercent >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
+        Group {
+            if horizontalSizeClass == .compact {
+                VStack(spacing: 10) {
+                    vxxTapeCard
+                    vixPressureCard
                 }
-
-                Text("Wait until vol actually gets loud.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .deskPanel(glow: viewModel.vxxChangePercent >= 0 ? DesignSystem.bullishColor.opacity(0.14) : DesignSystem.bearishColor.opacity(0.14))
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("VIX PRESSURE")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.1)
-                    .foregroundColor(DesignSystem.mutedText)
-
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(viewModel.vixLevel, specifier: "%.2f")")
-                        .font(DesignSystem.Typography.heroFont)
-                        .foregroundColor(DesignSystem.primaryText)
-
-                    Text("\(viewModel.vixChangePercent, specifier: "%+.2f")%")
-                        .font(DesignSystem.Typography.headlineFont)
-                        .foregroundColor(viewModel.vixChangePercent >= 0 ? DesignSystem.dangerColor : DesignSystem.bullishColor)
+            } else {
+                HStack(spacing: 16) {
+                    vxxTapeCard
+                    vixPressureCard
                 }
-
-                Text(viewModel.vixChangePercent >= 0 ? "Fear is rising. Make it prove itself." : "Pressure is easing. Fade carefully.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .deskPanel(glow: DesignSystem.warningColor.opacity(0.12))
         }
         .padding(.horizontal)
+    }
+
+    private var vxxTapeCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("VXX TAPE")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.1)
+                .foregroundColor(DesignSystem.mutedText)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("$\(viewModel.vxxPrice, specifier: "%.2f")")
+                    .font(DesignSystem.Typography.heroFont)
+                    .foregroundColor(DesignSystem.primaryText)
+
+                Text("\(viewModel.vxxChangePercent, specifier: "%+.2f")%")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(viewModel.vxxChangePercent >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
+            }
+
+            Text("Wait until vol actually gets loud.")
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .deskPanel(glow: .clear)
+    }
+
+    private var vixPressureCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("VIX PRESSURE")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.1)
+                .foregroundColor(DesignSystem.mutedText)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(viewModel.vixLevel, specifier: "%.2f")")
+                    .font(DesignSystem.Typography.heroFont)
+                    .foregroundColor(DesignSystem.primaryText)
+
+                Text("\(viewModel.vixChangePercent, specifier: "%+.2f")%")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(viewModel.vixChangePercent >= 0 ? DesignSystem.dangerColor : DesignSystem.bullishColor)
+            }
+
+            Text(viewModel.vixChangePercent >= 0 ? "Fear is rising. Make it prove itself." : "Pressure is easing. Fade carefully.")
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .deskPanel(glow: .clear)
     }
 
     // MARK: - Patterns Section
@@ -221,6 +243,26 @@ struct VXXTradingDashboard: View {
 
     private var vxxSignals: [Signal] {
         signalMonitor.activeSignals.filter { $0.symbol == "VXX" }
+    }
+}
+
+private struct VXXPhoneHeader: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("VXX DESK")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.primaryColor)
+            Text("Ratio. VWAP. Volume. Window.")
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(DesignSystem.primaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("No trade until the tape earns it.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .deskPanel(glow: .clear, padding: 16)
     }
 }
 

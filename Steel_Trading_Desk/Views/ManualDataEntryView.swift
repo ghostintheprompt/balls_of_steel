@@ -46,13 +46,14 @@ struct ManualDataEntryView: View {
                     .foregroundColor(DesignSystem.mutedText)
             }
 
-            Text("Post the chart. Let the app read it.")
+            Text("Enter the read. Check the rules.")
                 .font(DesignSystem.Typography.titleFont)
                 .foregroundColor(DesignSystem.primaryText)
 
-            Text("Pull the setup from ThinkOrSwim or Schwab. No auto-feed. No fake certainty. You choose the numbers, and the desk decides whether it deserves attention.")
+            Text("Pull the numbers from ThinkOrSwim or Schwab. VXX/VIX, volume, VWAP, arrow, window. You execute on the trading platform. Steel only keeps the decision honest.")
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 12) {
                 Text("YOU EXECUTE")
@@ -168,6 +169,17 @@ struct ManualDataEntryView: View {
                 .pickerStyle(.segmented)
             }
 
+            Toggle(isOn: $viewModel.keyLevelConfirmed) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Key level confirmed")
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                    Text("VWAP, 50 SMA, round number, prior high, or support break.")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                }
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 Label("Arrow Signal", systemImage: "arrow.up.arrow.down.circle.fill")
                     .font(DesignSystem.Typography.headlineFont)
@@ -178,6 +190,17 @@ struct ManualDataEntryView: View {
                     Text("Bearish (Down)").tag(ArrowSignalInput.bearish)
                 }
                 .pickerStyle(.segmented)
+            }
+
+            Toggle(isOn: $viewModel.patternConfirmed) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Rejection pattern visible")
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                    Text("Shooting star, doji, engulfing, or clear rejection candle.")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -492,6 +515,12 @@ struct ManualDataEntryView: View {
                     Text(entry.arrowSignal.displayName)
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(entry.arrowSignal.color)
+                    Text(entry.keyLevelConfirmed ? "Level: Confirmed" : "Level: Missing")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(entry.keyLevelConfirmed ? DesignSystem.bullishColor : DesignSystem.warningColor)
+                    Text(entry.patternConfirmed ? "Pattern: Confirmed" : "Pattern: Missing")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(entry.patternConfirmed ? DesignSystem.bullishColor : DesignSystem.warningColor)
                     Text(entry.timeWindow.displayName)
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
@@ -519,6 +548,8 @@ class ManualDataEntryViewModel: ObservableObject {
     @Published var arrowSignal: ArrowSignalInput = .none
     @Published var timeWindow: TimeWindowInput = .morning
     @Published var newsRisk: NewsRiskInput = .none
+    @Published var keyLevelConfirmed: Bool = false
+    @Published var patternConfirmed: Bool = false
 
     @Published var priceError: String?
     @Published var vixLevelError: String?
@@ -592,6 +623,8 @@ class ManualDataEntryViewModel: ObservableObject {
             volumePercent: volumePercentValue,
             vwapPosition: vwapPosition,
             arrowSignal: arrowSignal,
+            keyLevelConfirmed: keyLevelConfirmed,
+            patternConfirmed: patternConfirmed,
             timeWindow: timeWindow,
             newsRisk: newsRisk,
             timestamp: Date()
@@ -618,6 +651,8 @@ class ManualDataEntryViewModel: ObservableObject {
         volumePercent = String(format: "%.0f", entry.volumePercent)
         vwapPosition = entry.vwapPosition
         arrowSignal = entry.arrowSignal
+        keyLevelConfirmed = entry.keyLevelConfirmed
+        patternConfirmed = entry.patternConfirmed
         timeWindow = entry.timeWindow
         newsRisk = entry.newsRisk
     }
@@ -629,6 +664,8 @@ class ManualDataEntryViewModel: ObservableObject {
         volumePercent = "340"
         vwapPosition = .above
         arrowSignal = .bullish
+        keyLevelConfirmed = true
+        patternConfirmed = true
         timeWindow = .institutional
         newsRisk = .moderate
     }
@@ -640,6 +677,8 @@ class ManualDataEntryViewModel: ObservableObject {
         volumePercent = ""
         vwapPosition = .above
         arrowSignal = .none
+        keyLevelConfirmed = false
+        patternConfirmed = false
         timeWindow = .morning
         newsRisk = .none
         priceError = nil
@@ -664,6 +703,8 @@ struct MarketDataEntry: Codable {
     let volumePercent: Double
     let vwapPosition: VWAPPosition
     let arrowSignal: ArrowSignalInput
+    let keyLevelConfirmed: Bool
+    let patternConfirmed: Bool
     let timeWindow: TimeWindowInput
     let newsRisk: NewsRiskInput
     let timestamp: Date
@@ -676,6 +717,8 @@ struct MarketDataEntry: Codable {
         case volumePercent
         case vwapPosition
         case arrowSignal
+        case keyLevelConfirmed
+        case patternConfirmed
         case timeWindow
         case newsRisk
         case timestamp
@@ -688,6 +731,8 @@ struct MarketDataEntry: Codable {
         volumePercent: Double,
         vwapPosition: VWAPPosition,
         arrowSignal: ArrowSignalInput,
+        keyLevelConfirmed: Bool,
+        patternConfirmed: Bool,
         timeWindow: TimeWindowInput,
         newsRisk: NewsRiskInput,
         timestamp: Date
@@ -698,6 +743,8 @@ struct MarketDataEntry: Codable {
         self.volumePercent = volumePercent
         self.vwapPosition = vwapPosition
         self.arrowSignal = arrowSignal
+        self.keyLevelConfirmed = keyLevelConfirmed
+        self.patternConfirmed = patternConfirmed
         self.timeWindow = timeWindow
         self.newsRisk = newsRisk
         self.timestamp = timestamp
@@ -717,6 +764,8 @@ struct MarketDataEntry: Codable {
         volumePercent = try container.decodeIfPresent(Double.self, forKey: .volumePercent) ?? 0
         vwapPosition = try container.decodeIfPresent(VWAPPosition.self, forKey: .vwapPosition) ?? .above
         arrowSignal = try container.decodeIfPresent(ArrowSignalInput.self, forKey: .arrowSignal) ?? .none
+        keyLevelConfirmed = try container.decodeIfPresent(Bool.self, forKey: .keyLevelConfirmed) ?? false
+        patternConfirmed = try container.decodeIfPresent(Bool.self, forKey: .patternConfirmed) ?? false
         timeWindow = try container.decodeIfPresent(TimeWindowInput.self, forKey: .timeWindow) ?? .morning
         newsRisk = try container.decodeIfPresent(NewsRiskInput.self, forKey: .newsRisk) ?? .none
         timestamp = try container.decodeIfPresent(Date.self, forKey: .timestamp) ?? Date()
@@ -730,6 +779,8 @@ struct MarketDataEntry: Codable {
         try container.encode(volumePercent, forKey: .volumePercent)
         try container.encode(vwapPosition, forKey: .vwapPosition)
         try container.encode(arrowSignal, forKey: .arrowSignal)
+        try container.encode(keyLevelConfirmed, forKey: .keyLevelConfirmed)
+        try container.encode(patternConfirmed, forKey: .patternConfirmed)
         try container.encode(timeWindow, forKey: .timeWindow)
         try container.encode(newsRisk, forKey: .newsRisk)
         try container.encode(timestamp, forKey: .timestamp)

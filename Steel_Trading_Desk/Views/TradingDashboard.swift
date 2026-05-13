@@ -4,6 +4,13 @@ import Combine
 struct TradingDashboard: View {
     @ObservedObject var signalMonitor: SignalMonitor
     @StateObject private var marketPulse = MarketPulse.shared
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage("lastMarketDataEntry") private var lastMarketDataEntryData: Data = Data()
+
+    private var lastMarketDataEntry: MarketDataEntry? {
+        guard !lastMarketDataEntryData.isEmpty else { return nil }
+        return try? JSONDecoder().decode(MarketDataEntry.self, from: lastMarketDataEntryData)
+    }
     
     var body: some View {
         NavigationView {
@@ -12,33 +19,52 @@ struct TradingDashboard: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        TestSessionBanner()
-                        MarketStatusView(phase: marketPulse.currentPhase)
-                        DashboardPulseStrip(
-                            signalCount: signalMonitor.activeSignals.count,
-                            tradeCount: signalMonitor.activeTrades.count,
-                            phase: marketPulse.currentPhase
-                        )
+                        if horizontalSizeClass == .compact {
+                            phoneDeskContent
+                        } else {
+                            TestSessionBanner()
+                            MarketStatusView(phase: marketPulse.currentPhase)
+                            DashboardPulseStrip(
+                                signalCount: signalMonitor.activeSignals.count,
+                                tradeCount: signalMonitor.activeTrades.count,
+                                phase: marketPulse.currentPhase
+                            )
 
-                        activeSignalsSection
-                        activeTradesSection
+                            activeSignalsSection
+                            activeTradesSection
+                        }
                     }
-                    .padding(20)
+                    .padding(horizontalSizeClass == .compact ? 16 : 20)
                 }
             }
-            .navigationTitle("Steel Trading Desk")
+            .navigationTitle(horizontalSizeClass == .compact ? "Steel Desk" : "Steel Trading Desk")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .large)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button("Add Symbol") { }
-                        Button("Refresh Data") { }
-                        Button("Clear All") { }
+                    NavigationLink {
+                        SettingsView()
                     } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundColor(DesignSystem.primaryColor)
+                        Image(systemName: "gearshape")
+                            .foregroundColor(DesignSystem.secondaryColor)
                     }
                 }
             }
+        }
+    }
+
+    private var phoneDeskContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            PhoneDeskHeader(phase: marketPulse.currentPhase)
+            PhoneStrategyRail(signalMonitor: signalMonitor, entry: lastMarketDataEntry)
+            PhoneDeskReadout(
+                signalCount: signalMonitor.activeSignals.count,
+                tradeCount: signalMonitor.activeTrades.count,
+                phase: marketPulse.currentPhase
+            )
+            activeSignalsSection
+            activeTradesSection
         }
     }
 
@@ -87,44 +113,444 @@ struct TradingDashboard: View {
     }
 }
 
-struct TestSessionBanner: View {
+private struct PhoneDeskHeader: View {
+    let phase: MarketPhase
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                HStack(alignment: .center, spacing: 16) {
-                    SteelDeskMark(size: 58)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("STEEL TRADING DESK")
-                            .font(DesignSystem.Typography.labelFont)
-                            .tracking(1.5)
-                            .foregroundColor(DesignSystem.primaryColor)
-                        Text(AppConfig.Testing.nextTradingTestDate)
-                            .font(DesignSystem.Typography.heroFont)
-                            .foregroundColor(DesignSystem.primaryText)
-                    }
-                }
-
-                Spacer()
-
-                HStack(spacing: 8) {
-                    sessionTag("LOCAL FIRST", color: DesignSystem.primaryColor)
-                    sessionTag("IOS + MAC", color: .purple)
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("STEEL DESK")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.0)
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text("VXX / VWAP / WINDOW")
+                    .font(DesignSystem.Typography.titleFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+                Text("Read tape. Check rules. Execute elsewhere.")
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Open first. Close honest. Small size. If the tape wants aggression, it has to earn it.")
+            Divider()
+                .overlay(DesignSystem.panelStroke)
+
+            HStack(spacing: 10) {
+                PhoneStatusChip(title: "Phase", value: phase.displayName, accent: phase.color)
+                PhoneStatusChip(title: "Mode", value: "Manual", accent: DesignSystem.secondaryColor)
+            }
+        }
+        .deskPanel(glow: .clear, padding: 16)
+    }
+}
+
+private struct PhoneStrategyRail: View {
+    @ObservedObject var signalMonitor: SignalMonitor
+    let entry: MarketDataEntry?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DeskSectionHeader(title: "VXX Sequence", systemImage: "checklist", accent: DesignSystem.primaryColor)
+
+            VStack(spacing: 8) {
+                NavigationLink {
+                    ManualDataEntryView()
+                } label: {
+                    StrategyGateRow(
+                        index: 1,
+                        title: "Volume + window",
+                        detail: state.volumeWindowDetail,
+                        status: state.volumeWindowStatus,
+                        systemImage: "slider.horizontal.3",
+                        accent: DesignSystem.primaryColor
+                    )
+                }
+
+                StrategyGateRow(
+                    index: 2,
+                    title: "Ratio",
+                    detail: state.ratioDetail,
+                    status: state.ratioStatus,
+                    systemImage: "divide.circle",
+                    accent: DesignSystem.warningColor
+                )
+
+                StrategyGateRow(
+                    index: 3,
+                    title: "VWAP / key level",
+                    detail: state.levelDetail,
+                    status: state.levelStatus,
+                    systemImage: "scope",
+                    accent: DesignSystem.secondaryColor
+                )
+
+                StrategyGateRow(
+                    index: 4,
+                    title: "Pattern now",
+                    detail: state.patternDetail,
+                    status: state.patternStatus,
+                    systemImage: "candlestickchart",
+                    accent: DesignSystem.bullishColor
+                )
+
+                StrategyDecisionRow(state: state, signalMonitor: signalMonitor)
+            }
+        }
+    }
+
+    private var state: VXXStrategyState {
+        VXXStrategyState(entry: entry)
+    }
+}
+
+private struct StrategyGateRow: View {
+    let index: Int
+    let title: String
+    let detail: String
+    let status: GateStatus
+    let systemImage: String
+    let accent: Color
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Rectangle()
+                .fill(status.color)
+                .frame(width: 4)
+                .clipShape(Capsule())
+
+            Text("\(index)")
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
+                .frame(width: 28, height: 28)
+                .background(status.color.opacity(0.18))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                Text(detail)
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: status.icon)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(status.color)
+        }
+        .padding(14)
+        .frame(minHeight: 68)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(status == .locked ? DesignSystem.panelTop.opacity(0.55) : DesignSystem.panelTop)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(DesignSystem.panelStroke, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct StrategyDecisionRow: View {
+    let state: VXXStrategyState
+    @ObservedObject var signalMonitor: SignalMonitor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: state.ready ? "checkmark.seal.fill" : "hand.raised.fill")
+                    .foregroundColor(state.ready ? DesignSystem.bullishColor : DesignSystem.warningColor)
+                Text(state.ready ? "CLEARED: EXECUTE ON BROKER" : "NOT CLEARED")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
+            }
+
+            Text(state.decisionDetail)
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
-                .italic()
+                .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 8) {
-                sessionPill("SPY + VXX")
-                sessionPill("Institutional Flow")
-                sessionPill("No Fantasy Fills")
+            if state.ready {
+                HStack(spacing: 10) {
+                    NavigationLink {
+                        PromptCoachView()
+                    } label: {
+                        Label("Prompt", systemImage: "doc.on.clipboard")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    NavigationLink {
+                        ActiveTradesView(signalMonitor: signalMonitor)
+                    } label: {
+                        Label("Risk", systemImage: "shield.lefthalf.filled")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            } else {
+                NavigationLink {
+                    ManualDataEntryView()
+                } label: {
+                    Label("Fix Tape", systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .deskPanel(glow: .clear, padding: 16)
+    }
+}
+
+private enum GateStatus: Equatable {
+    case pass
+    case fail
+    case locked
+
+    var icon: String {
+        switch self {
+        case .pass: return "checkmark.circle.fill"
+        case .fail: return "xmark.circle.fill"
+        case .locked: return "lock.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .pass: return DesignSystem.bullishColor
+        case .fail: return DesignSystem.dangerColor
+        case .locked: return DesignSystem.mutedText
+        }
+    }
+}
+
+private struct VXXStrategyState {
+    let entry: MarketDataEntry?
+
+    var volumePass: Bool {
+        guard let entry else { return false }
+        return entry.volumePercent >= 200
+    }
+
+    var windowPass: Bool {
+        guard let entry else { return false }
+        return [.morning, .lunch, .powerHour, .institutional].contains(entry.timeWindow)
+    }
+
+    var volumeWindowPass: Bool {
+        volumePass && windowPass
+    }
+
+    var ratioPass: Bool {
+        guard let entry else { return false }
+        return entry.instrument == .vxx && entry.ratio >= 1.45
+    }
+
+    var levelPass: Bool {
+        guard let entry else { return false }
+        return entry.keyLevelConfirmed
+    }
+
+    var patternPass: Bool {
+        guard let entry else { return false }
+        return entry.patternConfirmed
+    }
+
+    var ready: Bool {
+        volumeWindowPass && ratioPass && levelPass && patternPass
+    }
+
+    var volumeWindowStatus: GateStatus {
+        guard entry != nil else { return .fail }
+        return volumeWindowPass ? .pass : .fail
+    }
+
+    var ratioStatus: GateStatus {
+        guard volumeWindowPass else { return .locked }
+        return ratioPass ? .pass : .fail
+    }
+
+    var levelStatus: GateStatus {
+        guard volumeWindowPass && ratioPass else { return .locked }
+        return levelPass ? .pass : .fail
+    }
+
+    var patternStatus: GateStatus {
+        guard volumeWindowPass && ratioPass && levelPass else { return .locked }
+        return patternPass ? .pass : .fail
+    }
+
+    var volumeWindowDetail: String {
+        guard let entry else { return "Start here. Enter current VXX tape." }
+        if !volumePass && !windowPass {
+            return "Need volume >200% and valid VXX window. Now: \(Int(entry.volumePercent))%, \(entry.timeWindow.displayName)."
+        }
+        if !volumePass {
+            return "Volume is \(Int(entry.volumePercent))%. Need >200% before anything else."
+        }
+        if !windowPass {
+            return "\(entry.timeWindow.displayName) is not a VXX window. Wait."
+        }
+        return "Volume \(Int(entry.volumePercent))% inside \(entry.timeWindow.displayName)."
+    }
+
+    var ratioDetail: String {
+        guard let entry else { return "Locked until tape is entered." }
+        if !volumeWindowPass { return "Locked until volume and time pass." }
+        return ratioPass
+            ? "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
+            : "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >1.45."
+    }
+
+    var levelDetail: String {
+        guard volumeWindowPass && ratioPass else { return "Locked until ratio passes." }
+        guard let entry else { return "Locked until tape is entered." }
+        return levelPass
+            ? "Key level confirmed. VWAP read: \(entry.vwapPosition.displayName)."
+            : "No key level. Need VWAP, 50 SMA, round number, prior high, or support break."
+    }
+
+    var patternDetail: String {
+        guard volumeWindowPass && ratioPass && levelPass else { return "Locked until level passes." }
+        guard let entry else { return "Locked until tape is entered." }
+        if patternPass {
+            return entry.arrowSignal == .none ? "Rejection pattern confirmed." : "Pattern confirmed with \(entry.arrowSignal.displayName)."
+        }
+        return "Wait for rejection candle. No early entry."
+    }
+
+    var decisionDetail: String {
+        guard let entry else { return "No tape entered. Start with Tape." }
+        if ready {
+            return "All five are live. Size by ratio: \(entry.ratioTier). Execute on broker. Time stop still rules."
+        }
+        return "One failed gate means skip or wait. Do not average your way into a trade."
+    }
+}
+
+private struct PhoneDeskReadout: View {
+    let signalCount: Int
+    let tradeCount: Int
+    let phase: MarketPhase
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DeskSectionHeader(title: "Now", systemImage: "gauge.with.dots.needle.33percent", accent: phase.color)
+            HStack(spacing: 10) {
+                PhoneStatusChip(title: "Signals", value: "\(signalCount)", accent: DesignSystem.warningColor)
+                PhoneStatusChip(title: "Risk", value: "\(tradeCount)", accent: DesignSystem.dangerColor)
+            }
+        }
+    }
+}
+
+private struct PhoneStatusChip: View {
+    let title: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(0.8)
+                .foregroundColor(DesignSystem.mutedText)
+            Text(value)
+                .font(DesignSystem.Typography.headlineFont)
+                .foregroundColor(DesignSystem.primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(accent.opacity(0.08))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(accent.opacity(0.28), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+struct TestSessionBanner: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if horizontalSizeClass == .compact {
+                compactHeader
+            } else {
+                expandedHeader
+            }
+
+            Text("Manual SPY/VXX discipline desk: enter context, check the playbook, manage risk, get out clean.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    sessionPill("Manual Only")
+                    sessionPill("SPY / VXX")
+                    sessionPill("Risk First")
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    sessionPill("Manual Only")
+                    sessionPill("SPY / VXX")
+                    sessionPill("Risk First")
+                }
             }
         }
         .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12), padding: 20)
+    }
+
+    private var compactHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            SteelDeskMark(size: 48)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("STEEL DESK")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text(AppConfig.Testing.nextTradingTestDate)
+                    .font(DesignSystem.Typography.titleFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var expandedHeader: some View {
+        HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: 16) {
+                SteelDeskMark(size: 58)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("STEEL TRADING DESK")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.5)
+                        .foregroundColor(DesignSystem.primaryColor)
+                    Text(AppConfig.Testing.nextTradingTestDate)
+                        .font(DesignSystem.Typography.heroFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                sessionTag("LOCAL FIRST", color: DesignSystem.primaryColor)
+                sessionTag("NO AUTOTRADE", color: DesignSystem.secondaryColor)
+            }
+        }
     }
 
     private func sessionTag(_ text: String, color: Color) -> some View {

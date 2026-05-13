@@ -4,7 +4,7 @@ import StoreKit
 class StoreKitService: ObservableObject {
     static let shared = StoreKitService()
     
-    @Published private(set) var hasProUnlock = false
+    @Published private(set) var hasProUnlock = true
     @Published private(set) var products: [Product] = []
     
     private let proProductId = "app.mdrn.steel.pro_unlock"
@@ -23,52 +23,21 @@ class StoreKitService: ObservableObject {
     }
     
     func fetchProducts() async {
-        do {
-            products = try await Product.products(for: [proProductId])
-        } catch {
-            print("Failed to fetch products: \(error)")
-        }
+        products = []
     }
     
     func purchase() async throws -> Transaction? {
-        guard let product = products.first(where: { $0.id == proProductId }) else {
-            return nil
-        }
-        
-        let result = try await product.purchase()
-        
-        switch result {
-        case .success(let verification):
-            let transaction = try checkVerified(verification)
-            await updatePurchaseStatus()
-            await transaction.finish()
-            return transaction
-        case .userCancelled, .pending:
-            return nil
-        @unknown default:
-            return nil
-        }
+        hasProUnlock = true
+        return nil
     }
     
     func restorePurchases() async {
-        try? await AppStore.sync()
-        await updatePurchaseStatus()
+        hasProUnlock = true
     }
     
     @MainActor
     func updatePurchaseStatus() async {
-        for await result in Transaction.currentEntitlements {
-            do {
-                let transaction = try checkVerified(result)
-                if transaction.productID == proProductId {
-                    hasProUnlock = true
-                    return
-                }
-            } catch {
-                print("Transaction verification failed")
-            }
-        }
-        hasProUnlock = false
+        hasProUnlock = true
     }
     
     private func listenForTransactions() -> Task<Void, Error> {

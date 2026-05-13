@@ -216,37 +216,23 @@ struct SettingsView: View {
     }
 
     private var accessCard: some View {
-        InfoCard(glow: storeKit.hasProUnlock ? DesignSystem.successColor.opacity(0.12) : DesignSystem.primaryColor.opacity(0.12)) {
+        InfoCard(glow: .clear) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("INSTITUTIONAL PRO")
+                    Text("ACCESS")
                         .font(DesignSystem.Typography.labelFont)
                         .tracking(1.2)
                         .foregroundColor(DesignSystem.mutedText)
-                    Text(storeKit.hasProUnlock ? "ACCESS GRANTED" : "LOCKED")
+                    Text("FREE. FULL DESK.")
                         .font(DesignSystem.Typography.titleFont)
                         .fontWeight(.black)
-                        .foregroundColor(storeKit.hasProUnlock ? DesignSystem.successColor : DesignSystem.primaryText)
+                        .foregroundColor(DesignSystem.primaryText)
+                    Text("No paywall. Build the best VXX/VIX/VWAP entry tool and charge for games.")
+                        .font(DesignSystem.Typography.bodyFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                
-                Spacer()
-                
-                Button(action: { showingUnlockView = true }) {
-                    Text(storeKit.hasProUnlock ? "VIEW" : "UNLOCK")
-                        .font(DesignSystem.Typography.labelFont)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(DesignSystem.primaryColor.opacity(0.12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6).stroke(DesignSystem.primaryColor, lineWidth: 1)
-                        )
-                        .foregroundColor(DesignSystem.primaryColor)
-                }
-                .buttonStyle(.plain)
             }
-        }
-        .sheet(isPresented: $showingUnlockView) {
-            UnlockView()
         }
     }
 

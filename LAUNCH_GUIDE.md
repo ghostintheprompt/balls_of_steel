@@ -9,16 +9,12 @@ This document consolidates all MDRN-standard technical details and submission st
 *   **Platforms:** iOS 17.0+ / macOS 14.0+
 *   **Privacy Manifest:** Included (`PrivacyInfo.xcprivacy`) — **Zero Data Collection**.
 
-## 2. Institutional Pro (Freemium Split)
-The app uses a "Educational Mode" by default. The following features are gated behind the **Institutional Pro** one-time IAP (`app.mdrn.steel.pro_unlock`):
-*   **Schwab API Integration:** Real-time data streaming (currently in broker placeholder mode).
-*   **Supreme Prompt Library:** High-level Institutional Flow and Power Hour prompts in the Prompt Coach.
-*   **Unlimited Journaling:** Access to complete historical data and P&L analytics.
+## 2. Free Full Desk
+The release direction is no paywall. The VXX/VIX/VWAP workflow, prompt support, and risk tools should be available without an in-app purchase. StoreKit code may remain temporarily in the repo, but it is not part of the current launch posture.
 
 ## 3. Final Playtest Checklist
 Before hitting "Submit" in App Store Connect, verify these flows in the Simulator:
-- [ ] **Gating Check:** Ensure **Settings > Institutional Pro** says "LOCKED" and Prompt Coach is obscured.
-- [ ] **Purchase Flow:** Tap "Unlock" and simulate a success. Verify the Schwab API card appears in Settings.
+- [ ] **Access Check:** Ensure the desk is fully usable without purchase prompts.
 - [ ] **Tape Logic:** Enter `350% Volume` in the Manual tab; verify the **VXX Dashboard** triggers the high-contrast Institutional Flow glow.
 - [ ] **Data Freshness:** Verify the "Open first. Close honest." tagline is visible on the main desk.
 

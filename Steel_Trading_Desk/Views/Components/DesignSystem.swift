@@ -5,22 +5,22 @@ import AppKit
 #endif
 
 struct DesignSystem {
-    // MARK: - Brand Colors (Boiler Room Aesthetic - Obsidian & Electric)
-    static let backgroundTop = Color(red: 0.01, green: 0.01, blue: 0.01) // #030303
-    static let backgroundBottom = Color(red: 0.04, green: 0.04, blue: 0.05) // #0A0A0D
-    static let panelTop = Color(red: 0.10, green: 0.11, blue: 0.13) // #1A1C21
-    static let panelBottom = Color(red: 0.05, green: 0.05, blue: 0.06) // #0D0D0F
-    static let panelStroke = Color.white.opacity(0.14)
+    // MARK: - Brand Colors (Black, Steel, Status)
+    static let backgroundTop = Color(red: 0.035, green: 0.037, blue: 0.040)
+    static let backgroundBottom = Color(red: 0.015, green: 0.016, blue: 0.018)
+    static let panelTop = Color(red: 0.105, green: 0.112, blue: 0.122)
+    static let panelBottom = Color(red: 0.075, green: 0.080, blue: 0.088)
+    static let panelStroke = Color.white.opacity(0.12)
 
-    static let primaryColor = Color(red: 0.00, green: 0.95, blue: 1.00) // Electric Cyan
-    static let successColor = Color(red: 0.15, green: 1.00, blue: 0.40) // Sharp Neon Green
-    static let dangerColor = Color(red: 1.00, green: 0.25, blue: 0.25) // Sharp Neon Red
-    static let warningColor = Color(red: 1.00, green: 0.90, blue: 0.00) // Sharp Neon Yellow
-    static let secondaryColor = Color(red: 0.60, green: 0.65, blue: 0.70) // Metallic Silver
+    static let primaryColor = Color(red: 0.72, green: 0.82, blue: 0.86) // cold steel
+    static let successColor = Color(red: 0.12, green: 0.72, blue: 0.34)
+    static let dangerColor = Color(red: 0.88, green: 0.18, blue: 0.16)
+    static let warningColor = Color(red: 0.86, green: 0.70, blue: 0.24)
+    static let secondaryColor = Color(red: 0.62, green: 0.66, blue: 0.70)
 
-    static let primaryText = Color.white
-    static let mutedText = Color(red: 0.55, green: 0.60, blue: 0.65)
-    static let edgeGlow = Color(red: 0.00, green: 0.95, blue: 1.00).opacity(0.15)
+    static let primaryText = Color(red: 0.94, green: 0.95, blue: 0.96)
+    static let mutedText = Color(red: 0.68, green: 0.71, blue: 0.74)
+    static let edgeGlow = Color.clear
 
     // MARK: - Trading Colors
     static let bullishColor = successColor
@@ -33,24 +33,24 @@ struct DesignSystem {
     static let largeSpacing: CGFloat = 24
 
     // MARK: - Corner Radius
-    static let cornerRadius: CGFloat = 10
+    static let cornerRadius: CGFloat = 8
     static let smallCornerRadius: CGFloat = 6
-    static let largeCornerRadius: CGFloat = 14
+    static let largeCornerRadius: CGFloat = 8
 
-    // MARK: - Typography (Sharp & Industrial)
+    // MARK: - Typography
     struct Typography {
-        static let heroFont = Font.system(size: 32, weight: .black, design: .default)
-        static let titleFont = Font.system(size: 22, weight: .bold, design: .default)
-        static let headlineFont = Font.system(size: 14, weight: .bold, design: .monospaced)
-        static let bodyFont = Font.system(size: 13, weight: .medium, design: .default)
-        static let captionFont = Font.system(size: 11, weight: .bold, design: .default)
-        static let labelFont = Font.system(size: 10, weight: .black, design: .monospaced)
-        static let monospacedFont = Font.system(size: 13, weight: .bold, design: .monospaced)
+        static let heroFont = Font.system(size: 30, weight: .black, design: .default)
+        static let titleFont = Font.system(size: 23, weight: .bold, design: .default)
+        static let headlineFont = Font.system(size: 16, weight: .bold, design: .default)
+        static let bodyFont = Font.system(size: 15, weight: .medium, design: .default)
+        static let captionFont = Font.system(size: 13, weight: .semibold, design: .default)
+        static let labelFont = Font.system(size: 11, weight: .black, design: .monospaced)
+        static let monospacedFont = Font.system(size: 15, weight: .bold, design: .monospaced)
     }
 
     // MARK: - Shadows
-    static let cardShadow = Color.black.opacity(0.35)
-    static let shadowRadius: CGFloat = 14
+    static let cardShadow = Color.black.opacity(0.18)
+    static let shadowRadius: CGFloat = 4
 
     // MARK: - Animation
     static let defaultAnimation = Animation.easeInOut(duration: 0.3)
@@ -59,27 +59,11 @@ struct DesignSystem {
 
 struct TradingBackdrop: View {
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [DesignSystem.backgroundTop, DesignSystem.backgroundBottom],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            RadialGradient(
-                colors: [DesignSystem.edgeGlow.opacity(0.18), .clear],
-                center: .topTrailing,
-                startRadius: 10,
-                endRadius: 420
-            )
-
-            RadialGradient(
-                colors: [DesignSystem.bullishColor.opacity(0.10), .clear],
-                center: .bottomLeading,
-                startRadius: 20,
-                endRadius: 360
-            )
-        }
+        LinearGradient(
+            colors: [DesignSystem.backgroundTop, DesignSystem.backgroundBottom],
+            startPoint: .top,
+            endPoint: .bottom
+        )
         .ignoresSafeArea()
     }
 }
@@ -87,47 +71,19 @@ struct TradingBackdrop: View {
 private struct DeskPanelModifier: ViewModifier {
     let glow: Color
     let padding: CGFloat
-    @State private var isHovered = false
 
     func body(content: Content) -> some View {
         content
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.largeCornerRadius)
-                    .fill(
-                        LinearGradient(
-                            colors: [DesignSystem.panelTop, DesignSystem.panelBottom],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(DesignSystem.panelTop)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.largeCornerRadius)
                     .stroke(DesignSystem.panelStroke, lineWidth: 1)
             )
-            .overlay(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: DesignSystem.largeCornerRadius)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(isHovered ? 0.12 : 0.06),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .blendMode(.screen)
-            }
-            .shadow(color: glow, radius: 18, x: 0, y: 8)
-            .shadow(color: DesignSystem.cardShadow, radius: DesignSystem.shadowRadius, x: 0, y: 10)
-            .scaleEffect(isHovered ? 1.008 : 1)
-            .offset(y: isHovered ? -2 : 0)
-            .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isHovered)
-            .onHover { hovering in
-                isHovered = hovering
-            }
+            .shadow(color: DesignSystem.cardShadow, radius: DesignSystem.shadowRadius, x: 0, y: 2)
     }
 }
 
@@ -195,25 +151,11 @@ struct DeskCountBadge: View {
 struct DeskPulseDot: View {
     let accent: Color
     var size: CGFloat = 10
-    @State private var pulse = false
 
     var body: some View {
         Circle()
             .fill(accent)
             .frame(width: size, height: size)
-            .background(
-                Circle()
-                    .stroke(accent.opacity(0.45), lineWidth: 1.5)
-                    .scaleEffect(pulse ? 2.4 : 1)
-                    .opacity(pulse ? 0 : 0.9)
-            )
-            .shadow(color: accent.opacity(0.55), radius: 8)
-            .onAppear {
-                pulse = false
-                withAnimation(.easeOut(duration: 1.5).repeatForever(autoreverses: false)) {
-                    pulse = true
-                }
-            }
     }
 }
 

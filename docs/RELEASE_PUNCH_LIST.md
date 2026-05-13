@@ -1,6 +1,6 @@
 # Steel Trading Desk Release Punch List
 
-Last updated: May 11, 2026
+Last updated: May 13, 2026
 
 ## Product Position
 
@@ -8,16 +8,25 @@ Steel Trading Desk should be positioned as a local-first, manual trading discipl
 
 It should not be positioned as financial advice, automated trading, managed execution, guaranteed signals, or a brokerage replacement.
 
+The app is not a website, game, generic trading dashboard, or AI authority product. It exists for a specific broker-desk workflow: VXX setup, VXX/VIX ratio, VWAP/level, volume confirmation, correct time window, prompt if useful, execute on broker, manage risk.
+
+Monetization posture: no paywall for the trading desk. The strategy and core tools should be free. If serious users want to support or fund deeper work later, earn that through usefulness rather than luring small users into a locked system.
+
 ## Current Release Posture
 
-The current app is not App Store ready, but it is now organized enough to move into a focused release pass. Generic iOS and macOS Debug builds pass with code signing disabled. There is still no watchOS target, no dedicated test target, and no completed App Store submission package.
+The current app is not App Store ready, but it is now organized enough to move into a focused release pass. Generic iOS Debug, generic iOS Release, and macOS Debug builds pass with code signing disabled. Signed iPhone Release builds have been installed on `ZZZ` for market-hours testing. There is still no watchOS target, no dedicated test target, and no completed App Store submission package.
 
-Practical estimate: closer to 60-70% release-ready than 75%, mostly because build hygiene is now in better shape but phone UX, compliance language, screenshots, signing, and device testing still need concentrated work.
+Practical estimate: closer to 50-60% release-ready than 75%. The build/signing path is real, but the phone product surface still needs a hard function-first pass before TestFlight.
 
 ## P0: Release Blockers
 
 1. iPhone-first UX pass
    - Treat iPhone as the primary product surface.
+   - Keep the primary phone model focused on `Desk`, `Tape`, and `Risk`.
+   - Keep VXX rules and prompt copy inside the desk workflow unless testing proves they need top-level placement.
+   - Every visible control must have a job in the trading workflow.
+   - Remove UI that feels like a website, video game, AI demo, or decorative dashboard.
+   - Use larger, readable text and fewer panels.
    - Test compact layouts on real or simulated iPhone sizes.
    - Reduce dense dashboard sections where they become cramped.
    - Confirm tab count, navigation titles, sheets, onboarding, disclaimers, paywall, and settings fit without clipping.
@@ -35,10 +44,11 @@ Practical estimate: closer to 60-70% release-ready than 75%, mostly because buil
    - Avoid presenting historical strategy rates as expected future results.
    - Consider legal review before external TestFlight.
 
-4. StoreKit and monetization verification
-   - Confirm `app.mdrn.steel.pro_unlock` exists in App Store Connect.
-   - Test purchase, restore, locked/unlocked states, offline behavior, and failed purchase states.
-   - Make paywall language concrete and App Review safe.
+4. Remove paywall assumptions
+   - Keep the full trading desk free.
+   - Remove or hide StoreKit/paywall surfaces from the release path.
+   - Do not describe premium/pro/unlock features in App Store metadata.
+   - If monetization returns later, treat it as patronage, enterprise support, or a separate serious offer, not a bait system.
 
 5. Privacy and permissions
    - Confirm privacy policy contact email is real.
@@ -83,8 +93,9 @@ Practical estimate: closer to 60-70% release-ready than 75%, mostly because buil
    - There are still many `.orange` warning accents and setup-doc references to the 50 SMA as orange. Audit whether orange should remain as a market convention or be replaced with the brand warning yellow/cyan system.
 
 4. Phone information architecture
-   - Decide whether Desk, Manual, VXX, SPY, Live, and Settings all belong in the primary tab bar on iPhone.
-   - Consider a shorter phone tab model: Desk, Manual, Coach, Risk, Settings.
+   - Current phone tab model is `Desk`, `Tape`, `Risk`.
+   - Settings should stay off the primary phone tab bar unless market-hours testing proves it needs to be first-class.
+   - SPY remains available on larger layouts, but VXX/VWAP/time-window flow is the lead phone workflow for now.
    - Keep iPad/macOS denser if useful.
 
 5. Data lifecycle

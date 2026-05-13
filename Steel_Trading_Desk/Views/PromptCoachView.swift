@@ -6,7 +6,7 @@ import UIKit
 #endif
 
 // MARK: - Prompt Coach View
-// Your personal AI prompt assistant - delivers the right analysis prompt at the right time
+// Delivers the right analysis prompt for the active trading window.
 
 struct PromptCoachView: View {
     @StateObject private var viewModel = PromptCoachViewModel()
@@ -77,7 +77,7 @@ struct PromptCoachView: View {
                     .font(DesignSystem.Typography.titleFont)
                     .fontWeight(.black)
                     .foregroundColor(DesignSystem.primaryText)
-                Text("Unlock the complete prompt library and institutional flow analysis.")
+                Text("Unlock the complete window prompt library.")
                     .font(DesignSystem.Typography.bodyFont)
                     .foregroundColor(DesignSystem.mutedText)
                     .multilineTextAlignment(.center)
@@ -85,7 +85,7 @@ struct PromptCoachView: View {
             .padding(.horizontal, 40)
 
             Button(action: { showingUnlockView = true }) {
-                Text("UNLOCK INSTITUTIONAL PRO")
+                Text("UNLOCK PROMPTS")
                     .font(DesignSystem.Typography.labelFont)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 14)
@@ -106,31 +106,33 @@ struct PromptCoachView: View {
     private var promptCoachHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "brain.head.profile")
+                Image(systemName: "doc.on.clipboard")
                     .font(.title)
-                    .foregroundColor(.purple)
-                Text("Your AI Prompt Coach")
+                    .foregroundColor(DesignSystem.primaryColor)
+                Text("Prompt Desk")
                     .font(.title2)
                     .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.primaryText)
             }
 
-            Text("Get the right analysis prompt at the right time with live data pre-filled. Just copy & paste into ChatGPT or Claude.")
+            Text("Copy the right question for the current window. Use your tape values. No magic, no autopilot.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(DesignSystem.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 16) {
-                FeatureBadge(icon: "clock.fill", text: "Auto-Scheduled", color: .blue)
-                FeatureBadge(icon: "chart.line.uptrend.xyaxis", text: "Live Data", color: .green)
-                FeatureBadge(icon: "doc.on.clipboard", text: "One-Tap Copy", color: .orange)
+                FeatureBadge(icon: "clock.fill", text: "Window", color: DesignSystem.primaryColor)
+                FeatureBadge(icon: "chart.line.uptrend.xyaxis", text: "Tape", color: DesignSystem.bullishColor)
+                FeatureBadge(icon: "doc.on.clipboard", text: "Copy", color: DesignSystem.secondaryColor)
             }
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.purple.opacity(0.05))
+                .fill(DesignSystem.panelTop)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                        .stroke(DesignSystem.panelStroke, lineWidth: 1)
                 )
         )
     }
@@ -141,15 +143,15 @@ struct PromptCoachView: View {
             HStack {
                 Image(systemName: "chart.bar.doc.horizontal.fill")
                     .font(.title2)
-                    .foregroundColor(.orange)
+                    .foregroundColor(DesignSystem.secondaryColor)
                     .padding(12)
-                    .background(Circle().fill(Color.orange.opacity(0.1)))
+                    .background(Circle().fill(DesignSystem.secondaryColor.opacity(0.12)))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("POST-TRADE REVIEW")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(.orange)
+                        .foregroundColor(DesignSystem.secondaryColor)
                     Text("Last Trade Analysis")
                         .font(.headline)
                 }
@@ -173,7 +175,7 @@ struct PromptCoachView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color.orange)
+                    .background(DesignSystem.secondaryColor)
                     .cornerRadius(8)
                 }
             }
@@ -193,10 +195,10 @@ struct PromptCoachView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.orange.opacity(0.05))
+                .fill(DesignSystem.panelTop)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.orange, lineWidth: 2)
+                        .stroke(DesignSystem.secondaryColor.opacity(0.35), lineWidth: 1)
                 )
         )
     }
@@ -213,7 +215,7 @@ struct PromptCoachView: View {
                     .background(Circle().fill(Color.green.opacity(0.1)))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("READY NOW")
+                    Text("WINDOW PROMPT")
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(.green)

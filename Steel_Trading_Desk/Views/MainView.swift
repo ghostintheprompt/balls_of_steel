@@ -6,41 +6,18 @@ struct MainView: View {
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @State private var showLaunchOverlay = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         ZStack {
             TradingBackdrop()
 
             TabView {
-                TradingDashboard(signalMonitor: signalMonitor)
-                    .tabItem {
-                        Label("Desk", systemImage: "chart.line.uptrend.xyaxis")
-                    }
-
-                ManualDataEntryView()
-                    .tabItem {
-                        Label("Manual", systemImage: "slider.horizontal.3")
-                    }
-
-                VXXTradingDashboard(signalMonitor: signalMonitor)
-                    .tabItem {
-                        Label("VXX", systemImage: "waveform.path.ecg")
-                    }
-
-                SPYTradingDashboard(signalMonitor: signalMonitor)
-                    .tabItem {
-                        Label("SPY", systemImage: "arrow.left.arrow.right")
-                    }
-                
-                ActiveTradesView(signalMonitor: signalMonitor)
-                    .tabItem {
-                        Label("Live", systemImage: "clock.arrow.circlepath")
-                    }
-                
-                SettingsView()
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
+                if horizontalSizeClass == .compact {
+                    compactPhoneTabs
+                } else {
+                    expandedDeskTabs
+                }
             }
             .tint(DesignSystem.primaryColor)
 
@@ -70,5 +47,56 @@ struct MainView: View {
                 showLaunchOverlay = false
             }
         }
+    }
+
+    @ViewBuilder
+    private var compactPhoneTabs: some View {
+        TradingDashboard(signalMonitor: signalMonitor)
+            .tabItem {
+                Label("Desk", systemImage: "chart.line.uptrend.xyaxis")
+            }
+
+        ManualDataEntryView()
+            .tabItem {
+                Label("Tape", systemImage: "slider.horizontal.3")
+            }
+
+        ActiveTradesView(signalMonitor: signalMonitor)
+            .tabItem {
+                Label("Risk", systemImage: "shield.lefthalf.filled")
+            }
+    }
+
+    @ViewBuilder
+    private var expandedDeskTabs: some View {
+        TradingDashboard(signalMonitor: signalMonitor)
+            .tabItem {
+                Label("Desk", systemImage: "chart.line.uptrend.xyaxis")
+            }
+
+        ManualDataEntryView()
+            .tabItem {
+                Label("Manual", systemImage: "slider.horizontal.3")
+            }
+
+        VXXTradingDashboard(signalMonitor: signalMonitor)
+            .tabItem {
+                Label("VXX", systemImage: "waveform.path.ecg")
+            }
+
+        SPYTradingDashboard(signalMonitor: signalMonitor)
+            .tabItem {
+                Label("SPY", systemImage: "arrow.left.arrow.right")
+            }
+
+        ActiveTradesView(signalMonitor: signalMonitor)
+            .tabItem {
+                Label("Live", systemImage: "clock.arrow.circlepath")
+            }
+
+        SettingsView()
+            .tabItem {
+                Label("Settings", systemImage: "gear")
+            }
     }
 }

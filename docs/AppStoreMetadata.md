@@ -25,8 +25,8 @@ Most trading tools encourage over-trading. Steel Trading Desk does the opposite.
 *   **Manual-First Discipline:** Validate signals manually to maintain "Skin in the Game."
 *   **Zero Telemetry:** Your data never leaves your device. No accounts. No tracking. No bullshit.
 
-**INSTITUTIONAL PRO (One-Time Purchase):**
-Unlock supreme power with automated Schwab API integration, the complete Supreme Prompt Library, and unlimited trade journaling.
+**FULL DESK, NO PAYWALL:**
+The VXX/VIX/VWAP workflow, prompt support, and risk tools are available without an in-app purchase.
 
 ## Reviewer Notes
 **IMPORTANT:** This app is an **Educational Utility** for market analysis and trading discipline. It does **not** manage funds, provide financial advice, or execute automated trades. 

@@ -10,7 +10,7 @@
 
 Bridging the gap between chart analysis and rigorous trade management, Steel provides an elite interface for manual-entry validation and AI-assisted analysis.
 
-**Try for Free:** Access the core manual-entry desk and pre-market/morning analysis prompts at no cost. Unlock the full **Institutional Pro** suite via a one-time In-App Purchase to access the supreme prompt library, unlimited journaling, and automated brokerage integration.
+**Full Desk, No Paywall:** The manual-entry desk, VXX/VIX/VWAP workflow, prompt support, and risk tools are available without an in-app purchase.
 
 **Key Features:**
 *   **Setup Validation:** Multi-factor checks for time windows, volume, VWAP, and volatility ratios.
