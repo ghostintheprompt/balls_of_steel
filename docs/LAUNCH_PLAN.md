@@ -45,30 +45,22 @@
 
 ---
 
-## Phase 4: Monetization Strategy (Freemium Model)
-*Aligning with the "Elite" philosophy: Provide high value for free, unlock supreme power for a premium.*
+## Phase 4: Free Full Desk
+*This is a field tool and a gift to traders, not a fish funnel.*
 
-### 4.1 The Tiered Structure
-To maximize adoption while ensuring revenue, we will use an **In-App Purchase (IAP)** to unlock "Pro" features.
+### 4.1 Release Structure
+The VXX/VIX/VWAP desk ships free. No Lite/Pro split, no locked prompts, no fake premium wall. The value is proving the workflow is real enough that serious people want to support the broader MDRN work later.
 
-| Feature | **Lite (Free)** | **Pro (Unlocked)** |
-| :--- | :--- | :--- |
-| **Manual Entry** | Basic Price/Volume | Full VIX/Ratio/Technical Data |
-| **Prompt Coach** | Pre-Market & Morning | **Supreme Library** (Institutional Flow, Power Hour, Crisis Mode) |
-| **Journaling** | Last 5 Trades | **Unlimited History** + P&L Analytics |
-| **Brokerage** | Manual Only | **Schwab API Integration** |
-| **Risk Tools** | Basic Close Warning | **Hard-Exit Automated Discipline** |
+| Area | Release Posture |
+| :--- | :--- |
+| **Manual Entry** | Full tape entry for VXX, VIX, volume, VWAP, key level, pattern, and window |
+| **Desk Sequence** | Full gate sequence: volume/window, ratio, VWAP/key level, pattern, decision |
+| **Prompt Desk** | Available without purchase prompts |
+| **Risk Tools** | Available without purchase prompts |
+| **Brokerage** | Manual execution only for launch |
 
-### 4.2 Pricing Strategy
-*   **Model:** One-time In-App Purchase (Life-time "Pro" Unlock).
-*   **Psychological Pricing:** 
-    *   **$49.99:** "Entry Elite" - Accessible for retail traders.
-    *   **$99.99:** "Institutional Pro" - Positioned as a professional tool.
-*   **Why One-Time?** Subscriptions often feel like "bloatware." A one-time high-ticket price reinforces the "Steel Trading Desk" brand of conviction and local-first ownership.
-
-### 4.3 App Store Implementation
-*   **Guideline 3.1.1:** Use Apple's native IAP framework.
-*   **Trial Period:** Offer a 7-day "Pro Trial" to hook users on the Institutional Flow window (3:45 PM), which has the highest reliability (90%).
+### 4.2 Long-Term Support
+If monetization returns, it should be patronage, enterprise support, or serious investor/supporter interest earned by the product's usefulness. No subscription bait and no locked trading workflow.
 
 ---
 
@@ -77,7 +69,7 @@ To maximize adoption while ensuring revenue, we will use an **In-App Purchase (I
 | :--- | :--- | :--- |
 | **Financial Regulation** | High | Emphasize "Manual Entry" and "Journaling" over "Trading". |
 | **Branding Rejection** | Medium | Use a sanitized "Display Name" in the App Store. |
-| **IAP Complexity** | Low | Implement a single "Unlock All" non-consumable IAP. |
+| **Scope Creep** | Medium | Keep the phone flow lean: Desk, Tape, Risk. Add live charts/arrows only when they directly improve entries. |
 
 ---
 

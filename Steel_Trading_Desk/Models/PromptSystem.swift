@@ -230,7 +230,7 @@ class PromptLibrary {
             type: .preMarketAnalysis,
             scheduledTime: .time(hour: 8, minute: 30),
             template: """
-            I'm executing my systematic VXX trading approach. Today is [DATE].
+            I'm checking my VXX/VIX/VWAP desk read. Today is [DATE].
 
             CURRENT DATA:
             - VXX pre-market price: $[VXX_PRICE]
@@ -246,20 +246,20 @@ class PromptLibrary {
             5. Technical Setup: Key levels, moving average positioning, pattern potential
             6. Options Environment: IV levels, institutional flow indicators
 
-            WINDOW PROBABILITY ASSESSMENT:
+            WINDOW PRIORITY ASSESSMENT:
             Rate each window (HIGH/MEDIUM/LOW/SKIP):
-            - Morning Window (9:50-10:15 AM): 85% reliability
-            - Lunch Window (12:20-12:40 PM): 70% reliability
-            - Power Hour Window (3:10-3:25 PM): 80% reliability
-            - Institutional Flow (3:45-4:10 PM): 90% reliability
+            - Morning Window (9:50-10:15 AM)
+            - Lunch Window (12:20-12:40 PM)
+            - Power Hour Window (3:10-3:25 PM)
+            - Late Flow Window (3:45-4:10 PM)
 
             POSITION SIZING RECOMMENDATION:
-            Based on current conditions and my systematic approach:
+            Based on current conditions and my rules:
             - Recommended position size: [1 contract max]
             - Risk level for today: [GREEN/YELLOW/RED]
 
             EXECUTION PLAN:
-            Provide specific entry criteria, volume thresholds (>200% required), and exit parameters for today's highest probability setup.
+            Provide specific entry criteria, volume thresholds (>200% required), and exit parameters for today's cleanest setup.
             """,
             dataFields: [.vxxPrice, .vixLevel, .spyPrice, .currentDate]
         ),
@@ -323,7 +323,7 @@ class PromptLibrary {
             5. Risk/reward favorable for smaller lunch scalp?
 
             RECOMMENDATION:
-            Should I take the 12:20-12:40 PM window (70% reliability) or preserve capital for power hour (80% reliability)?
+            Should I take the 12:20-12:40 PM window or preserve capital for power hour?
             """,
             dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage, .vxxVsVWAP]
         ),
@@ -338,7 +338,7 @@ class PromptLibrary {
             CURRENT SETUP:
             Date: [DATE]
             Time: 3:05 PM
-            Strategy: VXX systematic approach
+            Strategy: VXX/VIX/VWAP desk read
 
             MY CHART INDICATORS:
             - VXX 5-minute chart with:
@@ -363,7 +363,7 @@ class PromptLibrary {
             1. ENTRY SIGNAL ASSESSMENT: Do I have a clear VXX pattern? Volume confirmation? SMA positioning?
             2. RATIO VALUE CHECK: Is VXX expensive enough to fade (>1.45)? What position size?
             3. MARKET CONTEXT CHECK: SPY stability? VIX behavior supporting thesis? Late-day news?
-            4. RISK/REWARD ANALYSIS: Success probability? Entry levels? Profit targets and stops?
+            4. RISK/REWARD ANALYSIS: Entry levels? Profit targets and stops?
             5. EXECUTION DECISION: Clear GO/NO-GO with specific entry price, volume threshold, targets, stops, exit deadline (3:55 PM max)
 
             MY ENTRY CHECKLIST (confirm all are met):
@@ -374,9 +374,9 @@ class PromptLibrary {
             - [ ] No major news disruption
             - [ ] Market context supportive
 
-            NOTE: 3:45-4:10 PM Institutional Flow Window coming up (90% reliability, 300%+ volume required)
+            NOTE: 3:45-4:10 PM late flow window coming up. Volume still has to prove it.
 
-            Help me make a disciplined, systematic decision based on our established strategy and current market conditions.
+            Help me make a disciplined decision based on the rules and current market conditions.
             """,
             dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage, .vxxVsVWAP, .sma20Position, .sma50Position, .currentDate]
         ),
@@ -386,10 +386,10 @@ class PromptLibrary {
             type: .institutionalFlowAlert,
             scheduledTime: .time(hour: 15, minute: 40),
             template: """
-            --- INSTITUTIONAL FLOW WINDOW IN 5 MINUTES ---
-            3:45-4:10 PM | 90% RELIABILITY | SUPREME SETUP
+            --- LATE FLOW WINDOW IN 5 MINUTES ---
+            3:45-4:10 PM | CHECK THE TAPE
 
-            This is your highest probability window. Portfolio rebalancing. Mutual fund NAV. Index rebalancing. Real institutional money flows.
+            This is a serious window, but it still has to earn the trade. Portfolio rebalancing, NAV, and index flow can matter here. No proof, no entry.
 
             CURRENT DATA:
             - VXX: $[VXX_PRICE]
@@ -463,11 +463,11 @@ class PromptLibrary {
             - Set alarm for 4:00 PM (5-minute warning)
             - Exit by 4:05 PM sharp
 
-            WHY 3:55 PM EXIT IS SACRED:
+            WHY 3:55 PM EXIT MATTERS:
             1. Prevents emotional attachment
             2. Prevents "hope trading"
             3. Preserves capital for tomorrow
-            4. System integrity depends on it
+            4. Discipline depends on it
 
             IF YOU'RE WINNING:
             - Take the profit, don't get greedy
@@ -475,7 +475,7 @@ class PromptLibrary {
 
             IF YOU'RE LOSING:
             - Take the loss, preserve capital
-            - System works over 20+ trades, not 1
+            - The edge is process over many trades, not one trade
 
             IF YOU'RE BREAKING EVEN:
             - Close it, no drama
@@ -503,7 +503,7 @@ class PromptLibrary {
             - Worst trade: [DESCRIBE]
 
             EXECUTION ANALYSIS:
-            1. Rules Adherence: Did I follow my systematic approach? Any deviations?
+            1. Rules Adherence: Did I follow the desk sequence? Any deviations?
             2. Entry Quality: Were my entries based on proper criteria? Volume confirmation >200%?
             3. Exit Discipline: Did I take profits/losses at predetermined levels?
             4. Emotional State: How did I feel during trades? Any stress or euphoria?
@@ -563,7 +563,7 @@ class PromptLibrary {
             type: .losingStreak,
             scheduledTime: .condition(.losingStreakCount(3)),
             template: """
-            System check - experiencing losing streak:
+            Discipline check - experiencing losing streak:
 
             RECENT PERFORMANCE:
             - Last [X] trades: [Results]
@@ -572,12 +572,12 @@ class PromptLibrary {
             - Emotional state: [DESCRIBE]
 
             DIAGNOSTIC ANALYSIS:
-            1. Are losses due to system failure or normal variance?
+            1. Are losses due to rule failure or normal variance?
             2. Have I been following all rules properly?
             3. Has the market regime changed?
             4. Should I reduce position sizes or pause trading?
 
-            Help me determine if this is normal drawdown or system breakdown, with specific recovery recommendations.
+            Help me determine if this is normal drawdown or process breakdown, with specific recovery recommendations.
             """,
             dataFields: [.tradesCount, .winRate]
         )

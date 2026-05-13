@@ -10,13 +10,13 @@ This document consolidates all MDRN-standard technical details and submission st
 *   **Privacy Manifest:** Included (`PrivacyInfo.xcprivacy`) — **Zero Data Collection**.
 
 ## 2. Free Full Desk
-The release direction is no paywall. The VXX/VIX/VWAP workflow, prompt support, and risk tools should be available without an in-app purchase. StoreKit code may remain temporarily in the repo, but it is not part of the current launch posture.
+The release direction is no paywall. The VXX/VIX/VWAP workflow, prompt support, and risk tools are available without an in-app purchase. StoreKit/paywall code has been removed from the release path.
 
 ## 3. Final Playtest Checklist
 Before hitting "Submit" in App Store Connect, verify these flows in the Simulator:
 - [ ] **Access Check:** Ensure the desk is fully usable without purchase prompts.
-- [ ] **Tape Logic:** Enter `350% Volume` in the Manual tab; verify the **VXX Dashboard** triggers the high-contrast Institutional Flow glow.
-- [ ] **Data Freshness:** Verify the "Open first. Close honest." tagline is visible on the main desk.
+- [ ] **Tape Logic:** Enter `350% Volume`, VXX/VIX ratio above `1.45`, VWAP/key-level confirmation, and rejection pattern; verify the Desk sequence clears only after every gate passes.
+- [ ] **Data Freshness:** Verify the Desk starts with the VXX sequence, not a marketing page or generic dashboard.
 
 ## 4. App Store Submission Assets
 All metadata drafts are located in `docs/AppStoreMetadata.md`.
@@ -38,4 +38,4 @@ All metadata drafts are located in `docs/AppStoreMetadata.md`.
 5.  **Distribute:** Upload to App Store Connect.
 
 ---
-**Status:** Code is hardened. Assets are drafted. Ready for launch.
+**Status:** Release build path is real. Phone workflow still needs market-hours field testing before TestFlight.

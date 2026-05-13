@@ -54,14 +54,12 @@
 		00000000000000001A000075 /* EventDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000076 /* EventDay.swift */; };
 		00000000000000001A000077 /* PromptSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000078 /* PromptSystem.swift */; };
 		00000000000000001A000079 /* TechnicalIndicators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00007A /* TechnicalIndicators.swift */; };
-		00000000000000001A00007B /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00007C /* StoreKitService.swift */; };
 		00000000000000001A00007D /* ArcadeEnergyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00007E /* ArcadeEnergyService.swift */; };
 		00000000000000001A00007F /* DisclaimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000080 /* DisclaimerView.swift */; };
 		00000000000000001A000081 /* ManualDataEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000082 /* ManualDataEntryView.swift */; };
 		00000000000000001A000083 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000084 /* OnboardingView.swift */; };
 		00000000000000001A000085 /* PromptCoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000086 /* PromptCoachView.swift */; };
 		00000000000000001A000087 /* StrategiesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000088 /* StrategiesListView.swift */; };
-		00000000000000001A000089 /* UnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00008A /* UnlockView.swift */; };
 		00000000000000001A00008B /* VXXTradingDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00008C /* VXXTradingDashboard.swift */; };
 		00000000000000001A00008D /* SharedSignalRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00008E /* SharedSignalRowView.swift */; };
 		00000000000000001A00008F /* ArrowSignalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000090 /* ArrowSignalViews.swift */; };
@@ -126,14 +124,12 @@
 		00000000000000001A000076 /* EventDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDay.swift; sourceTree = "<group>"; };
 		00000000000000001A000078 /* PromptSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptSystem.swift; sourceTree = "<group>"; };
 		00000000000000001A00007A /* TechnicalIndicators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnicalIndicators.swift; sourceTree = "<group>"; };
-		00000000000000001A00007C /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
 		00000000000000001A00007E /* ArcadeEnergyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeEnergyService.swift; sourceTree = "<group>"; };
 		00000000000000001A000080 /* DisclaimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisclaimerView.swift; sourceTree = "<group>"; };
 		00000000000000001A000082 /* ManualDataEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualDataEntryView.swift; sourceTree = "<group>"; };
 		00000000000000001A000084 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		00000000000000001A000086 /* PromptCoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCoachView.swift; sourceTree = "<group>"; };
 		00000000000000001A000088 /* StrategiesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategiesListView.swift; sourceTree = "<group>"; };
-		00000000000000001A00008A /* UnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockView.swift; sourceTree = "<group>"; };
 		00000000000000001A00008C /* VXXTradingDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VXXTradingDashboard.swift; sourceTree = "<group>"; };
 
 		00000000000000001A00008E /* SharedSignalRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSignalRowView.swift; sourceTree = "<group>"; };
@@ -267,7 +263,6 @@
 				B000000000000001A000003 /* KeychainService.swift */,
 				B000000000000001A000005 /* TradeJournal.swift */,
 				B000000000000001A000009 /* UpdateChecker.swift */,
-				00000000000000001A00007C /* StoreKitService.swift */,
 				00000000000000001A00007E /* ArcadeEnergyService.swift */,
 			);
 			path = Services;
@@ -286,7 +281,6 @@
 				00000000000000001A000084 /* OnboardingView.swift */,
 				00000000000000001A000086 /* PromptCoachView.swift */,
 				00000000000000001A000088 /* StrategiesListView.swift */,
-				00000000000000001A00008A /* UnlockView.swift */,
 				00000000000000001A00008C /* VXXTradingDashboard.swift */,
 								1A000062000000000000001A /* Components */,
 			);
@@ -443,14 +437,12 @@
 				00000000000000001A000075 /* EventDay.swift in Sources */,
 				00000000000000001A000077 /* PromptSystem.swift in Sources */,
 				00000000000000001A000079 /* TechnicalIndicators.swift in Sources */,
-				00000000000000001A00007B /* StoreKitService.swift in Sources */,
 				00000000000000001A00007D /* ArcadeEnergyService.swift in Sources */,
 				00000000000000001A00007F /* DisclaimerView.swift in Sources */,
 				00000000000000001A000081 /* ManualDataEntryView.swift in Sources */,
 				00000000000000001A000083 /* OnboardingView.swift in Sources */,
 				00000000000000001A000085 /* PromptCoachView.swift in Sources */,
 				00000000000000001A000087 /* StrategiesListView.swift in Sources */,
-				00000000000000001A000089 /* UnlockView.swift in Sources */,
 				00000000000000001A00008B /* VXXTradingDashboard.swift in Sources */,
 				00000000000000001A00008D /* SharedSignalRowView.swift in Sources */,
 				00000000000000001A00008F /* ArrowSignalViews.swift in Sources */,

@@ -77,7 +77,7 @@ struct FirstLaunchDisclaimerView: View {
             - You can lose your entire investment
             - Past performance does NOT guarantee future results
             - Win rates and strategies shown are educational examples
-            - Market conditions change - no system guarantees profits
+            - Market conditions change - no checklist guarantees profits
 
             Only trade with money you can afford to lose.
             """)
@@ -291,7 +291,7 @@ struct AboutLegalView: View {
                         Text("Institutional Flow Edition")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Text("\nFree and Open Source. Educational tool for learning systematic SPY and VXX trading.")
+                        Text("\nFree educational desk for manual SPY and VXX trading discipline.")
                             .font(.caption)
                     }
                     .padding(.vertical, 8)
@@ -351,7 +351,7 @@ struct TermsOfServiceView: View {
 
                 **1. EDUCATIONAL TOOL ONLY**
 
-                1.1 The App is an educational tool designed to teach VXX trading strategies and systematic analysis techniques.
+                1.1 The App is an educational tool designed to support manual VXX trading discipline and analysis.
 
                 1.2 The App is NOT:
                 - A licensed trading platform
@@ -404,7 +404,7 @@ struct TermsOfServiceView: View {
 
                 4.4 Past performance of strategies does not guarantee future results.
 
-                4.5 Market conditions change constantly - no system eliminates risk.
+                4.5 Market conditions change constantly - no checklist eliminates risk.
 
                 4.6 Only trade with money you can afford to lose.
 

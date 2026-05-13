@@ -10,8 +10,6 @@ import UIKit
 
 struct PromptCoachView: View {
     @StateObject private var viewModel = PromptCoachViewModel()
-    @StateObject private var storeKit = StoreKitService.shared
-    @State private var showingUnlockView = false
 
     var body: some View {
         NavigationView {
@@ -41,11 +39,8 @@ struct PromptCoachView: View {
                     .padding()
                 }
 
-                if !storeKit.hasProUnlock {
-                    premiumOverlay
-                }
             }
-            .navigationTitle("Prompt Coach")
+            .navigationTitle("Prompt Desk")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -63,42 +58,6 @@ struct PromptCoachView: View {
         }
         .task {
             await viewModel.startMonitoring()
-        }
-    }
-
-    private var premiumOverlay: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 48))
-                .foregroundColor(DesignSystem.primaryColor)
-
-            VStack(spacing: 8) {
-                Text("PRO LIBRARY LOCKED")
-                    .font(DesignSystem.Typography.titleFont)
-                    .fontWeight(.black)
-                    .foregroundColor(DesignSystem.primaryText)
-                Text("Unlock the complete window prompt library.")
-                    .font(DesignSystem.Typography.bodyFont)
-                    .foregroundColor(DesignSystem.mutedText)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 40)
-
-            Button(action: { showingUnlockView = true }) {
-                Text("UNLOCK PROMPTS")
-                    .font(DesignSystem.Typography.labelFont)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(DesignSystem.primaryColor)
-                    .foregroundColor(.black)
-                    .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.backgroundTop.opacity(0.88))
-        .sheet(isPresented: $showingUnlockView) {
-            UnlockView()
         }
     }
 

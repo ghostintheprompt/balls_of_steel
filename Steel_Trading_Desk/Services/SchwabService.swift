@@ -8,27 +8,15 @@ import Combine
 class SchwabService: ObservableObject {
     static let shared = SchwabService()
     @Published var isConnected = false
-    
-    private let storeKit = StoreKitService.shared
 
     private init() {}
     func fetchQuote(_ symbol: String) async throws -> Quote {
-        // Only allow real fetching if pro is unlocked
-        guard storeKit.hasProUnlock else {
-            return generateSampleQuote(for: symbol)
-        }
-        
-        // Simulate real network delay
         try await Task.sleep(nanoseconds: 800_000_000)
-        return generateSampleQuote(for: symbol) // Still returning sample for now as per "Educational Mode" compliance
+        return generateSampleQuote(for: symbol)
     }
 
     /// Educational mode - No live order execution
     func placeOrder(order: Order) async throws -> OrderResponse {
-        guard storeKit.hasProUnlock else {
-            throw SchwabError.educationalModeOnly
-        }
-        // In a real release, this would call the Schwab API
         throw SchwabError.educationalModeOnly 
     }
 
@@ -39,7 +27,7 @@ class SchwabService: ObservableObject {
     }
 
     /// Educational mode - No live quote subscriptions
-    /// Enter data manually to practice the system
+    /// Enter data manually to practice the desk read
     func subscribeToQuotes(symbol: String) -> AnyPublisher<Quote, Never> {
         // Return empty publisher - use manual data entry instead
         return Empty().eraseToAnyPublisher()

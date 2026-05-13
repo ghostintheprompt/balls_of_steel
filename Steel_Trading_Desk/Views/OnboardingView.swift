@@ -63,12 +63,12 @@ struct OnboardingView: View {
             }
 
             VStack(spacing: 12) {
-                FeatureHighlight(icon: "clock.fill", text: "5 Time Windows", subtext: "70-90% win rates")
-                FeatureHighlight(icon: "brain.head.profile", text: "Prompt Coach", subtext: "AI analysis at the right time")
-                FeatureHighlight(icon: "arrow.up.arrow.down.circle.fill", text: "Arrow + Volume", subtext: "Simple signal validation")
+                FeatureHighlight(icon: "clock.fill", text: "VXX Windows", subtext: "Time matters. No random entries.")
+                FeatureHighlight(icon: "divide.circle", text: "Ratio + VWAP", subtext: "Price has to prove it.")
+                FeatureHighlight(icon: "arrow.up.arrow.down.circle.fill", text: "Arrow + Volume", subtext: "Act only when the tape agrees.")
             }
 
-            Text("**Your phone beeps. VXX institutional flow. 300% volume. Arrow confirmed. You make the trade.**")
+            Text("**Volume. Window. Ratio. Level. Pattern. If the chain breaks, no trade.**")
                 .font(DesignSystem.Typography.bodyFont)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -95,7 +95,7 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            Text("How It Works")
+            Text("The Order")
                 .font(DesignSystem.Typography.heroFont)
                 .foregroundColor(DesignSystem.primaryText)
 
@@ -103,29 +103,29 @@ struct OnboardingView: View {
                 OnboardingStep(
                     number: "1",
                     icon: "hand.point.up.left.fill",
-                    title: "Enter Market Data",
-                    description: "Open ThinkOrSwim or Schwab. Check VXX price, volume, arrow signal. Enter manually in the app.",
+                    title: "Enter Tape",
+                    description: "Open ThinkOrSwim or Schwab. Enter VXX, VIX, volume, VWAP, level, window, and pattern.",
                     color: .blue
                 )
 
                 OnboardingStep(
                     number: "2",
-                    icon: "brain.head.profile",
-                    title: "Prompt Coach Analyzes",
-                    description: "App delivers the right analysis prompt at the right time. Copy to ChatGPT. Get systematic analysis in 30 seconds.",
-                    color: .purple
+                    icon: "checklist",
+                    title: "Check The Gates",
+                    description: "Volume and window first. Ratio second. VWAP or key level third. Rejection pattern last.",
+                    color: .orange
                 )
 
                 OnboardingStep(
                     number: "3",
                     icon: "checkmark.circle.fill",
-                    title: "You Execute The Trade",
-                    description: "Make your decision. Execute on your platform. Not automated--but close.",
+                    title: "Act Elsewhere",
+                    description: "Make the decision here. Execute on your broker. Manage the stop, profit target, and time exit.",
                     color: .green
                 )
             }
 
-            Text("**Total time: ~15 minutes spread across the day.**")
+            Text("**Simple enough to use fast. Strict enough to keep you honest.**")
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
 
@@ -177,7 +177,7 @@ struct OnboardingView: View {
 
                 RealityCheckPoint(
                     icon: "person.fill.checkmark",
-                    text: "**Disciplined Analysis.** Built for traders who value systematic execution over emotional impulse.",
+                    text: "**Discipline First.** Built for traders who respect rules over impulse.",
                     color: .purple
                 )
             }
@@ -210,11 +210,11 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            Text("Choose Your Platform")
+            Text("Execution Platform")
                 .font(DesignSystem.Typography.heroFont)
                 .foregroundColor(DesignSystem.primaryText)
 
-            Text("Where do you execute trades?")
+            Text("Where do you place trades?")
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.mutedText)
 
@@ -229,7 +229,7 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 32)
 
-            Text("You'll enter data manually from your platform. The app validates signals and generates prompts.")
+            Text("Steel keeps the decision clean. You execute on your broker.")
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(DesignSystem.mutedText)
                 .multilineTextAlignment(.center)

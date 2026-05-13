@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @StateObject private var storeKit = StoreKitService.shared
-    @State private var showingUnlockView = false
     @State private var apiKey = AppConfig.apiKey
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @AppStorage("alertVolume") private var alertVolume: Double = 0.7 // Default 70%
@@ -22,9 +20,7 @@ struct SettingsView: View {
                     settingsHeader
                     accessCard
                     playtestCard
-                    if storeKit.hasProUnlock {
-                        brokerCard
-                    }
+                    brokerCard
                     monitoringCard
                     notificationsCard
                     closeManagementCard
@@ -227,7 +223,7 @@ struct SettingsView: View {
                         .font(DesignSystem.Typography.titleFont)
                         .fontWeight(.black)
                         .foregroundColor(DesignSystem.primaryText)
-                    Text("No paywall. Build the best VXX/VIX/VWAP entry tool and charge for games.")
+                    Text("No paywall. No system pitch. One job: keep the VXX/VIX/VWAP decision honest.")
                         .font(DesignSystem.Typography.bodyFont)
                         .foregroundColor(DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
