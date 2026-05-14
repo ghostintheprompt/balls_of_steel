@@ -22,6 +22,14 @@ xcrun devicectl device install app --device DC63616F-433E-5833-9255-BE85AAFC9A7A
 xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9A7A app.mdrn.steel
 ```
 
+Latest signed Release installed and launched on `ZZZ` after the `NEXT MOVE` command-card pass:
+
+```sh
+xcodebuild -quiet -project Steel_Trading_Desk.xcodeproj -scheme Steel_Trading_Desk -configuration Release -destination 'platform=iOS,id=00008120-000E64960CE9A01E' -derivedDataPath /private/tmp/balls_of_steel_device_release_command DEVELOPMENT_TEAM=9TB25L4266 CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY='Apple Development' build
+xcrun devicectl device install app --device DC63616F-433E-5833-9255-BE85AAFC9A7A /private/tmp/balls_of_steel_device_release_command/Build/Products/Release-iphoneos/Steel_Trading_Desk.app
+xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9A7A app.mdrn.steel
+```
+
 ## What Changed In This Pass
 
 - Reframed the iPhone app around function-first desk workflow. The compact phone tab bar is now only `Desk`, `Tape`, and `Risk`; VXX rules and prompts are actions inside the Desk rail instead of top-level pages.
@@ -40,7 +48,7 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
   - Prompt Coach is now framed as a window prompt desk, not an AI authority surface.
 - Removed the paywall release path. `StoreKitService.swift` and `UnlockView.swift` were removed from the target/repo, Prompt Desk no longer checks purchase state, and Settings presents the app as a free full desk.
 - Added `docs/APP_STORE_CONNECT_COPY.md` as the paste-ready App Store Connect version `1.0` copy sheet. SKU is `MDRN-STEEL-DESK-001`; bundle id is `app.mdrn.steel`.
-- Built and installed signed Release builds on the paired iPhone `ZZZ`. The latest installed build uses the three-tab strategy rail direction. The final launch command disconnected after install, but the install completed successfully.
+- Built, installed, and launched signed Release builds on the paired iPhone `ZZZ`. The latest installed build uses the three-tab strategy rail plus the new `NEXT MOVE` command surface.
 
 ## Important Findings
 

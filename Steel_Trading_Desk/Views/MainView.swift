@@ -1,10 +1,27 @@
 import SwiftUI
 
+private enum CompactPhoneTab: Hashable {
+    case desk
+    case tape
+    case risk
+}
+
+private enum ExpandedDeskTab: Hashable {
+    case desk
+    case manual
+    case vxx
+    case spy
+    case live
+    case settings
+}
+
 struct MainView: View {
     @StateObject private var signalMonitor = SignalMonitor.shared
     @StateObject private var marketState = MarketPulse.shared
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @State private var showLaunchOverlay = true
+    @State private var compactTab: CompactPhoneTab = .desk
+    @State private var expandedTab: ExpandedDeskTab = .desk
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -12,14 +29,17 @@ struct MainView: View {
         ZStack {
             TradingBackdrop()
 
-            TabView {
-                if horizontalSizeClass == .compact {
+            if horizontalSizeClass == .compact {
+                TabView(selection: $compactTab) {
                     compactPhoneTabs
-                } else {
+                }
+                .tint(DesignSystem.primaryColor)
+            } else {
+                TabView(selection: $expandedTab) {
                     expandedDeskTabs
                 }
+                .tint(DesignSystem.primaryColor)
             }
-            .tint(DesignSystem.primaryColor)
 
             if showLaunchOverlay {
                 LaunchOverlayView()
@@ -51,20 +71,27 @@ struct MainView: View {
 
     @ViewBuilder
     private var compactPhoneTabs: some View {
-        TradingDashboard(signalMonitor: signalMonitor)
+        TradingDashboard(
+            signalMonitor: signalMonitor,
+            openTape: { compactTab = .tape },
+            openRisk: { compactTab = .risk }
+        )
             .tabItem {
                 Label("Desk", systemImage: "chart.line.uptrend.xyaxis")
             }
+            .tag(CompactPhoneTab.desk)
 
         ManualDataEntryView()
             .tabItem {
                 Label("Tape", systemImage: "slider.horizontal.3")
             }
+            .tag(CompactPhoneTab.tape)
 
         ActiveTradesView(signalMonitor: signalMonitor)
             .tabItem {
                 Label("Risk", systemImage: "shield.lefthalf.filled")
             }
+            .tag(CompactPhoneTab.risk)
     }
 
     @ViewBuilder
@@ -73,30 +100,36 @@ struct MainView: View {
             .tabItem {
                 Label("Desk", systemImage: "chart.line.uptrend.xyaxis")
             }
+            .tag(ExpandedDeskTab.desk)
 
         ManualDataEntryView()
             .tabItem {
                 Label("Manual", systemImage: "slider.horizontal.3")
             }
+            .tag(ExpandedDeskTab.manual)
 
         VXXTradingDashboard(signalMonitor: signalMonitor)
             .tabItem {
                 Label("VXX", systemImage: "waveform.path.ecg")
             }
+            .tag(ExpandedDeskTab.vxx)
 
         SPYTradingDashboard(signalMonitor: signalMonitor)
             .tabItem {
                 Label("SPY", systemImage: "arrow.left.arrow.right")
             }
+            .tag(ExpandedDeskTab.spy)
 
         ActiveTradesView(signalMonitor: signalMonitor)
             .tabItem {
                 Label("Live", systemImage: "clock.arrow.circlepath")
             }
+            .tag(ExpandedDeskTab.live)
 
         SettingsView()
             .tabItem {
                 Label("Settings", systemImage: "gear")
             }
+            .tag(ExpandedDeskTab.settings)
     }
 }

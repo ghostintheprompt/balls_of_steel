@@ -3,6 +3,8 @@ import Combine
 
 struct TradingDashboard: View {
     @ObservedObject var signalMonitor: SignalMonitor
+    var openTape: (() -> Void)? = nil
+    var openRisk: (() -> Void)? = nil
     @StateObject private var marketPulse = MarketPulse.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage("lastMarketDataEntry") private var lastMarketDataEntryData: Data = Data()
@@ -61,9 +63,9 @@ struct TradingDashboard: View {
     private var phoneDeskContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             PhoneDeskHeader(phase: marketPulse.currentPhase)
-            PhoneCommandCard(state: phoneStrategyState, signalMonitor: signalMonitor)
-            PhoneTapeSnapshot(entry: lastMarketDataEntry, state: phoneStrategyState)
-            PhoneStrategyRail(entry: lastMarketDataEntry)
+            PhoneCommandCard(state: phoneStrategyState, signalMonitor: signalMonitor, openTape: openTape, openRisk: openRisk)
+            PhoneTapeSnapshot(entry: lastMarketDataEntry, state: phoneStrategyState, openTape: openTape)
+            PhoneStrategyRail(entry: lastMarketDataEntry, openTape: openTape)
 
             if !signalMonitor.activeTrades.isEmpty {
                 activeTradesSection
@@ -152,6 +154,8 @@ private struct PhoneDeskHeader: View {
 private struct PhoneCommandCard: View {
     let state: VXXStrategyState
     @ObservedObject var signalMonitor: SignalMonitor
+    let openTape: (() -> Void)?
+    let openRisk: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -192,22 +196,38 @@ private struct PhoneCommandCard: View {
                     }
                     .buttonStyle(.bordered)
 
+                    if let openRisk {
+                        Button(action: openRisk) {
+                            Label("Risk", systemImage: "shield.lefthalf.filled")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        NavigationLink {
+                            ActiveTradesView(signalMonitor: signalMonitor)
+                        } label: {
+                            Label("Risk", systemImage: "shield.lefthalf.filled")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            } else {
+                if let openTape {
+                    Button(action: openTape) {
+                        Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else {
                     NavigationLink {
-                        ActiveTradesView(signalMonitor: signalMonitor)
+                        ManualDataEntryView()
                     } label: {
-                        Label("Risk", systemImage: "shield.lefthalf.filled")
+                        Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
                 }
-            } else {
-                NavigationLink {
-                    ManualDataEntryView()
-                } label: {
-                    Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
             }
         }
         .deskPanel(glow: .clear, padding: 16)
@@ -217,6 +237,7 @@ private struct PhoneCommandCard: View {
 private struct PhoneTapeSnapshot: View {
     let entry: MarketDataEntry?
     let state: VXXStrategyState
+    let openTape: (() -> Void)?
 
     private let columns = [
         GridItem(.flexible(), spacing: 8),
@@ -242,12 +263,7 @@ private struct PhoneTapeSnapshot: View {
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
                     Spacer()
-                    NavigationLink {
-                        ManualDataEntryView()
-                    } label: {
-                        Text("Update")
-                            .font(DesignSystem.Typography.labelFont)
-                    }
+                    tapeControl(title: "Update")
                 }
             } else {
                 VStack(alignment: .leading, spacing: 10) {
@@ -258,17 +274,31 @@ private struct PhoneTapeSnapshot: View {
                         .font(DesignSystem.Typography.bodyFont)
                         .foregroundColor(DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
-                    NavigationLink {
-                        ManualDataEntryView()
-                    } label: {
-                        Label("Open Tape", systemImage: "slider.horizontal.3")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
+                    tapeControl(title: "Open Tape", fill: true)
+                        .buttonStyle(.bordered)
                 }
             }
         }
         .deskPanel(glow: .clear, padding: 14)
+    }
+
+    @ViewBuilder
+    private func tapeControl(title: String, fill: Bool = false) -> some View {
+        if let openTape {
+            Button(action: openTape) {
+                Label(title, systemImage: "slider.horizontal.3")
+                    .font(fill ? DesignSystem.Typography.headlineFont : DesignSystem.Typography.labelFont)
+                    .frame(maxWidth: fill ? .infinity : nil)
+            }
+        } else {
+            NavigationLink {
+                ManualDataEntryView()
+            } label: {
+                Label(title, systemImage: "slider.horizontal.3")
+                    .font(fill ? DesignSystem.Typography.headlineFont : DesignSystem.Typography.labelFont)
+                    .frame(maxWidth: fill ? .infinity : nil)
+            }
+        }
     }
 }
 
@@ -304,6 +334,7 @@ private struct TapeMetric: View {
 
 private struct PhoneStrategyRail: View {
     let entry: MarketDataEntry?
+    let openTape: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -314,18 +345,7 @@ private struct PhoneStrategyRail: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 8) {
-                NavigationLink {
-                    ManualDataEntryView()
-                } label: {
-                    StrategyGateRow(
-                        index: 1,
-                        title: "Volume + window",
-                        detail: state.volumeWindowDetail,
-                        status: state.volumeWindowStatus,
-                        systemImage: "slider.horizontal.3",
-                        accent: DesignSystem.primaryColor
-                    )
-                }
+                tapeGateButton
 
                 StrategyGateRow(
                     index: 2,
@@ -353,6 +373,31 @@ private struct PhoneStrategyRail: View {
                     systemImage: "candlestickchart",
                     accent: DesignSystem.bullishColor
                 )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var tapeGateButton: some View {
+        let row = StrategyGateRow(
+            index: 1,
+            title: "Volume + window",
+            detail: state.volumeWindowDetail,
+            status: state.volumeWindowStatus,
+            systemImage: "slider.horizontal.3",
+            accent: DesignSystem.primaryColor
+        )
+
+        if let openTape {
+            Button(action: openTape) {
+                row
+            }
+            .buttonStyle(.plain)
+        } else {
+            NavigationLink {
+                ManualDataEntryView()
+            } label: {
+                row
             }
         }
     }
