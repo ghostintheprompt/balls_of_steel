@@ -4,6 +4,14 @@
 <dict>
 	<key>NSUserNotificationAlertStyle</key>
 	<string>alert</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Fonts/IBMPlexSans-Regular.ttf</string>
+		<string>Fonts/IBMPlexSans-SemiBold.ttf</string>
+		<string>Fonts/IBMPlexSans_Condensed-Bold.ttf</string>
+		<string>Fonts/IBMPlexMono-Regular.ttf</string>
+		<string>Fonts/IBMPlexMono-SemiBold.ttf</string>
+	</array>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.finance</string>
 	<key>NSNotificationsUsageDescription</key>

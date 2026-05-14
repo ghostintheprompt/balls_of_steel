@@ -6,25 +6,15 @@ private enum CompactPhoneTab: Hashable {
     case risk
 }
 
-private enum ExpandedDeskTab: Hashable {
-    case desk
-    case manual
-    case vxx
-    case spy
-    case live
-    case settings
-}
-
 struct MainView: View {
     @StateObject private var signalMonitor = SignalMonitor.shared
     @StateObject private var marketState = MarketPulse.shared
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @State private var showLaunchOverlay = true
     @State private var compactTab: CompactPhoneTab = .desk
-    @State private var expandedTab: ExpandedDeskTab = .desk
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     var body: some View {
         ZStack {
             TradingBackdrop()
@@ -33,12 +23,11 @@ struct MainView: View {
                 TabView(selection: $compactTab) {
                     compactPhoneTabs
                 }
-                .tint(DesignSystem.primaryColor)
+                .tint(DesignSystem.amber)
             } else {
-                TabView(selection: $expandedTab) {
-                    expandedDeskTabs
-                }
-                .tint(DesignSystem.primaryColor)
+                // Mac / iPad regular size class: single-window terminal.
+                // Gate spine is the navigation; no tab bar, no sub-screens.
+                TradingDashboard(signalMonitor: signalMonitor)
             }
 
             if showLaunchOverlay {
@@ -92,44 +81,5 @@ struct MainView: View {
                 Label("Risk", systemImage: "shield.lefthalf.filled")
             }
             .tag(CompactPhoneTab.risk)
-    }
-
-    @ViewBuilder
-    private var expandedDeskTabs: some View {
-        TradingDashboard(signalMonitor: signalMonitor)
-            .tabItem {
-                Label("Desk", systemImage: "chart.line.uptrend.xyaxis")
-            }
-            .tag(ExpandedDeskTab.desk)
-
-        ManualDataEntryView()
-            .tabItem {
-                Label("Manual", systemImage: "slider.horizontal.3")
-            }
-            .tag(ExpandedDeskTab.manual)
-
-        VXXTradingDashboard(signalMonitor: signalMonitor)
-            .tabItem {
-                Label("VXX", systemImage: "waveform.path.ecg")
-            }
-            .tag(ExpandedDeskTab.vxx)
-
-        SPYTradingDashboard(signalMonitor: signalMonitor)
-            .tabItem {
-                Label("SPY", systemImage: "arrow.left.arrow.right")
-            }
-            .tag(ExpandedDeskTab.spy)
-
-        ActiveTradesView(signalMonitor: signalMonitor)
-            .tabItem {
-                Label("Live", systemImage: "clock.arrow.circlepath")
-            }
-            .tag(ExpandedDeskTab.live)
-
-        SettingsView()
-            .tabItem {
-                Label("Settings", systemImage: "gear")
-            }
-            .tag(ExpandedDeskTab.settings)
     }
 }

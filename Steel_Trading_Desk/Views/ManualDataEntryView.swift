@@ -991,9 +991,9 @@ enum ArrowSignalInput: String, Codable, CaseIterable {
 
     var color: Color {
         switch self {
-        case .none: return .gray
-        case .bullish: return .green
-        case .bearish: return .red
+        case .none: return DesignSystem.muted
+        case .bullish: return DesignSystem.long
+        case .bearish: return DesignSystem.short
         }
     }
 }

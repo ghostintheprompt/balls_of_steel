@@ -32,23 +32,17 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 
 ## What Changed In This Pass
 
-- Reframed the iPhone app around function-first desk workflow. The compact phone tab bar is now only `Desk`, `Tape`, and `Risk`; VXX rules and prompts are actions inside the Desk rail instead of top-level pages.
-- Changed the installed display name to `Steel Desk` so the home screen is not the underscored target name.
-- Replaced the fake release banner value `v1.0.0 Release` with `Field Test`.
-- Added a compact phone Desk surface with a direct strategy rail: tape, VXX rules, prompt, risk.
-- Reworked the compact phone Desk into a trader command surface:
-  - Big `NEXT MOVE` card says `ENTER TAPE`, `NO TRADE`, `WAIT LEVEL`, `WAIT PATTERN`, or `CLEARED`.
-  - Current tape snapshot shows price, volume, ratio, window, VWAP, and pattern.
-  - Phone Desk no longer leads with generic signal/dashboard sections when there is no active risk.
-- Reworked Tape entry around the strategy order. It now shows `ORDER OF ATTACK` before the form and moves the trading window next to volume so gate 1 is visually non-negotiable.
-- Moved Settings out of the primary phone tab bar and into a gear on the Desk.
-- Stripped decorative hover/pulse behavior and reduced the visual system toward a flatter obsidian/steel utility.
-- Rewrote key copy away from generic AI/product language:
-  - Manual feed now explicitly says ThinkOrSwim/Schwab are the execution platforms.
-  - Prompt Coach is now framed as a window prompt desk, not an AI authority surface.
-- Removed the paywall release path. `StoreKitService.swift` and `UnlockView.swift` were removed from the target/repo, Prompt Desk no longer checks purchase state, and Settings presents the app as a free full desk.
-- Added `docs/APP_STORE_CONNECT_COPY.md` as the paste-ready App Store Connect version `1.0` copy sheet. SKU is `MDRN-STEEL-DESK-001`; bundle id is `app.mdrn.steel`.
-- Built, installed, and launched signed Release builds on the paired iPhone `ZZZ`. The latest installed build uses the three-tab strategy rail plus the new `NEXT MOVE` command surface.
+Boiler-room redesign per `CLAUDE_CODE_DIRECTIONS.md`. All 9 phases shipped.
+
+- **Phase 1 — Token swap.** New palette (CRT amber `#FFB000` on near-black) and IBM Plex font stack. System fallback wired; Plex `.ttf` files pending bundling.
+- **Phase 2 — Decoration killed.** Every cornerRadius → 2pt, every shadow/glow on cards removed, every bare `.purple/.orange/.yellow/.cyan/.gray` color replaced with a `DesignSystem` token, large fixed paddings collapsed.
+- **Phase 3 — Mac single-window terminal.** Three-column layout (ticker strip / left rail gate spine / chart center / right rail NEXT MOVE+RAW READ+SECOND READ+ET clock / status footer). Mac TabView removed.
+- **Phase 4 — iPhone gate-spine.** Phone home is ticker strip → NEXT MOVE verb → 4-gate stack with amber blocker highlight + tap-through → mini chart → ET clock + hard-stop countdown footer. Tapping a gate opens a drill-in sheet with big number + tier table + house rule.
+- **Phase 5 — TradingView chart embed.** New `Views/Components/ChartWebView.swift` (cross-platform WKWebView). VWAP + SMA + Volume overlays. 15-min delayed disclosure in chart footer.
+- **Phase 6 — MarketDataProvider scaffolding.** Protocol + 4 provider files (`Finnhub`, `Polygon`, `Schwab`, `Yahoo`). Settings has a segmented picker + per-provider setup note + API key field. Real network calls stubbed; gates still consume manual tape entry.
+- **Phase 7 — DeskState machine.** New `Models/DeskState.swift`. iPhone hard-exit takeover (15:50–16:10 ET) drives off `DeskState.isTakeover`.
+- **Phase 8 — Notification copy.** Every body string in `SignalNotification.swift` rewritten to blunt diagnosis tone. Registered `STEEL_DESK` notification category with "Open Desk" foreground action.
+- **Phase 9 — App Store metadata.** Subtitle synced to "Native Volatility Analysis Tool". Promo text + description rewritten to mention chart embed and hard-exit takeover. `RELEASE_PUNCH_LIST.md` refreshed to reflect what's done vs. what remains.
 
 ## Important Findings
 
@@ -66,14 +60,12 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 
 ## Suggested Next Session
 
-1. Test the installed Release build on `ZZZ` during market hours. Judge it by speed, legibility, and whether it helps with VXX/VWAP/time-window decisions.
-2. Continue stripping any UI that has no function. Big text, direct controls, fewer surfaces.
-3. Collapse old inherited screens into the strategy rail where possible. The app should not feel like many pages.
-4. Test whether the new `NEXT MOVE` card is readable at a glance while ThinkOrSwim/Schwab is open beside it.
-5. Audit VXX, Tape, Prompts, and Risk screens for phone readability and remove decorative/card-heavy sections that do not help the trade workflow.
-6. Scrub public-facing copy in UI and docs for App Review safety, including removal of premium/pro/unlock promises.
-7. Add a test target and cover time windows, VXX/VIX ratio thresholds, VWAP logic, prompt substitution, daily risk, and persistence.
-8. Prepare App Store metadata and screenshots only after the phone workflow feels like a real desk.
+1. Bundle IBM Plex `.ttf` files (Mono Regular + SemiBold, Sans Regular + SemiBold, Sans Condensed Bold + Black) into `Resources/Fonts/`, add `UIAppFonts` to `Info.plist`, flip `DesignSystem.Typography.useSystemFallback = false`.
+2. Build + install signed Release on `ZZZ` and evaluate the boiler-room redesign during market hours. Verify the hard-exit takeover fires at 15:50 ET. Check ticker strip readout updates as tape entry changes.
+3. Wire real Finnhub network code in `FinnhubProvider.swift` (REST `/quote`, WebSocket `wss://ws.finnhub.io`). Swap `UserDefaults`-backed key storage for `KeychainService`.
+4. Refresh App Store screenshots: iPhone (Desk + gate-detail + hard-exit), iPad/Mac (terminal layout). Re-render the icon since the SteelDeskMark is now amber-on-black.
+5. Add an XCTest target. Cover `TimeManager` window logic, `DeskState.current(...)` boundary times, `VXXStrategyState.firstFailingGateIndex`, ratio threshold tiers.
+6. Scrub `LAUNCH_GUIDE.md` / `LAUNCH_PLAN.md` / `MARKETING.md` for any remaining "Pro/Premium/Coach/win-rate %" leakage and reconcile with `APP_STORE_CONNECT_COPY.md` as the canonical source.
 
 ## Files To Start With
 

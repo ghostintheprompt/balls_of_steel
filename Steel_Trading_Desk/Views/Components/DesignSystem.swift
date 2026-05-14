@@ -59,33 +59,41 @@ struct DesignSystem {
 
     // MARK: - Typography
     //
-    // Spec calls for IBM Plex Sans Condensed (display), IBM Plex Sans (body),
-    // IBM Plex Mono (numbers / labels). Falling back to system fonts here.
-    // To switch to real Plex: drop the .ttf/.otf files into
-    // Steel_Trading_Desk/Resources/Fonts, register them in Info.plist under
-    // UIAppFonts, then change Typography.useSystemFallback to false.
+    // Bundled: IBM Plex Sans (Regular + SemiBold), Sans Condensed (Bold),
+    // Mono (Regular + SemiBold). System fallback retained per-family in case
+    // the .ttf registration fails on a given build.
     struct Typography {
-        static let useSystemFallback = true
+        static let useSansFallback = false
+        static let useMonoFallback = false
+
+        private static func isHeavy(_ weight: Font.Weight) -> Bool {
+            switch weight {
+            case .semibold, .bold, .heavy, .black: return true
+            default: return false
+            }
+        }
 
         private static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            if useSystemFallback {
+            if useSansFallback {
                 return .system(size: size, weight: weight, design: .default)
             }
-            return Font.custom("IBMPlexSans-Regular", size: size).weight(weight)
+            return Font.custom(isHeavy(weight) ? "IBMPlexSans-SemiBold" : "IBMPlexSans-Regular", size: size)
         }
 
         private static func display(_ size: CGFloat, weight: Font.Weight = .heavy) -> Font {
-            if useSystemFallback {
+            if useSansFallback {
                 return .system(size: size, weight: weight, design: .default).width(.condensed)
             }
-            return Font.custom("IBMPlexSansCondensed-Bold", size: size).weight(weight)
+            // Only Bold of Condensed is bundled; that's the heaviest in the
+            // standard Plex distribution and reads correctly for the hero verb.
+            return Font.custom("IBMPlexSansCondensed-Bold", size: size)
         }
 
         private static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            if useSystemFallback {
+            if useMonoFallback {
                 return .system(size: size, weight: weight, design: .monospaced)
             }
-            return Font.custom("IBMPlexMono-Regular", size: size).weight(weight)
+            return Font.custom(isHeavy(weight) ? "IBMPlexMono-SemiBold" : "IBMPlexMono-Regular", size: size)
         }
 
         // Hero command verb ("NO TRADE.", "CLOSE IT.")

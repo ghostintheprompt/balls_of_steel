@@ -1,136 +1,77 @@
 # Steel Trading Desk Release Punch List
 
-Last updated: May 13, 2026
+Last updated: May 13, 2026 (after the boiler-room redesign pass).
 
 ## Product Position
 
-Steel Trading Desk should be positioned as a local-first, manual trading discipline utility for SPY and VXX options traders. The app helps a trader enter market context manually, check setup quality against time windows, volume, VWAP, volatility, and risk rules, copy structured analysis prompts, journal decisions, and receive user-enabled alerts.
+Steel Trading Desk is a local-first, manual trading discipline utility for SPY and VXX options traders. The app is a hard discipline layer: enter the tape, watch the four gates clear in order, embed a chart for context, execute manually on a broker, and keep the exit honest.
 
-It should not be positioned as financial advice, automated trading, managed execution, guaranteed signals, or a brokerage replacement.
+It is not financial advice, automated trading, managed execution, guaranteed signals, or a brokerage replacement.
 
-The app is not a website, game, generic trading dashboard, or AI authority product. It exists for a specific broker-desk workflow: VXX setup, VXX/VIX ratio, VWAP/level, volume confirmation, correct time window, prompt if useful, execute on broker, manage risk.
+It is not a website, game, generic trading dashboard, or AI authority product. It exists for one workflow: VXX setup → VXX/VIX ratio → VWAP/level → volume confirmation → correct time window → optional second read → broker execution → risk management → hard exit.
 
-Monetization posture: no paywall for the trading desk. The strategy and core tools should be free. If serious users want to support or fund deeper work later, earn that through usefulness rather than luring small users into a locked system.
+Monetization posture: no paywall for the desk. Strategy and core tools are free. If a paid product exists later, it is a separate SPY-focused offer earned through usefulness.
 
-Internal product note: VXX is the free desk and proof of craft. If a paid trading product exists later, make it the SPY version as a separate serious offer. Keep this out of public App Store copy for the VXX release.
+Internal product note: VXX is the free desk and proof of craft. Keep paid-tier ideas out of public App Store copy for the VXX release.
 
-## Current Release Posture
+## Done in the boiler-room redesign pass (May 2026)
 
-The current app is not App Store ready, but it is now organized enough to move into a focused release pass. Generic iOS Debug, generic iOS Release, and macOS Debug builds pass with code signing disabled. Signed iPhone Release builds have been installed on `ZZZ` for market-hours testing. There is still no watchOS target, no dedicated test target, and no completed App Store submission package.
+- **Token swap.** New palette (CRT amber `#FFB000` on near-black) and IBM Plex font stack wired with system fallback. (Plex `.ttf` files dropping into `Resources/Fonts` + `Info.plist UIAppFonts` flips it to real Plex.)
+- **Decoration killed.** All `RoundedRectangle` corners → 2pt; every shadow/glow on cards removed; `.padding(20)` collapsed; every purple/orange/yellow/cyan/gray bare color replaced with a `DesignSystem` token.
+- **Mac single-window terminal.** Three-column layout (ticker strip / left rail gate spine / chart center / right rail NEXT MOVE+RAW READ+SECOND READ+ET clock / status footer). The Mac TabView is gone; the gate sequence IS the navigation. Manual entry + Prompt Coach come up as sheets from the right rail.
+- **iPhone gate-spine.** Phone home is now ticker strip → NEXT MOVE verb → 4-gate stack with amber blocker highlight → mini chart → ET clock + hard-stop countdown footer. Tapping a gate opens a drill-in sheet with big number + tier table + house rule.
+- **Hard-exit takeover.** Between 15:50 and 16:10 ET the iPhone screen is replaced by a giant red countdown to 15:55, open positions list with live P/L, and the three exit rules. Triggered automatically by `DeskState.isTakeover`.
+- **TradingView chart embed.** New `Views/Components/ChartWebView.swift` wraps the TradingView Advanced Chart widget in `WKWebView` (cross-platform). VWAP + SMA + Volume overlays. 15-minute delayed disclosure in the chart footer.
+- **MarketDataProvider scaffolding.** New protocol + 4 provider files (`Finnhub`, `Polygon`, `Schwab`, `Yahoo`). Settings has a segmented picker + per-provider setup note + API key field. **Real network calls are stubbed for now** — the gates still consume the manual tape entry. Real implementation lands when the user has API keys provisioned.
+- **DeskState machine.** New `Models/DeskState.swift` enum (preMarket / betweenWindows / windowOpen / openPosition / closeWarning / hardExit / afterHours) drives screen state.
+- **Notification copy.** Every body string in `SignalNotification.swift` rewritten to blunt diagnosis tone (e.g. `VXX · GO CHECK THE TAPE` / `R 1.62 · VIX 18.4 · ENTRY $X · STOP $Y · TGT $Z`). Registered `STEEL_DESK` notification category with an "Open Desk" foreground action.
+- **App Store copy.** Subtitle synced to "Native Volatility Analysis Tool" (good Review cover). Promo text + description rewritten to mention the chart embed and hard-exit takeover.
 
-Practical estimate: closer to 50-60% release-ready than 75%. The build/signing path is real, but the phone product surface still needs a hard function-first pass before TestFlight.
+## Remaining P0 — Release Blockers
 
-## P0: Release Blockers
+1. **Plex font bundling.** Drop `IBMPlexMono-Regular/SemiBold`, `IBMPlexSans-Regular/SemiBold`, `IBMPlexSansCondensed-Bold/Black` into `Steel_Trading_Desk/Resources/Fonts/`. Add a `UIAppFonts` array in `Info.plist`. Flip `DesignSystem.Typography.useSystemFallback = false`.
 
-1. iPhone-first UX pass
-   - Treat iPhone as the primary product surface.
-   - Keep the primary phone model focused on `Desk`, `Tape`, and `Risk`.
-   - Keep the Desk led by the `NEXT MOVE` command card, not a marketing/dashboard layout.
-   - Make the first screen answer: enter tape, no trade, wait for level, wait for pattern, or cleared.
-   - Keep VXX rules and prompt copy inside the desk workflow unless testing proves they need top-level placement.
-   - Every visible control must have a job in the trading workflow.
-   - Remove UI that feels like a website, video game, AI demo, or decorative dashboard.
-   - Use larger, readable text and fewer panels.
-   - Test compact layouts on real or simulated iPhone sizes.
-   - Reduce dense dashboard sections where they become cramped.
-   - Confirm tab count, navigation titles, sheets, onboarding, disclaimers, paywall, and settings fit without clipping.
-   - Verify Dynamic Type, small screens, landscape, and dark mode.
+2. **Real market-data wiring.** Pick a provider (Finnhub recommended for v1.0), generate an API key, fill in the REST + WebSocket bodies in `FinnhubProvider.swift` (currently throw `notImplemented`). Hook the live quotes into the gate evaluator so `MarketDataEntry` can be auto-populated when a provider is configured.
 
-2. App Review compliance copy scrub
-   - Remove or soften public-facing "90% win rate", "highest probability", "supreme power", "ready to execute", and similar claims.
-   - Keep "manual execution", "educational utility", "risk discipline", "setup checklist", and "local-first" language.
-   - Replace aggressive marketing lines that could imply advice, guaranteed performance, or automated trading.
-   - Make reviewer notes consistent with actual app behavior.
+3. **iPhone-first UX validation on real device.** The boiler-room redesign needs market-hours testing on `ZZZ`. Verify the hard-exit takeover fires at 15:50 ET. Verify gate-detail sheets open and dismiss cleanly. Verify the ticker strip readout updates as tape entry changes.
 
-3. Financial risk and disclaimer review
-   - Confirm the first-run disclaimer appears before any trading workflow.
-   - Confirm "not financial advice" and "manual execution only" appear in customer-facing context without overwhelming the app.
-   - Avoid presenting historical strategy rates as expected future results.
-   - Consider legal review before external TestFlight.
+4. **Disclaimer + privacy.**
+   - Confirm the first-run `DisclaimerView` still appears and matches the new tone.
+   - Confirm "not financial advice" + "manual execution only" remain in the on-app disclaimer and the App Store description.
+   - Confirm `PrivacyInfo.xcprivacy` matches actual API usage (UserDefaults Category CA92.1).
 
-4. Remove paywall assumptions
-   - Keep the full trading desk free.
-   - Remove or hide StoreKit/paywall surfaces from the release path.
-   - Do not describe premium/pro/unlock features in App Store metadata.
-   - If monetization returns later, treat it as patronage, enterprise support, or a separate serious offer, not a bait system.
+5. **App Review compliance scrub.**
+   - Search Strings/Views for any remaining "win rate %", "highest probability", "ready to execute", "signal" framing in primary UI. Helper internals can keep these names; visible labels cannot.
+   - Confirm the App Store description never claims a directional recommendation ("VXX is going to fade") — only describes the discipline layer.
 
-5. Privacy and permissions
-   - Confirm privacy policy contact email is real.
-   - Confirm privacy manifest matches actual APIs.
-   - Confirm notification permission copy says alerts are user-enabled.
-   - Re-check background behavior before claiming background monitoring on iOS.
+6. **Test target.**
+   - Add an XCTest target.
+   - Cover: time-window logic in `TimeManager`, `DeskState.current(...)` derivation across boundary times, `VXXStrategyState.firstFailingGateIndex`, ratio threshold tiers, prompt placeholder substitution.
+   - One UI smoke test: launch → enter tape → see gates update → open Settings → toggle data source.
 
-6. Test coverage
-   - Add a test target.
-   - Cover time-window logic, VXX/VIX ratio thresholds, signal/watch generation, close-management timing, prompt placeholder replacement, UserDefaults persistence, Keychain storage, and daily risk locking.
-   - Add at least one UI smoke test for onboarding -> manual entry -> dashboard -> settings.
+7. **App Store assets.**
+   - iPhone screenshots (required sizes): Desk default, gate-detail sheet, hard-exit takeover.
+   - iPad + Mac screenshots: terminal layout (left rail + chart + right rail), with a populated tape.
+   - Verify icon at small sizes — the SteelDeskMark is now amber-on-black.
+   - Confirm support URL, marketing URL, privacy URL, subtitle, keywords, reviewer notes.
 
-7. App Store assets
-   - Produce iPhone screenshots for required sizes.
-   - Produce iPad screenshots.
-   - Produce macOS screenshots.
-   - Verify icon appearance at small sizes.
-   - Prepare support URL, marketing URL, privacy URL, subtitle, keywords, and reviewer demo notes.
-
-8. Signing and archive
-   - Set team, signing, capabilities, version, and build number.
+8. **Signing and archive.**
+   - Set team / signing / capabilities / version / build number.
    - Run archive for iOS and macOS.
    - Upload to TestFlight.
    - Fix any App Store Connect processing warnings.
 
-## P1: Hardening
+## P1 — Hardening
 
-1. Run on real devices
-   - iPhone physical device.
-   - iPad physical device or simulator.
-   - Apple silicon Mac.
-   - Intel Mac only if still required.
+1. **Real-device testing on iPhone, iPad, Apple silicon Mac.** Intel Mac only if still required.
+2. **Build warnings.** `xcodebuild Debug` should be warning-free. Run Xcode Analyze. Review entitlements.
+3. **Keychain for API keys.** Currently `FinnhubProvider`/`PolygonProvider` read from `UserDefaults` for the scaffolding. Move to `KeychainService` when network code lands.
+4. **Data lifecycle.** Document what is stored locally. Add a "Reset Local Data" control in Settings if needed. Confirm uninstall behavior matches the privacy policy.
+5. **Background monitoring.** Re-check the actual background behavior on iOS 18 — the existing toggle exists, but verify it actually wakes the app for the institutional window check.
 
-2. Build warnings and static checks
-   - Keep Debug builds warning-free where practical.
-   - Run Xcode Analyze.
-   - Review entitlements and Info.plist for platform-specific keys.
+## P2 — Post-launch
 
-3. Brand color audit
-   - Current core palette is obsidian, electric cyan, neon green, red, yellow, and metallic gray.
-   - No brown/beige theme is present in the design system.
-   - There are still many `.orange` warning accents and setup-doc references to the 50 SMA as orange. Audit whether orange should remain as a market convention or be replaced with the brand warning yellow/cyan system.
-
-4. Live chart north star
-   - Research the correct data path for VXX, VIX, and VWAP on phone.
-   - Define the minimum viable live chart: VXX price, VWAP, volume, ratio, level, pattern/arrow marker.
-   - Do not add a decorative chart. The chart must directly improve entry timing.
-
-5. Phone information architecture
-   - Current phone tab model is `Desk`, `Tape`, `Risk`.
-   - Settings should stay off the primary phone tab bar unless market-hours testing proves it needs to be first-class.
-   - SPY remains available on larger layouts, but VXX/VWAP/time-window flow is the lead phone workflow for now.
-   - Keep iPad/macOS denser if useful.
-
-6. Data lifecycle
-   - Document what is stored locally.
-   - Add clear reset/delete-local-data controls if needed.
-   - Confirm uninstall behavior and privacy policy match.
-
-## P2: Post-Launch / Future
-
-1. watchOS punch list
-   - Do not add watchOS until iPhone is stable.
-   - Define it as a companion, not a full trading app.
-   - Best watch features: trading-window reminders, risk timer, alert glance, manual "dismiss" or "mark reviewed" actions.
-   - Avoid order entry or brokerage actions on watch.
-
-2. iPad optimization
-   - Use wider layouts for side-by-side manual data and validation.
-   - Keep touch targets generous.
-   - Consider split-view navigation.
-
-3. macOS release polish
-   - Confirm menu commands.
-   - Confirm update-checker behavior is appropriate for Mac App Store distribution.
-   - Consider whether GitHub release update checks should be disabled for App Store builds.
-
-4. Documentation refresh
-   - Consolidate duplicate launch docs.
-   - Split internal strategy notes from public App Store copy.
-   - Keep aggressive brand voice in internal docs, and restrained clarity in App Store metadata.
+1. **watchOS punch list.** Companion only. Trading-window reminders, risk timer, alert glance. No order entry.
+2. **iPad optimization.** The Mac terminal layout already works on iPad — review touch-target sizes.
+3. **Mac App Store polish.** Confirm menu commands. Decide whether the GitHub `UpdateChecker` should be disabled for App Store builds.
+4. **Docs consolidation.** `LAUNCH_GUIDE.md`, `LAUNCH_PLAN.md`, `MARKETING.md`, and `AppStoreMetadata.md` overlap with `APP_STORE_CONNECT_COPY.md`. Pick one source of truth and delete the others or mark them as superseded.

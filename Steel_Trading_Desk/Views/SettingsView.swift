@@ -10,7 +10,10 @@ struct SettingsView: View {
     @AppStorage(AppConfig.CloseManagement.institutionalHardExitKey) private var institutionalHardExitTime = AppConfig.CloseManagement.defaultInstitutionalHardExit
     @StateObject private var connectionManager = SchwabService.shared
     @StateObject private var notifications = SignalNotification.shared
-    
+    @StateObject private var marketDataRegistry = MarketDataRegistry.shared
+    @AppStorage("finnhub.apiKey") private var finnhubKey: String = ""
+    @AppStorage("polygon.apiKey") private var polygonKey: String = ""
+
     var body: some View {
         ZStack {
             TradingBackdrop()
@@ -20,6 +23,7 @@ struct SettingsView: View {
                     settingsHeader
                     accessCard
                     playtestCard
+                    dataSourceCard
                     brokerCard
                     monitoringCard
                     notificationsCard
@@ -31,6 +35,63 @@ struct SettingsView: View {
         }
         .task {
             await notifications.refreshAuthorizationStatus()
+        }
+    }
+
+    private var dataSourceCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("DATA SOURCE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.4)
+                    .foregroundColor(DesignSystem.amber)
+
+                Picker("Provider", selection: providerBinding) {
+                    ForEach(MarketDataProviderID.allCases) { id in
+                        Text(id.displayName).tag(id)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(marketDataRegistry.active.setupNote)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if marketDataRegistry.active.requiresApiKey {
+                    SecureField(keyPlaceholder, text: keyBinding)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                Text("Phase 6 status: protocol + scaffolds in place. Network calls are stubbed — until they're wired, the manual tape on the right rail is the source of truth.")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var providerBinding: Binding<MarketDataProviderID> {
+        Binding(
+            get: { marketDataRegistry.active.id },
+            set: { marketDataRegistry.use($0) }
+        )
+    }
+
+    private var keyBinding: Binding<String> {
+        switch marketDataRegistry.active.id {
+        case .finnhub: return $finnhubKey
+        case .polygon: return $polygonKey
+        default:       return .constant("")
+        }
+    }
+
+    private var keyPlaceholder: String {
+        switch marketDataRegistry.active.id {
+        case .finnhub: return "Finnhub API key"
+        case .polygon: return "Polygon API key"
+        default:       return "API Key"
         }
     }
 

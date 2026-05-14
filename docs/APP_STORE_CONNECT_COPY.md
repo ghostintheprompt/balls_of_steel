@@ -9,7 +9,7 @@ Use this as the paste sheet for App Store Connect version `1.0`.
 | Field | Value |
 | :--- | :--- |
 | App Name | Steel Trading Desk |
-| Subtitle | VXX VWAP Trading Desk |
+| Subtitle | Native Volatility Analysis Tool |
 | SKU | MDRN-STEEL-DESK-001 |
 | Bundle ID | app.mdrn.steel |
 | Primary Category | Finance |
@@ -21,11 +21,11 @@ Use this as the paste sheet for App Store Connect version `1.0`.
 
 ### Promotional Text
 
-A lean VXX/VIX/VWAP desk for traders who want discipline before execution. Enter the tape, check the gates, and keep the trade honest.
+A boiler-room VXX/VIX/VWAP discipline desk. Four gates, one verb, hard exit at 15:55. No signals, no autopilot, no fantasy fills.
 
 ### Description
 
-Steel Trading Desk is a local-first iPhone, iPad, and Mac utility for traders who want a clean VXX/VIX/VWAP discipline layer between chart analysis and broker execution.
+Steel Trading Desk is a local-first iPhone, iPad, and Mac utility for traders who want a hard discipline layer between their charts and their broker. The desk is one screen: a single command verb (NO TRADE / WAIT / CLEARED) on top of a four-gate sequence that has to clear in order before any entry is on the table.
 
 This is not a signal seller, broker, trading bot, or magic system. Steel keeps the trade in order:
 
@@ -35,19 +35,21 @@ This is not a signal seller, broker, trading bot, or magic system. Steel keeps t
 4. Rejection pattern
 5. Manual execution and risk management
 
-Enter the tape from your charting or brokerage platform, check the gates in sequence, copy a structured prompt when a second read helps, and execute manually on your broker.
+Enter the tape from your charting or brokerage platform, check the gates in sequence, embed a TradingView chart for context, copy a structured prompt when a second read helps, and execute manually on your broker.
 
 Built for a simple purpose: fewer forced trades, cleaner entries, stricter exits.
 
 Key features:
 
-- VXX sequence: volume/window, VXX/VIX ratio, VWAP/key level, and pattern gates in order.
+- VXX sequence: volume/window, VXX/VIX ratio, VWAP/key level, and pattern gates in order, with a clearly marked blocker on whichever gate is failing right now.
 - Tape entry: fast manual input for the chart values that matter.
-- Prompt Desk: structured market questions when you want a second read; no autopilot.
+- Embedded chart: TradingView Advanced Chart with VWAP, SMA, and volume overlays directly in the desk.
+- Hard-exit takeover: between 3:50 and 4:10 PM ET the screen replaces itself with a giant countdown to 15:55, your open position summary, and the three exit rules.
+- Second Read: structured prompts you paste into the model of your choice when you want an outside check.
 - Risk discipline: active-risk and close-management surfaces for keeping the trade honest.
 - Local-first privacy: no accounts, no telemetry, no tracking.
 
-The full VXX/VIX/VWAP workflow, prompt support, and risk tools are available without an in-app purchase.
+The full VXX/VIX/VWAP workflow, chart, prompts, and risk tools are available without an in-app purchase.
 
 Important: Steel Trading Desk is an educational utility. It does not execute trades, manage funds, provide financial advice, or connect as a brokerage service. You are responsible for your own trading decisions and risk.
 

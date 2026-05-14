@@ -2,14 +2,14 @@
 
 ## App Information
 *   **App Name:** Steel Trading Desk
-*   **Subtitle:** VXX VWAP Trading Desk
+*   **Subtitle:** Native Volatility Analysis Tool
 *   **Category:** Finance / Education
 *   **SKU:** `MDRN-STEEL-DESK-001`
 *   **Bundle ID:** `app.mdrn.steel`
 *   **Copyright:** © 2026 MDRN Corporation
 
 ## Marketing Text
-*   **Promotional Text:** A lean VXX/VIX/VWAP desk for traders who want discipline before execution. Enter the tape, check the gates, and keep the trade honest.
+*   **Promotional Text:** A boiler-room VXX/VIX/VWAP discipline desk. Four gates, one verb, hard exit at 15:55. No signals, no autopilot, no fantasy fills.
 *   **Keywords:** VXX,VIX,VWAP,SPY,options,trading,volatility,tape,risk,journal,finance,stocks
 *   **Support URL:** https://github.com/ghostintheprompt/steel-trading-desk/issues
 *   **Marketing URL:** https://mdrn.app/steel

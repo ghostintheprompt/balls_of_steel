@@ -27,6 +27,7 @@
 		1A000021000000000000001A /* Strategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000022000000000000001A /* Strategy.swift */; };
 		1A000023000000000000001A /* StrategyParams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000024000000000000001A /* StrategyParams.swift */; };
 		1A000025000000000000001A /* Trade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000026000000000000001A /* Trade.swift */; };
+		1ADS01000000000000000001 /* DeskState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADS01000000000000000002 /* DeskState.swift */; };
 		1A000027000000000000001A /* TradingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000028000000000000001A /* TradingCriteria.swift */; };
 		1A00002D000000000000001A /* ValidationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00002E000000000000001A /* ValidationModels.swift */; };
 		1A00002F000000000000001A /* ExitSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000030000000000000001A /* ExitSignalService.swift */; };
@@ -49,6 +50,11 @@
 		1A000051000000000000001A /* StrategyBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000052000000000000001A /* StrategyBadge.swift */; };
 		1A000053000000000000001A /* signal_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A000054000000000000001A /* signal_alert.wav */; };
 		00000000000000001A000056 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000055 /* PrivacyInfo.xcprivacy */; };
+		1AFT01000000000000000001 /* IBMPlexSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AFT01000000000000000002 /* IBMPlexSans-Regular.ttf */; };
+		1AFT02000000000000000001 /* IBMPlexSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AFT02000000000000000002 /* IBMPlexSans-SemiBold.ttf */; };
+		1AFT03000000000000000001 /* IBMPlexSans_Condensed-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AFT03000000000000000002 /* IBMPlexSans_Condensed-Bold.ttf */; };
+		1AFT04000000000000000001 /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AFT04000000000000000002 /* IBMPlexMono-Regular.ttf */; };
+		1AFT05000000000000000001 /* IBMPlexMono-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AFT05000000000000000002 /* IBMPlexMono-SemiBold.ttf */; };
 		00000000000000001A000071 /* ArrowSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000072 /* ArrowSignal.swift */; };
 		00000000000000001A000073 /* CandlestickPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000074 /* CandlestickPattern.swift */; };
 		00000000000000001A000075 /* EventDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000076 /* EventDay.swift */; };
@@ -65,11 +71,16 @@
 		00000000000000001A00008F /* ArrowSignalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000090 /* ArrowSignalViews.swift */; };
 		00000000000000001A000091 /* PatternIndicatorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000092 /* PatternIndicatorViews.swift */; };
 		00000000000000001A000093 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000094 /* DesignSystem.swift */; };
+		1ACW01000000000000000001 /* ChartWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACW01000000000000000002 /* ChartWebView.swift */; };
 		B000000000000001A000002 /* DailyRiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000001 /* DailyRiskManager.swift */; };
 		B000000000000001A000004 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000003 /* KeychainService.swift */; };
 		B000000000000001A000006 /* TradeJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000005 /* TradeJournal.swift */; };
 		B000000000000001A000008 /* VXXTradingWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000007 /* VXXTradingWindow.swift */; };
 		B000000000000001A00000A /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000009 /* UpdateChecker.swift */; };
+		1AMD01000000000000000001 /* MarketDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD01000000000000000002 /* MarketDataProvider.swift */; };
+		1AMD02000000000000000001 /* FinnhubProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD02000000000000000002 /* FinnhubProvider.swift */; };
+		1AMD03000000000000000001 /* PolygonProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD03000000000000000002 /* PolygonProvider.swift */; };
+		1AMD04000000000000000001 /* YahooProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD04000000000000000002 /* YahooProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -94,6 +105,7 @@
 		1A000022000000000000001A /* Strategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strategy.swift; sourceTree = "<group>"; };
 		1A000024000000000000001A /* StrategyParams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyParams.swift; sourceTree = "<group>"; };
 		1A000026000000000000001A /* Trade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Trade.swift; sourceTree = "<group>"; };
+		1ADS01000000000000000002 /* DeskState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskState.swift; sourceTree = "<group>"; };
 		1A000028000000000000001A /* TradingCriteria.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradingCriteria.swift; sourceTree = "<group>"; };
 		1A00002E000000000000001A /* ValidationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationModels.swift; sourceTree = "<group>"; };
 		1A000030000000000000001A /* ExitSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitSignalService.swift; sourceTree = "<group>"; };
@@ -115,6 +127,12 @@
 		1A000050000000000000001A /* TradingDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradingDashboard.swift; sourceTree = "<group>"; };
 		1A000052000000000000001A /* StrategyBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyBadge.swift; sourceTree = "<group>"; };
 		00000000000000001A000054 /* signal_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = signal_alert.wav; sourceTree = "<group>"; };
+		1AFT01000000000000000002 /* IBMPlexSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexSans-Regular.ttf"; sourceTree = "<group>"; };
+		1AFT02000000000000000002 /* IBMPlexSans-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexSans-SemiBold.ttf"; sourceTree = "<group>"; };
+		1AFT03000000000000000002 /* IBMPlexSans_Condensed-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexSans_Condensed-Bold.ttf"; sourceTree = "<group>"; };
+		1AFT04000000000000000002 /* IBMPlexMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-Regular.ttf"; sourceTree = "<group>"; };
+		1AFT05000000000000000002 /* IBMPlexMono-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-SemiBold.ttf"; sourceTree = "<group>"; };
+		1AFT00000000000000000003 /* Fonts */ = {isa = PBXGroup; children = (1AFT01000000000000000002 /* IBMPlexSans-Regular.ttf */, 1AFT02000000000000000002 /* IBMPlexSans-SemiBold.ttf */, 1AFT03000000000000000002 /* IBMPlexSans_Condensed-Bold.ttf */, 1AFT04000000000000000002 /* IBMPlexMono-Regular.ttf */, 1AFT05000000000000000002 /* IBMPlexMono-SemiBold.ttf */, ); path = Fonts; sourceTree = "<group>"; };
 		00000000000000001A000055 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		1A000055000000000000001A /* Steel_Trading_Desk.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steel_Trading_Desk.entitlements; sourceTree = "<group>"; };
 
@@ -136,11 +154,16 @@
 		00000000000000001A000090 /* ArrowSignalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrowSignalViews.swift; sourceTree = "<group>"; };
 		00000000000000001A000092 /* PatternIndicatorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternIndicatorViews.swift; sourceTree = "<group>"; };
 		00000000000000001A000094 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		1ACW01000000000000000002 /* ChartWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWebView.swift; sourceTree = "<group>"; };
 		B000000000000001A000001 /* DailyRiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRiskManager.swift; sourceTree = "<group>"; };
 		B000000000000001A000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		B000000000000001A000005 /* TradeJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeJournal.swift; sourceTree = "<group>"; };
 		B000000000000001A000007 /* VXXTradingWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VXXTradingWindow.swift; sourceTree = "<group>"; };
 		B000000000000001A000009 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		1AMD01000000000000000002 /* MarketDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketDataProvider.swift; sourceTree = "<group>"; };
+		1AMD02000000000000000002 /* FinnhubProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubProvider.swift; sourceTree = "<group>"; };
+		1AMD03000000000000000002 /* PolygonProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonProvider.swift; sourceTree = "<group>"; };
+		1AMD04000000000000000002 /* YahooProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -230,6 +253,7 @@
 				1A000022000000000000001A /* Strategy.swift */,
 				1A000024000000000000001A /* StrategyParams.swift */,
 				1A000026000000000000001A /* Trade.swift */,
+				1ADS01000000000000000002 /* DeskState.swift */,
 				1AES0001000000000000001A /* ExitSignal.swift */,
 				1AOR0001000000000000001A /* Order.swift */,
 				1A000028000000000000001A /* TradingCriteria.swift */,
@@ -264,6 +288,10 @@
 				B000000000000001A000005 /* TradeJournal.swift */,
 				B000000000000001A000009 /* UpdateChecker.swift */,
 				00000000000000001A00007E /* ArcadeEnergyService.swift */,
+				1AMD01000000000000000002 /* MarketDataProvider.swift */,
+				1AMD02000000000000000002 /* FinnhubProvider.swift */,
+				1AMD03000000000000000002 /* PolygonProvider.swift */,
+				1AMD04000000000000000002 /* YahooProvider.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -295,6 +323,7 @@
 				00000000000000001A000090 /* ArrowSignalViews.swift */,
 				00000000000000001A000092 /* PatternIndicatorViews.swift */,
 				00000000000000001A000094 /* DesignSystem.swift */,
+				1ACW01000000000000000002 /* ChartWebView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -303,6 +332,7 @@
 			isa = PBXGroup;
 			children = (
 				1A000054000000000000001A /* signal_alert.wav */,
+				1AFT00000000000000000003 /* Fonts */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -383,6 +413,11 @@
 				1A000053000000000000001A /* signal_alert.wav in Resources */,
 				00000000000000001A000056 /* PrivacyInfo.xcprivacy in Resources */,
 				1A000005000000000000001A /* Assets.xcassets in Resources */,
+				1AFT01000000000000000001 /* IBMPlexSans-Regular.ttf in Resources */,
+				1AFT02000000000000000001 /* IBMPlexSans-SemiBold.ttf in Resources */,
+				1AFT03000000000000000001 /* IBMPlexSans_Condensed-Bold.ttf in Resources */,
+				1AFT04000000000000000001 /* IBMPlexMono-Regular.ttf in Resources */,
+				1AFT05000000000000000001 /* IBMPlexMono-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +445,7 @@
 				1A000021000000000000001A /* Strategy.swift in Sources */,
 				1A000023000000000000001A /* StrategyParams.swift in Sources */,
 				1A000025000000000000001A /* Trade.swift in Sources */,
+				1ADS01000000000000000001 /* DeskState.swift in Sources */,
 				1AES0002000000000000001A /* ExitSignal.swift in Sources */,
 				1AOR0002000000000000001A /* Order.swift in Sources */,
 				1A000027000000000000001A /* TradingCriteria.swift in Sources */,
@@ -448,11 +484,16 @@
 				00000000000000001A00008F /* ArrowSignalViews.swift in Sources */,
 				00000000000000001A000091 /* PatternIndicatorViews.swift in Sources */,
 				00000000000000001A000093 /* DesignSystem.swift in Sources */,
+				1ACW01000000000000000001 /* ChartWebView.swift in Sources */,
 				B000000000000001A000002 /* DailyRiskManager.swift in Sources */,
 				B000000000000001A000004 /* KeychainService.swift in Sources */,
 				B000000000000001A000006 /* TradeJournal.swift in Sources */,
 				B000000000000001A000008 /* VXXTradingWindow.swift in Sources */,
 				B000000000000001A00000A /* UpdateChecker.swift in Sources */,
+				1AMD01000000000000000001 /* MarketDataProvider.swift in Sources */,
+				1AMD02000000000000000001 /* FinnhubProvider.swift in Sources */,
+				1AMD03000000000000000001 /* PolygonProvider.swift in Sources */,
+				1AMD04000000000000000001 /* YahooProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

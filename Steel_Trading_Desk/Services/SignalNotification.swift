@@ -17,10 +17,14 @@ class SignalNotification: ObservableObject {
     
     private var soundPlayer: AVAudioPlayer?
     
+    private static let categoryIdentifier = "STEEL_DESK"
+    private static let openDeskActionIdentifier = "OPEN_DESK"
+
     func requestPermissions() async {
         do {
             let center = UNUserNotificationCenter.current()
             _ = try await center.requestAuthorization(options: [.alert, .sound])
+            registerCategories()
             await refreshAuthorizationStatus()
         } catch {
             lastError = .permissionDenied
@@ -32,11 +36,27 @@ class SignalNotification: ObservableObject {
 
     func prepareForLaunch() async {
         await refreshAuthorizationStatus()
+        registerCategories()
 
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         if settings.authorizationStatus == .notDetermined {
             await requestPermissions()
         }
+    }
+
+    private func registerCategories() {
+        let openDesk = UNNotificationAction(
+            identifier: Self.openDeskActionIdentifier,
+            title: "Open Desk",
+            options: [.foreground]
+        )
+        let category = UNNotificationCategory(
+            identifier: Self.categoryIdentifier,
+            actions: [openDesk],
+            intentIdentifiers: [],
+            options: []
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
     func refreshAuthorizationStatus() async {
@@ -77,29 +97,42 @@ class SignalNotification: ObservableObject {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = "\(exitSignal.action.displayName.uppercased()) \(exitSignal.symbol)"
-        content.subtitle = exitSignal.strategy.rawValue
-        content.body = "Price: $\(String(format: "%.2f", exitSignal.exitPrice)) - \(exitSignal.exitReason.displayName)"
+        content.title = "\(exitSignal.symbol) · CLOSE IT"
+        content.subtitle = exitSignal.action.displayName.uppercased()
+        content.body = "PRICE $\(String(format: "%.2f", exitSignal.exitPrice)) · \(exitSignal.exitReason.displayName.uppercased())"
         content.sound = .default
+        content.categoryIdentifier = Self.categoryIdentifier
         scheduleNotification(content)
     }
-    
+
     private func createNotificationContent(for signal: Signal) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = "\(signal.kind.displayName) \(signal.symbol) - \(signal.direction.optionLabel)"
-        content.subtitle = signal.strategy.rawValue
-        content.body = formatSignalDetails(signal)
+        content.title = "\(signal.symbol) · \(directiveTitle(for: signal))"
+        content.subtitle = "\(signal.strategy.rawValue.uppercased()) · \(signal.direction.optionLabel.uppercased())"
+        content.body = formatSignalBody(signal)
         content.sound = .default
+        content.categoryIdentifier = Self.categoryIdentifier
         return content
     }
-    
-    private func formatSignalDetails(_ signal: Signal) -> String {
-        """
-        Direction: \(signal.direction.displayName)
-        Entry: $\(String(format: "%.2f", signal.entry))
-        Target: $\(String(format: "%.2f", signal.target))
-        Stop: $\(String(format: "%.2f", signal.stop))
-        """
+
+    private func directiveTitle(for signal: Signal) -> String {
+        switch signal.kind {
+        case .entry: return "GO CHECK THE TAPE"
+        case .watch: return "WATCH"
+        case .exit:  return "CLOSE IT"
+        }
+    }
+
+    private func formatSignalBody(_ signal: Signal) -> String {
+        let ratioText = signal.vxxVixRatio > 0 ? String(format: "R %.2f", signal.vxxVixRatio) : nil
+        let vixText = signal.vix > 0 ? String(format: "VIX %.1f", signal.vix) : nil
+        let entryText = String(format: "ENTRY $%.2f", signal.entry)
+        let stopText = String(format: "STOP $%.2f", signal.stop)
+        let targetText = String(format: "TGT $%.2f", signal.target)
+
+        return [ratioText, vixText, entryText, stopText, targetText]
+            .compactMap { $0 }
+            .joined(separator: " · ")
     }
     
     private func playAlertSound() throws {
