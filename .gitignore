@@ -42,3 +42,8 @@ xcuserdata/
 *.zip
 *.app
 Builds/
+
+## Secrets — NEVER COMMIT
+.env
+.env.local
+Secrets.xcconfig

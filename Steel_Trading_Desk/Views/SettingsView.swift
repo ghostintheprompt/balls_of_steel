@@ -11,8 +11,10 @@ struct SettingsView: View {
     @StateObject private var connectionManager = SchwabService.shared
     @StateObject private var notifications = SignalNotification.shared
     @StateObject private var marketDataRegistry = MarketDataRegistry.shared
-    @AppStorage("finnhub.apiKey") private var finnhubKey: String = ""
-    @AppStorage("polygon.apiKey") private var polygonKey: String = ""
+    @StateObject private var liveTape = LiveTapeService.shared
+    @State private var finnhubKey: String = KeychainService.load(key: FinnhubProvider.keychainKey) ?? ""
+    @State private var polygonKey: String = KeychainService.load(key: PolygonProvider.keychainKey) ?? ""
+    @State private var liveEnabled: Bool = LiveTapeService.shared.isEnabled
 
     var body: some View {
         ZStack {
@@ -63,13 +65,62 @@ struct SettingsView: View {
                         .textFieldStyle(.roundedBorder)
                 }
 
-                Text("Phase 6 status: protocol + scaffolds in place. Network calls are stubbed — until they're wired, the manual tape on the right rail is the source of truth.")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.2)
-                    .foregroundColor(DesignSystem.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+                Divider().background(DesignSystem.hairline)
+
+                Toggle(isOn: liveModeBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("AUTO-POPULATE FROM PROVIDER")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1.4)
+                            .foregroundColor(DesignSystem.text)
+                        Text("Polls VXX + VIX every 30s and writes into the tape. Pattern, level, and news stay manual.")
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(DesignSystem.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                if liveEnabled {
+                    HStack(spacing: 6) {
+                        DeskPulseDot(accent: liveTape.isLive ? DesignSystem.long : DesignSystem.short, size: 6)
+                        Text(liveStatusText)
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1.2)
+                            .foregroundColor(DesignSystem.text2)
+                        Spacer()
+                        Button("Refresh") {
+                            Task { await liveTape.tickNow() }
+                        }
+                        .font(DesignSystem.Typography.labelFont)
+                    }
+                    if let err = liveTape.lastError {
+                        Text(err.uppercased())
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1.0)
+                            .foregroundColor(DesignSystem.short)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
         }
+    }
+
+    private var liveModeBinding: Binding<Bool> {
+        Binding(
+            get: { liveEnabled },
+            set: { newValue in
+                liveEnabled = newValue
+                liveTape.isEnabled = newValue
+            }
+        )
+    }
+
+    private var liveStatusText: String {
+        if let last = liveTape.lastTickAt {
+            let delta = Int(Date().timeIntervalSince(last))
+            return liveTape.isLive ? "LAST TICK \(delta)s AGO" : "STALE \(delta)s"
+        }
+        return liveTape.isLive ? "WAITING FOR FIRST TICK" : "OFF"
     }
 
     private var providerBinding: Binding<MarketDataProviderID> {
@@ -81,9 +132,32 @@ struct SettingsView: View {
 
     private var keyBinding: Binding<String> {
         switch marketDataRegistry.active.id {
-        case .finnhub: return $finnhubKey
-        case .polygon: return $polygonKey
-        default:       return .constant("")
+        case .finnhub:
+            return Binding(
+                get: { finnhubKey },
+                set: { newValue in
+                    finnhubKey = newValue
+                    if newValue.isEmpty {
+                        KeychainService.delete(key: FinnhubProvider.keychainKey)
+                    } else {
+                        KeychainService.save(key: FinnhubProvider.keychainKey, value: newValue)
+                    }
+                }
+            )
+        case .polygon:
+            return Binding(
+                get: { polygonKey },
+                set: { newValue in
+                    polygonKey = newValue
+                    if newValue.isEmpty {
+                        KeychainService.delete(key: PolygonProvider.keychainKey)
+                    } else {
+                        KeychainService.save(key: PolygonProvider.keychainKey, value: newValue)
+                    }
+                }
+            )
+        default:
+            return .constant("")
         }
     }
 

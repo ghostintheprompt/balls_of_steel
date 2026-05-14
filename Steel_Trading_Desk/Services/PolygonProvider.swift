@@ -14,12 +14,10 @@ struct PolygonProvider: MarketDataProvider {
     let deliversRealtime = true
     let setupNote = "Stocks Starter ($29/mo): real-time NBBO + options. Best when serious."
 
-    private static let keychainKey = "polygon.apiKey"
+    static let keychainKey = "polygon.apiKey"
     private static let restBase = URL(string: "https://api.polygon.io")!
 
-    private var apiKey: String? {
-        UserDefaults.standard.string(forKey: Self.keychainKey)
-    }
+    private var apiKey: String? { KeychainService.load(key: Self.keychainKey) }
 
     func quote(_ symbol: String) async throws -> Quote {
         guard let key = apiKey, !key.isEmpty else {

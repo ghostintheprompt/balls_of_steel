@@ -16,7 +16,7 @@ Internal product note: VXX is the free desk and proof of craft. Keep paid-tier i
 
 ## Done in the boiler-room redesign pass (May 2026)
 
-- **Token swap.** New palette (CRT amber `#FFB000` on near-black) and IBM Plex font stack wired with system fallback. (Plex `.ttf` files dropping into `Resources/Fonts` + `Info.plist UIAppFonts` flips it to real Plex.)
+- **Token swap.** New palette (CRT amber `#FFB000` on near-black). IBM Plex fonts now live and bundled: Sans Regular + SemiBold, Sans Condensed Bold, Mono Regular + SemiBold. ~1MB total in the app bundle. System fallback retained per-family but disabled by default.
 - **Decoration killed.** All `RoundedRectangle` corners → 2pt; every shadow/glow on cards removed; `.padding(20)` collapsed; every purple/orange/yellow/cyan/gray bare color replaced with a `DesignSystem` token.
 - **Mac single-window terminal.** Three-column layout (ticker strip / left rail gate spine / chart center / right rail NEXT MOVE+RAW READ+SECOND READ+ET clock / status footer). The Mac TabView is gone; the gate sequence IS the navigation. Manual entry + Prompt Coach come up as sheets from the right rail.
 - **iPhone gate-spine.** Phone home is now ticker strip → NEXT MOVE verb → 4-gate stack with amber blocker highlight → mini chart → ET clock + hard-stop countdown footer. Tapping a gate opens a drill-in sheet with big number + tier table + house rule.
@@ -29,11 +29,9 @@ Internal product note: VXX is the free desk and proof of craft. Keep paid-tier i
 
 ## Remaining P0 — Release Blockers
 
-1. **Plex font bundling.** Drop `IBMPlexMono-Regular/SemiBold`, `IBMPlexSans-Regular/SemiBold`, `IBMPlexSansCondensed-Bold/Black` into `Steel_Trading_Desk/Resources/Fonts/`. Add a `UIAppFonts` array in `Info.plist`. Flip `DesignSystem.Typography.useSystemFallback = false`.
+1. **Validate live-tape end-to-end with a real Finnhub key.** The provider + LiveTapeService are wired but unverified against the actual Finnhub API. Drop a key into Settings → Data Source, flip "Auto-populate from provider", confirm the desk shows a "LIVE · Ns" indicator and gates update without touching manual tape. Likely friction: VIX symbol (`^VIX` may need to be `TVC:VIX` or similar on Finnhub; quick fix in `LiveTapeService.fetchAndPersist` if so).
 
-2. **Real market-data wiring.** Pick a provider (Finnhub recommended for v1.0), generate an API key, fill in the REST + WebSocket bodies in `FinnhubProvider.swift` (currently throw `notImplemented`). Hook the live quotes into the gate evaluator so `MarketDataEntry` can be auto-populated when a provider is configured.
-
-3. **iPhone-first UX validation on real device.** The boiler-room redesign needs market-hours testing on `ZZZ`. Verify the hard-exit takeover fires at 15:50 ET. Verify gate-detail sheets open and dismiss cleanly. Verify the ticker strip readout updates as tape entry changes.
+2. **iPhone-first UX validation on real device.** The boiler-room redesign needs market-hours testing on `ZZZ`. Verify the hard-exit takeover fires at 15:50 ET. Verify gate-detail sheets open and dismiss cleanly. Verify the ticker strip readout updates as tape entry changes. Verify Plex renders correctly (fonts now bundled).
 
 4. **Disclaimer + privacy.**
    - Confirm the first-run `DisclaimerView` still appears and matches the new tone.

@@ -2274,12 +2274,13 @@ private struct RightRailView: View {
 private struct StatusFooterView: View {
     @ObservedObject var marketPulse: MarketPulse
     let entry: MarketDataEntry?
+    @ObservedObject private var liveTape = LiveTapeService.shared
 
     var body: some View {
         HStack(spacing: 0) {
             footerCell("CHART", "TRADINGVIEW · 15M", accent: DesignSystem.muted)
             divider
-            footerCell("QUOTES", "MANUAL TAPE", accent: entry == nil ? DesignSystem.short : DesignSystem.amber)
+            footerCell("QUOTES", quotesText, accent: quotesAccent)
             divider
             footerCell("EXEC", "THINKORSWIM", accent: DesignSystem.muted)
             divider
@@ -2293,6 +2294,26 @@ private struct StatusFooterView: View {
             Rectangle().fill(DesignSystem.hairline).frame(height: 1),
             alignment: .top
         )
+    }
+
+    private var quotesText: String {
+        if liveTape.isLive {
+            if let last = liveTape.lastTickAt {
+                let delta = Int(Date().timeIntervalSince(last))
+                return "LIVE · \(delta)s"
+            }
+            return "LIVE"
+        }
+        if liveTape.isEnabled, let err = liveTape.lastError {
+            return "LIVE · ERR · \(err.prefix(40))".uppercased()
+        }
+        return entry == nil ? "NO TAPE" : "MANUAL TAPE"
+    }
+
+    private var quotesAccent: Color {
+        if liveTape.isLive { return DesignSystem.long }
+        if liveTape.isEnabled && liveTape.lastError != nil { return DesignSystem.short }
+        return entry == nil ? DesignSystem.short : DesignSystem.amber
     }
 
     private var divider: some View {
@@ -2457,6 +2478,7 @@ private struct PhoneMiniChart: View {
 
 private struct PhoneClockFooter: View {
     @State private var now = Date()
+    @ObservedObject private var liveTape = LiveTapeService.shared
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private static let etFormatter: DateFormatter = {
@@ -2506,6 +2528,21 @@ private struct PhoneClockFooter: View {
         .padding(.vertical, 10)
         .background(DesignSystem.bg1)
         .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+        .overlay(alignment: .topTrailing) {
+            if liveTape.isLive {
+                HStack(spacing: 4) {
+                    DeskPulseDot(accent: DesignSystem.long, size: 5)
+                    Text("LIVE")
+                        .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                        .tracking(1.4)
+                        .foregroundColor(DesignSystem.long)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(DesignSystem.long.opacity(0.10))
+                .padding(6)
+            }
+        }
         .onReceive(timer) { now = $0 }
     }
 

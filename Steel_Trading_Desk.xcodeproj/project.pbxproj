@@ -81,6 +81,9 @@
 		1AMD02000000000000000001 /* FinnhubProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD02000000000000000002 /* FinnhubProvider.swift */; };
 		1AMD03000000000000000001 /* PolygonProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD03000000000000000002 /* PolygonProvider.swift */; };
 		1AMD04000000000000000001 /* YahooProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD04000000000000000002 /* YahooProvider.swift */; };
+		1ALT01000000000000000001 /* LiveTapeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ALT01000000000000000002 /* LiveTapeService.swift */; };
+		1AEN01000000000000000001 /* EnvSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AEN01000000000000000002 /* EnvSeeder.swift */; };
+		1AEN02000000000000000001 /* .env in Resources */ = {isa = PBXBuildFile; fileRef = 1AEN02000000000000000002 /* .env */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -164,6 +167,9 @@
 		1AMD02000000000000000002 /* FinnhubProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubProvider.swift; sourceTree = "<group>"; };
 		1AMD03000000000000000002 /* PolygonProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonProvider.swift; sourceTree = "<group>"; };
 		1AMD04000000000000000002 /* YahooProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooProvider.swift; sourceTree = "<group>"; };
+		1ALT01000000000000000002 /* LiveTapeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTapeService.swift; sourceTree = "<group>"; };
+		1AEN01000000000000000002 /* EnvSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvSeeder.swift; sourceTree = "<group>"; };
+		1AEN02000000000000000002 /* .env */ = {isa = PBXFileReference; lastKnownFileType = text; name = ".env"; path = ".env"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -292,6 +298,8 @@
 				1AMD02000000000000000002 /* FinnhubProvider.swift */,
 				1AMD03000000000000000002 /* PolygonProvider.swift */,
 				1AMD04000000000000000002 /* YahooProvider.swift */,
+				1ALT01000000000000000002 /* LiveTapeService.swift */,
+				1AEN01000000000000000002 /* EnvSeeder.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -333,6 +341,7 @@
 			children = (
 				1A000054000000000000001A /* signal_alert.wav */,
 				1AFT00000000000000000003 /* Fonts */,
+				1AEN02000000000000000002 /* .env */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -413,6 +422,7 @@
 				1A000053000000000000001A /* signal_alert.wav in Resources */,
 				00000000000000001A000056 /* PrivacyInfo.xcprivacy in Resources */,
 				1A000005000000000000001A /* Assets.xcassets in Resources */,
+				1AEN02000000000000000001 /* .env in Resources */,
 				1AFT01000000000000000001 /* IBMPlexSans-Regular.ttf in Resources */,
 				1AFT02000000000000000001 /* IBMPlexSans-SemiBold.ttf in Resources */,
 				1AFT03000000000000000001 /* IBMPlexSans_Condensed-Bold.ttf in Resources */,
@@ -494,6 +504,8 @@
 				1AMD02000000000000000001 /* FinnhubProvider.swift in Sources */,
 				1AMD03000000000000000001 /* PolygonProvider.swift in Sources */,
 				1AMD04000000000000000001 /* YahooProvider.swift in Sources */,
+				1ALT01000000000000000001 /* LiveTapeService.swift in Sources */,
+				1AEN01000000000000000001 /* EnvSeeder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
