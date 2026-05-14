@@ -1,17 +1,51 @@
 # Steel Trading Desk: Privacy Policy
 
-**Effective Date:** May 2, 2026
+**Effective Date:** May 13, 2026
 
-**1. Zero Data Collection:** The "Steel Trading Desk" application does not collect, store, or transmit any personal information, trading data, or account credentials to external servers. 
+## 1. What we collect
 
-**2. Local-Only Storage:** All data entered manually or retrieved via API is stored exclusively on your local hardware using secure macOS primitives (Keychain and local storage). 
+Nothing. Steel Trading Desk does not collect, store, or transmit personal information, trading data, account credentials, telemetry, analytics, crash reports, or device identifiers to any server we control.
 
-**3. No Telemetry:** We do not use third-party analytics, tracking pixels, or crash-reporting tools that share data with us or any third party. Your usage of the app is completely private.
+## 2. Local-only storage
 
-**4. Third-Party Services:** 
-*   **Brokerage Integration:** If you connect a brokerage account (e.g., Schwab), all communication occurs directly between your local machine and the service provider. We never see, proxy, or store your credentials.
-*   **External Links:** The app may contain links to external sites (e.g., MDRN Corp). We are not responsible for the privacy practices of those sites.
+All data you enter into the app is stored exclusively on your device:
 
-**5. Data Deletion:** Removing the application and its associated container from your Mac will delete all stored data.
+- **Tape entries** (VXX/VIX/volume/VWAP/level/pattern/window/news) live in `UserDefaults` on the device.
+- **API keys** (Finnhub, Polygon, Schwab) are stored in the platform Keychain, scoped to this app and your device.
+- **Trade history / journal** lives in local app storage.
 
-**Contact:** For questions about this policy, contact the developer at [YOUR_CONTACT_EMAIL].
+When you delete the app, all of this is removed by the operating system.
+
+## 3. Outbound network calls (third-party services)
+
+The app makes outbound HTTPS calls only to services *you explicitly configure* in Settings → Data Source. We never proxy these calls through our servers; they go directly from your device to the provider:
+
+| Provider | Endpoint | Purpose | Required? |
+|---|---|---|---|
+| TradingView | `s3.tradingview.com`, `tradingview.com` | Embedded chart widget (15-min delayed quotes) | Used whenever the chart is visible. No account / no auth. |
+| Finnhub | `finnhub.io`, `ws.finnhub.io` | Real-time VXX / VIX quote data | Only if you provide a Finnhub API key |
+| Polygon.io | `api.polygon.io`, `socket.polygon.io` | Real-time quote data (alternative provider) | Only if you provide a Polygon API key |
+| Schwab | `api.schwabapi.com` | Real-time brokerage quote data | Only if you complete the Schwab OAuth flow |
+| Yahoo Finance (unofficial) | `query1.finance.yahoo.com` | Delayed quote fallback | Only if you select Yahoo as your provider |
+
+Each provider's privacy policy governs how *they* handle the requests they receive. We do not share your API keys with anyone, ever.
+
+## 4. No telemetry, no third-party analytics
+
+We do not embed Google Analytics, Mixpanel, Firebase, Sentry, App Center, Crashlytics, or any other tracking or analytics SDK. Apple's standard, opt-in crash reporting (which goes to Apple, not to us) is the only diagnostic flow.
+
+## 5. App Tracking Transparency
+
+The app does not track you across other apps or websites. We do not request permission under Apple's App Tracking Transparency framework because we have nothing to track.
+
+## 6. Children
+
+This app is for adult traders. We do not knowingly collect or process information from anyone under 18.
+
+## 7. Changes to this policy
+
+If material changes are made (e.g., adding a new third-party data provider), this document will be updated and the Effective Date bumped. Continuing to use the app after a material change constitutes acceptance.
+
+## 8. Contact
+
+Questions about this policy: `support@mdrn.app` (placeholder — confirm/replace with the address you want surfaced before App Store submission).

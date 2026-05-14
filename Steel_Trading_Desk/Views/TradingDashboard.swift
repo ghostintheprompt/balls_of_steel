@@ -7,6 +7,7 @@ struct TradingDashboard: View {
     var openRisk: (() -> Void)? = nil
     @StateObject private var marketPulse = MarketPulse.shared
     @StateObject private var timeManager = TimeManager.shared
+    @StateObject private var liveTape = LiveTapeService.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage("lastMarketDataEntry") private var lastMarketDataEntryData: Data = Data()
 
@@ -595,6 +596,20 @@ private enum GateStatus: Equatable {
 
 private struct VXXStrategyState {
     let entry: MarketDataEntry?
+    /// Live divergence read. Read once at struct construction; views that
+    /// observe `LiveTapeService.shared` will re-render with a fresh value.
+    let liveSnapshot: LiveTapeService.LiveSnapshot?
+
+    @MainActor
+    init(entry: MarketDataEntry?) {
+        self.entry = entry
+        self.liveSnapshot = LiveTapeService.shared.lastSnapshot
+    }
+
+    init(entry: MarketDataEntry?, liveSnapshot: LiveTapeService.LiveSnapshot?) {
+        self.entry = entry
+        self.liveSnapshot = liveSnapshot
+    }
 
     var volumePass: Bool {
         guard let entry else { return false }
@@ -610,9 +625,21 @@ private struct VXXStrategyState {
         volumePass && windowPass
     }
 
+    /// True when VIX is meaningfully outpacing VXX (ratio is compressing).
+    /// That's the *wrong* direction to fade the ratio, so it blocks gate 2.
+    /// Only evaluated when live data is available; manual mode has no
+    /// pct-change input and can't enforce this constraint.
+    var ratioConverging: Bool {
+        guard let snap = liveSnapshot else { return false }
+        return snap.isDiverging && snap.divergencePoints < 0
+    }
+
     var ratioPass: Bool {
         guard let entry else { return false }
-        return entry.instrument == .vxx && entry.ratio >= 1.45
+        guard entry.instrument == .vxx, entry.ratio >= 1.45 else { return false }
+        // Divergence direction is part of the entry constraint: never fade a
+        // ratio that is compressing, regardless of absolute level.
+        return !ratioConverging
     }
 
     var levelPass: Bool {
@@ -677,9 +704,13 @@ private struct VXXStrategyState {
         guard let entry else { return "Locked until tape is entered." }
         if !volumeWindowPass { return "Locked until volume and time pass." }
         if entry.instrument != .vxx { return "This desk is for VXX. Switch the tape to VXX." }
-        return ratioPass
-            ? "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
-            : "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >1.45."
+        if entry.ratio < 1.45 {
+            return "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >1.45."
+        }
+        if ratioConverging, let snap = liveSnapshot {
+            return "Ratio \(String(format: "%.2f", entry.ratio)) cheap but VIX is outpacing VXX (\(String(format: "%+.2f", snap.divergencePoints))pp). Ratio is compressing — do not fade."
+        }
+        return "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
     }
 
     var levelDetail: String {
@@ -2028,6 +2059,7 @@ private struct RightRailView: View {
     let onSecondRead: () -> Void
 
     @State private var now = Date()
+    @ObservedObject private var liveTape = LiveTapeService.shared
     private let clockTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private static let etTimeFormatter: DateFormatter = {
@@ -2153,6 +2185,9 @@ private struct RightRailView: View {
                 rawReadRow("RATIO", String(format: "%.3f", entry.ratio), accent: ratioAccent(entry))
                 rawReadRow("TIER", entry.ratioTier.uppercased())
             }
+            if let snap = liveTape.lastSnapshot {
+                divergenceRows(snap)
+            }
             rawReadRow("VOLUME", "\(Int(entry.volumePercent))%")
             rawReadRow("VWAP", entry.vwapPosition.shortName)
             rawReadRow("WINDOW", entry.timeWindow.displayName.uppercased())
@@ -2161,6 +2196,37 @@ private struct RightRailView: View {
             rawReadRow("PATTERN", entry.patternConfirmed ? "CONFIRMED" : "WAITING",
                        accent: entry.patternConfirmed ? DesignSystem.long : DesignSystem.amber)
         }
+    }
+
+    @ViewBuilder
+    private func divergenceRows(_ snap: LiveTapeService.LiveSnapshot) -> some View {
+        rawReadRow("VXX Δ",
+                   String(format: "%+.2f%%", snap.vxxPctChange),
+                   accent: snap.vxxPctChange >= 0 ? DesignSystem.long : DesignSystem.short)
+        rawReadRow("VIX Δ",
+                   String(format: "%+.2f%%", snap.vixPctChange),
+                   accent: snap.vixPctChange >= 0 ? DesignSystem.long : DesignSystem.short)
+        rawReadRow("DIVERGE",
+                   divergenceText(snap),
+                   accent: divergenceAccent(snap))
+    }
+
+    private func divergenceText(_ snap: LiveTapeService.LiveSnapshot) -> String {
+        let sign = snap.divergencePoints >= 0 ? "+" : ""
+        let label: String
+        if !snap.isDiverging {
+            label = "TRACKING"
+        } else if snap.divergencePoints > 0 {
+            label = "VXX OUT"   // VXX outpacing VIX = fade-worthy expansion
+        } else {
+            label = "VIX OUT"   // VIX outpacing VIX = regime move, not the fade
+        }
+        return "\(label) \(sign)\(String(format: "%.2f", snap.divergencePoints))pp"
+    }
+
+    private func divergenceAccent(_ snap: LiveTapeService.LiveSnapshot) -> Color {
+        if !snap.isDiverging { return DesignSystem.steel }
+        return snap.divergencePoints > 0 ? DesignSystem.amber : DesignSystem.short
     }
 
     private func ratioAccent(_ entry: MarketDataEntry) -> Color {

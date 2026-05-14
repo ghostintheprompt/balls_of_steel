@@ -61,8 +61,9 @@ VXX,VIX,VWAP,SPY,options,trading,volatility,tape,risk,journal,finance,stocks
 
 | Field | Value |
 | :--- | :--- |
-| Support URL | https://github.com/ghostintheprompt/steel-trading-desk/issues |
+| Support URL | https://mdrn.app/steel/support |
 | Marketing URL | https://mdrn.app/steel |
+| Privacy Policy URL | https://mdrn.app/steel/privacy |
 
 ### Version And Copyright
 

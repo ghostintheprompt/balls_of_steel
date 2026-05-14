@@ -20,6 +20,27 @@ final class LiveTapeService: ObservableObject {
     @Published private(set) var isLive: Bool = false
     @Published private(set) var lastTickAt: Date?
     @Published private(set) var lastError: String?
+    @Published private(set) var lastSnapshot: LiveSnapshot?
+
+    /// Captures the live divergence read between VXX and VIX. The ratio gate
+    /// looks at absolute ratio; this snapshot adds the *direction* of the move
+    /// — VXX outpacing VIX is the fade-worthy expansion the strategy is built
+    /// around.
+    struct LiveSnapshot: Equatable {
+        let vxxPrice: Double
+        let vxxPctChange: Double      // vs previous close, %
+        let vixPrice: Double
+        let vixPctChange: Double      // vs previous close, %
+        let ratio: Double
+        let timestamp: Date
+
+        /// VXX moving more than VIX = divergence. Positive = VXX outpacing
+        /// (fade-worthy on stretched ratio). Negative = VIX outpacing
+        /// (regime move; ratio likely compressing).
+        var divergencePoints: Double { vxxPctChange - vixPctChange }
+
+        var isDiverging: Bool { abs(divergencePoints) >= 0.5 }
+    }
 
     private static let enabledKey = "liveTape.enabled"
     private static let entryKey = "lastMarketDataEntry"
@@ -77,6 +98,14 @@ final class LiveTapeService: ObservableObject {
 
             let entry = composeEntry(vxx: vxx, vix: vix, volumeMultiple: volMul)
             persist(entry)
+            lastSnapshot = LiveSnapshot(
+                vxxPrice: vxx.price,
+                vxxPctChange: pctChange(price: vxx.price, prevClose: vxx.previousClose),
+                vixPrice: vix.price,
+                vixPctChange: pctChange(price: vix.price, prevClose: vix.previousClose),
+                ratio: vix.price > 0 ? vxx.price / vix.price : 0,
+                timestamp: Date()
+            )
             lastTickAt = Date()
             lastError = nil
             isLive = true
@@ -84,6 +113,11 @@ final class LiveTapeService: ObservableObject {
             lastError = error.localizedDescription
             isLive = false
         }
+    }
+
+    private func pctChange(price: Double, prevClose: Double) -> Double {
+        guard prevClose > 0 else { return 0 }
+        return ((price - prevClose) / prevClose) * 100
     }
 
     private func composeEntry(vxx: Quote, vix: Quote, volumeMultiple: Double) -> MarketDataEntry {

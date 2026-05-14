@@ -29,7 +29,9 @@ Internal product note: VXX is the free desk and proof of craft. Keep paid-tier i
 
 ## Remaining P0 — Release Blockers
 
-1. **Validate live-tape end-to-end with a real Finnhub key.** The provider + LiveTapeService are wired but unverified against the actual Finnhub API. Drop a key into Settings → Data Source, flip "Auto-populate from provider", confirm the desk shows a "LIVE · Ns" indicator and gates update without touching manual tape. Likely friction: VIX symbol (`^VIX` may need to be `TVC:VIX` or similar on Finnhub; quick fix in `LiveTapeService.fetchAndPersist` if so).
+1. **Strategy ↔ code alignment audit** (next pair-programming session). Walk every gate evaluator and ratio threshold in code (`VXXStrategyState`, `LiveTapeService.LiveSnapshot`, `ratioPass`, `volumeWindowPass`, `levelPass`, `patternPass`, ratio tier table, divergence threshold) against the actual stated strategy. The strategy is supposed to be simple and transparent — verify the code does exactly what the doc says, no drift, no bonus heuristics. Document any gaps and fix on the spot.
+
+2. **Validate live-tape end-to-end with a real Finnhub key.** The provider + LiveTapeService are wired but unverified against the actual Finnhub API. Drop a key into Settings → Data Source, flip "Auto-populate from provider", confirm the desk shows a "LIVE · Ns" indicator and gates update without touching manual tape. Likely friction: VIX symbol (`^VIX` may need to be `TVC:VIX` or similar on Finnhub; quick fix in `LiveTapeService.fetchAndPersist` if so).
 
 2. **iPhone-first UX validation on real device.** The boiler-room redesign needs market-hours testing on `ZZZ`. Verify the hard-exit takeover fires at 15:50 ET. Verify gate-detail sheets open and dismiss cleanly. Verify the ticker strip readout updates as tape entry changes. Verify Plex renders correctly (fonts now bundled).
 

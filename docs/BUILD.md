@@ -1,33 +1,109 @@
 # Build Instructions
 
 ## Prerequisites
-- macOS 14.0+
-- Xcode 15.0+
 
-## Development Build
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/ghostintheprompt/balls-of-steel.git
-   cd balls-of-steel
-   ```
-2. Open the project:
-   ```bash
-   open Steel_Trading_Desk.xcodeproj
-   ```
-3. Build and Run:
-   - Select the **Steel_Trading_Desk** scheme.
-   - Set destination to **My Mac**.
-   - Press `Cmd + R`.
+- macOS 14.0+ (Sonoma or later)
+- Xcode 15.0+ (Xcode 16 recommended)
+- Apple Developer account (free is fine for local installs; paid required for TestFlight / App Store)
 
-## Release Build (DMG)
-To package the app for distribution:
-1. Ensure the project is clean.
-2. Run the DMG creation script:
-   ```bash
-   ./make_dmg.sh
-   ```
-   This will generate `Steel_Trading_Desk.dmg` in the project root.
+## Clone
+
+```bash
+git clone https://github.com/ghostintheprompt/balls_of_steel.git
+cd balls_of_steel
+open Steel_Trading_Desk.xcodeproj
+```
+
+The repo is private. Internal codename is "balls of steel"; the public-facing app is **Steel Trading Desk**.
+
+## First-time setup
+
+### 1. IBM Plex fonts (already bundled)
+
+Five `.ttf` files live in `Steel_Trading_Desk/Resources/Fonts/` and are wired into the Xcode target via `Info.plist > UIAppFonts`:
+
+- `IBMPlexSans-Regular.ttf`
+- `IBMPlexSans-SemiBold.ttf`
+- `IBMPlexSans_Condensed-Bold.ttf`
+- `IBMPlexMono-Regular.ttf`
+- `IBMPlexMono-SemiBold.ttf`
+
+Source: [github.com/IBM/plex/releases](https://github.com/IBM/plex/releases). Bundled under SIL Open Font License.
+
+### 2. Optional: `.env` for live-data API keys
+
+The app uses user-supplied API keys for live VXX/VIX data via Finnhub (default), Polygon, Schwab, or Yahoo. Production builds expect users to paste their key into Settings → Data Source. For dev, `EnvSeeder.swift` (`#if DEBUG` only) reads a bundled `.env` and seeds the platform Keychain on launch.
+
+```bash
+cp .env.example .env
+# Then edit .env and fill in:
+#   FINNHUB_API_KEY=your_actual_key
+#   POLYGON_API_KEY=your_actual_key
+```
+
+`.env` is gitignored. **Empty it before archiving for TestFlight / App Store** — the file IS bundled in any build, even though the loader is Debug-gated, so defense-in-depth.
+
+Get a free Finnhub key at [finnhub.io/dashboard](https://finnhub.io/dashboard). Webhook field can be left blank — this app is pull-only (REST + WebSocket).
+
+## Run on simulator
+
+```
+Scheme: Steel_Trading_Desk
+Destination: any iPhone simulator
+Cmd + R
+```
+
+## Run on Mac
+
+```
+Scheme: Steel_Trading_Desk
+Destination: My Mac
+Cmd + R
+```
+
+## Run on physical iPhone
+
+The Mac/simulator paths are good for most dev. For market-hours real-device testing on the paired iPhone (named `ZZZ` in our setup):
+
+```bash
+# Build (Release works reliably; Debug is sometimes flaky on this device)
+xcodebuild -quiet -project Steel_Trading_Desk.xcodeproj \
+  -scheme Steel_Trading_Desk -configuration Release \
+  -destination 'platform=iOS,id=00008120-000E64960CE9A01E' \
+  -derivedDataPath /private/tmp/balls_of_steel_device \
+  DEVELOPMENT_TEAM=9TB25L4266 \
+  CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY='Apple Development' \
+  build
+
+# Install
+xcrun devicectl device install app \
+  --device DC63616F-433E-5833-9255-BE85AAFC9A7A \
+  /private/tmp/balls_of_steel_device/Build/Products/Release-iphoneos/Steel_Trading_Desk.app
+
+# Launch
+xcrun devicectl device process launch \
+  --device DC63616F-433E-5833-9255-BE85AAFC9A7A \
+  app.mdrn.steel
+```
+
+Tradeoff: Release builds skip `EnvSeeder` (it's `#if DEBUG`-gated), so you'll need to paste the API key into Settings → Data Source once on the device. After that, it persists in the device Keychain.
+
+## Release archive (App Store / TestFlight)
+
+1. **Sanitize `.env`** at repo root — clear all key values. Don't ship a real key in the IPA.
+2. Open the project in Xcode.
+3. **Set version + build number** in the project's General tab.
+4. **Set destination** to `Any iOS Device (arm64)` for iOS, or `Any Mac` for macOS.
+5. **Product > Archive.**
+6. **Validate** in the Organizer (catches most App Store Connect issues early).
+7. **Distribute** to App Store Connect.
+
+The full submission checklist lives in `docs/LAUNCH_GUIDE.md`. Marketing copy is in `docs/APP_STORE_CONNECT_COPY.md` (canonical paste sheet) and `docs/AppStoreMetadata.md` (companion summary).
 
 ## Troubleshooting
-- **Code Signing:** If you encounter code signing errors, go to the **Signing & Capabilities** tab in Xcode and select your personal development team.
-- **Dependencies:** This project uses no external dependencies (no Swift Package Manager, no CocoaPods). If build fails, ensure your Xcode command line tools are up to date: `xcode-select --install`.
+
+- **Code Signing.** If you hit signing errors, open Signing & Capabilities in Xcode and select your personal Developer team. The repo defaults to MDRN's team ID; override locally.
+- **Dependencies.** Zero external dependencies — no SPM packages, no CocoaPods. If a build fails, run `xcode-select --install` to refresh command-line tools.
+- **SourceKit phantom errors.** The Xcode SourceKit-LSP throws constant "Cannot find DesignSystem in scope" / "Cannot find SignalMonitor in scope" diagnostics that are stale. Trust `xcodebuild`, not the live LSP indicator.
+- **Stale build artifacts in `/tmp`.** The xcodebuild commands above use `/private/tmp/balls_of_steel_*` derived-data paths. Old runs accumulate. `rm -rf /private/tmp/balls_of_steel_*` cleans them all (also useful if a stale `.env` with a real key got bundled into a previous build artifact).

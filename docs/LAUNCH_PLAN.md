@@ -1,82 +1,58 @@
-# Steel Trading Desk: App Store Launch Strategy (Internal)
+# Steel Trading Desk: Launch Strategy
 
-**Objective:** Transition the "Steel Trading Desk" from a local-first utility to a publicly available **iOS application first**, followed by a macOS release on the Mac App Store. This "Mobile-First" strategy aims to capture the signal-on-the-go market and navigate Apple's review process with a more focused mobile interface.
-
----
-
-## Phase 1: Compliance & Branding (The "Review Guard")
-*Apple's review process is the primary bottleneck. We must minimize friction in branding and financial regulations.*
-
-### 1.1 Branding Pivot
-*   **Internal Name:** `Steel Trading Desk`
-*   **App Store Display Name:** `Steel Trading Desk`
-*   **Reasoning:** Professional, aggressive, and avoids "Objectionable Content" triggers.
-*   **Action:** Ensure the name is consistent across all metadata.
+**Status:** The original "Mobile-First / Compliance / Hardening" launch phases are largely complete after the May 2026 boiler-room redesign. This file is now the *historical* launch plan plus the live status of submission. Active P0 work lives in `docs/RELEASE_PUNCH_LIST.md`.
 
 ---
 
-## Phase 2: Technical Hardening (Mobile Priority)
-*Ensuring the app meets Apple's performance and stability standards for iOS.*
+## Where we are now
 
-### 2.1 iOS Target & Adaptive UI
-*   **Task:** Add iOS target to the Xcode project.
-*   **Requirements:**
-    *   `com.apple.security.network.client`: Enabled.
-    *   `com.apple.security.personal-information.keychain`: Enabled.
-    *   Adaptive SwiftUI layouts that look "Elite" on iPhone (Compact) and iPad (Regular).
-
-### 2.2 APNs & Signal Alerts
-*   **Task:** Implement Push Notifications for ENTRY/WATCH/EXIT signals.
-*   **Requirement:** Traders need to know when the institutional window is live without checking the app.
+- **Compliance & branding:** App is named "Steel Trading Desk" across all metadata. Subtitle "Native Volatility Analysis Tool" (good Review cover). No "Pro/Premium/Coach/Unlock" surfaces. Disclaimer wired. Privacy policy refreshed (`docs/PRIVACY.md`).
+- **Technical hardening:** iOS + iPadOS + macOS targets all building. Privacy Manifest present. Keychain in use for API keys. Push notifications wired (`STEEL_DESK` notification category with "Open Desk" action).
+- **iOS-first deployment:** Boiler-room redesign passes shipped (9 phases per `docs/CLAUDE_CODE_DIRECTIONS.md`). Signed Release installs cleanly on the paired iPhone (`ZZZ`). Live data wired (Finnhub default, Polygon/Schwab/Yahoo as alternatives).
+- **macOS:** Three-column terminal layout shipped. macOS Debug build verified green.
 
 ---
 
-## Phase 3: Deployment Roadmap (iOS First)
+## Free-Full-Desk posture
 
-### Step 1: iOS TestFlight (Week 1)
-*   **Goal:** Surface immediate rejection reasons for the mobile interface.
-*   **Action:** Submit the iOS build to TestFlight for External Review.
-
-### Step 2: macOS Port & Approval (Week 2-3)
-*   **Action:** Once iOS is in review/approved, finalize the macOS target using the same shared logic.
-*   **Benefit:** macOS reviewers often see an approved iOS app as a sign of legitimacy.
-
----
-
----
-
-## Phase 4: Free Full Desk
-*This is a field tool and a gift to traders, not a fish funnel.*
-
-### 4.1 Release Structure
-The VXX/VIX/VWAP desk ships free. No Lite/Pro split, no locked prompts, no fake premium wall. The value is proving the workflow is real enough that serious people want to support the broader MDRN work later.
+The release ships paywall-free. The full VXX/VIX/VWAP discipline workflow, embedded TradingView chart, prompt support, hard-exit takeover, and live-data integration are available without an in-app purchase. StoreKit / paywall code has been removed from the release path.
 
 | Area | Release Posture |
 | :--- | :--- |
-| **Manual Entry** | Full tape entry for VXX, VIX, volume, VWAP, key level, pattern, and window |
-| **Desk Sequence** | Full gate sequence: volume/window, ratio, VWAP/key level, pattern, decision |
+| **Manual entry** | Full tape entry for VXX, VIX, volume, VWAP, key level, pattern, window, news |
+| **Desk sequence** | Full four-gate sequence with divergence-aware ratio gate |
+| **Embedded chart** | TradingView widget, free, 15-min delayed disclosure |
+| **Live data** | Optional, bring-your-own API key, Keychain-stored, never proxied |
 | **Prompt Desk** | Available without purchase prompts |
-| **Risk Tools** | Available without purchase prompts |
-| **Brokerage** | Manual execution only for launch |
+| **Risk tools** | Available without purchase prompts |
+| **Brokerage** | Manual execution only — no broker integration in v1.0 |
 
-### 4.2 Long-Term Support
-If monetization returns, it should be patronage, enterprise support, or serious investor/supporter interest earned by the product's usefulness. No subscription bait and no locked trading workflow.
-
-### 4.3 Internal Product Ladder
-VXX is the free desk: the gift, proof of craft, and cleanest way to show the MDRN trading style without charging people for another fake system.
-
-The future paid product, if we build one, is the SPY version. That should be treated as a separate serious product line with deeper workflow, stronger tooling, and enough value to justify payment. Do not leak this into App Store copy for the free VXX release.
+If monetization ever returns, it is patronage / supporter tier or a separate serious product line — *not* a feature gate on this app. Internal direction lives in `STRATEGY_NOTES.md`.
 
 ---
 
-## Critical Risks to Monitor
+## Critical risks remaining
+
 | Risk | Impact | Mitigation |
 | :--- | :--- | :--- |
-| **Financial Regulation** | High | Emphasize "Manual Entry" and "Journaling" over "Trading". |
-| **Branding Rejection** | Medium | Use a sanitized "Display Name" in the App Store. |
-| **Scope Creep** | Medium | Keep the phone flow lean: Desk, Tape, Risk. Add live charts/arrows only when they directly improve entries. |
+| **Financial regulation framing** | High | Public copy emphasizes "manual entry", "discipline", "educational utility". App never claims directional recommendations. |
+| **`.env` accidentally archived with a real API key** | High | Pre-archive sanitize step in `docs/BUILD.md`; `EnvSeeder` is `#if DEBUG`-gated as defense-in-depth. |
+| **iPhone chart squash** | Medium | Documented; see `STRATEGY_NOTES.md`. Three fix paths captured for v1.1. |
+| **VIX symbol on Finnhub** | Low | `^VIX` may need adjusting once user validates against the real API. One-line edit in `LiveTapeService`. |
+| **Scope creep** | Medium | Hard rule: every feature must serve the one strategy (VXX/VIX divergence fade). Don't add unrelated strategies. |
 
 ---
 
-**Next Directive Recommendation:**
-To begin, we should audit the `Info.plist` and `.entitlements` to ensure they are production-ready for the App Store Sandbox.
+## Submission roadmap
+
+1. **Real-key validation** — confirm Finnhub end-to-end, fix VIX symbol if needed.
+2. **iPhone chart fit** — pick one of the three approaches in `STRATEGY_NOTES.md`.
+3. **Test target** — XCTest covering time windows, `DeskState` boundaries, ratio thresholds, divergence-gate behavior.
+4. **Plex license file** in app bundle (SIL Open Font License compliance).
+5. **App Store assets** — screenshots in the order specified in `docs/LAUNCH_GUIDE.md`.
+6. **Final sanitize** of `.env` and `/tmp` build artifacts.
+7. **Archive + validate + upload** — see `docs/BUILD.md`.
+8. **TestFlight** external review.
+9. **App Store** submission with the canonical paste sheet (`docs/APP_STORE_CONNECT_COPY.md`).
+
+The day-to-day P0 list lives in `docs/RELEASE_PUNCH_LIST.md`.
