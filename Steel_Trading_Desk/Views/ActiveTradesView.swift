@@ -27,7 +27,7 @@ struct ActiveTradesView: View {
                             }
                         }
                     }
-                    .padding(20)
+                    .padding(DesignSystem.spacing)
                 }
             }
             .navigationTitle("Active Trades")

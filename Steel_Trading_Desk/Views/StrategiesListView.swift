@@ -53,7 +53,7 @@ struct StrategyRow: View {
                 HStack(spacing: 8) {
                     Text(winRate)
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundColor(DesignSystem.long)
                     Text(reliability)
                         .font(.caption)
                 }
@@ -62,7 +62,7 @@ struct StrategyRow: View {
             Spacer()
             
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundColor(DesignSystem.long)
         }
         .padding(.vertical, 4)
     }

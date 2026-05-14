@@ -228,13 +228,13 @@ struct VXXTradingDashboard: View {
                         Button("Trade") {
                             signalMonitor.startTrade(signal)
                         }
-                        .tint(isExecutionBlocked ? .gray : .green)
+                        .tint(isExecutionBlocked ? DesignSystem.muted : DesignSystem.long)
                         .disabled(isExecutionBlocked)
 
                         Button("Dismiss") {
                             viewModel.dismissSignal(signal)
                         }
-                        .tint(.red)
+                        .tint(DesignSystem.short)
                     }
                 }
             }
@@ -295,10 +295,10 @@ struct TradingLockBanner: View {
         }
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 2)
                 .fill((isRiskLocked ? DesignSystem.bearishColor : DesignSystem.warningColor).opacity(0.12))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 2)
                         .stroke((isRiskLocked ? DesignSystem.bearishColor : DesignSystem.warningColor).opacity(0.4), lineWidth: 1)
                 )
         )
@@ -351,7 +351,7 @@ struct PatternCard: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(strengthColor)
-                    .cornerRadius(4)
+                    .cornerRadius(2)
 
                 Spacer()
 
@@ -478,7 +478,7 @@ struct OptionContractRow: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background((type == .call ? DesignSystem.bullishColor : DesignSystem.bearishColor).opacity(0.12))
-                .cornerRadius(4)
+                .cornerRadius(2)
         }
         .padding(.vertical, 4)
     }

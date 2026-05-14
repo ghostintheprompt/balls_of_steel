@@ -83,7 +83,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(DesignSystem.primaryColor)
                     .foregroundColor(.white)
-                    .cornerRadius(14)
+                    .cornerRadius(2)
             }
             .padding(.horizontal, 32)
         }
@@ -138,7 +138,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(DesignSystem.primaryColor)
                     .foregroundColor(.white)
-                    .cornerRadius(14)
+                    .cornerRadius(2)
             }
             .padding(.horizontal, 32)
         }
@@ -187,7 +187,7 @@ struct OnboardingView: View {
                 .foregroundColor(DesignSystem.bearishColor)
                 .padding()
                 .background(DesignSystem.bearishColor.opacity(0.12))
-                .cornerRadius(8)
+                .cornerRadius(2)
 
             Spacer()
 
@@ -198,7 +198,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(DesignSystem.warningColor)
                     .foregroundColor(.white)
-                    .cornerRadius(14)
+                    .cornerRadius(2)
             }
             .padding(.horizontal, 32)
         }
@@ -247,7 +247,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(DesignSystem.bullishColor)
                     .foregroundColor(.white)
-                    .cornerRadius(14)
+                    .cornerRadius(2)
             }
             .padding(.horizontal, 32)
         }
@@ -380,10 +380,10 @@ struct PlatformButton: View {
             }
             .padding()
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 2)
                     .fill(isSelected ? DesignSystem.bullishColor.opacity(0.12) : Color.white.opacity(0.04))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 2)
                             .stroke(isSelected ? DesignSystem.bullishColor : Color.white.opacity(0.08), lineWidth: isSelected ? 2 : 1)
                     )
             )

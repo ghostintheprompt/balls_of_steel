@@ -46,9 +46,9 @@ enum SignalStrength {
 
     var color: Color {
         switch self {
-        case .strong: return .green
-        case .medium: return .yellow
-        case .weak: return .red
+        case .strong: return DesignSystem.long
+        case .medium: return DesignSystem.amber
+        case .weak: return DesignSystem.short
         }
     }
 }

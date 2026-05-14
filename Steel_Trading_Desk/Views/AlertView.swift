@@ -92,7 +92,7 @@ struct AlertView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(Color.white.opacity(0.04))
-        .cornerRadius(12)
+        .cornerRadius(2)
     }
 }
 

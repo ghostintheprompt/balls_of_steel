@@ -11,12 +11,12 @@ enum MarketPhase: String, CaseIterable {
     
     var color: Color {
         switch self {
-        case .preMarket: return .orange
-        case .opening: return .green
-        case .midday: return .blue
-        case .powerHour: return .purple
-        case .afterHours: return .red
-        case .regular: return .blue
+        case .preMarket: return DesignSystem.amber
+        case .opening: return DesignSystem.long
+        case .midday: return DesignSystem.steel
+        case .powerHour: return DesignSystem.amber
+        case .afterHours: return DesignSystem.short
+        case .regular: return DesignSystem.steel
         }
     }
     

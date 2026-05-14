@@ -53,7 +53,7 @@ struct PatternBadgeView: View {
         HStack(spacing: 2) {
             ForEach(0..<3) { index in
                 Circle()
-                    .fill(index < strengthBars ? signalColor : Color.gray.opacity(0.3))
+                    .fill(index < strengthBars ? signalColor : DesignSystem.faint)
                     .frame(width: 4, height: 4)
             }
         }
@@ -282,7 +282,7 @@ struct VXXVIXRatioView: View {
                 .padding(.vertical, 4)
                 .padding(.horizontal, 8)
                 .background(signalColor.opacity(0.1))
-                .cornerRadius(6)
+                .cornerRadius(2)
             }
 
             Text(ratio.signal == .noTrade ? "If the ratio is dead, skip the fantasy." : "Useful only when the rest of the tape agrees.")
@@ -343,7 +343,7 @@ struct TradingWindowAlertView: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(DesignSystem.warningColor.opacity(0.1))
-                .cornerRadius(6)
+                .cornerRadius(2)
         }
         .deskPanel(glow: DesignSystem.warningColor.opacity(0.16))
     }
@@ -438,7 +438,7 @@ struct PriceLabelView: View {
         .frame(maxWidth: .infinity)
         .padding(10)
         .background(Color.white.opacity(0.04))
-        .cornerRadius(10)
+        .cornerRadius(2)
     }
 }
 
@@ -458,6 +458,6 @@ struct MiniIndicator: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
         .background(color.opacity(0.1))
-        .cornerRadius(4)
+        .cornerRadius(2)
     }
 }

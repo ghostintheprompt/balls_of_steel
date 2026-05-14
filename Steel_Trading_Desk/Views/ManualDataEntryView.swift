@@ -24,7 +24,7 @@ struct ManualDataEntryView: View {
                             lastEntryCard(lastEntry)
                         }
                     }
-                    .padding(20)
+                    .padding(DesignSystem.spacing)
                 }
             }
             .navigationTitle("Manual Feed")
@@ -284,7 +284,7 @@ struct ManualDataEntryView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(DesignSystem.primaryColor)
-                    .cornerRadius(8)
+                    .cornerRadius(2)
             } else if volumePct >= 300 {
                 Label("INSTITUTIONAL FLOW", systemImage: "star.fill")
                     .font(DesignSystem.Typography.captionFont)
@@ -292,7 +292,7 @@ struct ManualDataEntryView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(DesignSystem.dangerColor)
-                    .cornerRadius(8)
+                    .cornerRadius(2)
             } else if volumePct >= 200 {
                 Label("ENTRY-GRADE", systemImage: "checkmark.circle.fill")
                     .font(DesignSystem.Typography.captionFont)
@@ -349,7 +349,7 @@ struct ManualDataEntryView: View {
             }
             .padding()
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 2)
                     .fill(ratioColor(for: ratioData.tier).opacity(0.1))
             )
 
@@ -375,71 +375,53 @@ struct ManualDataEntryView: View {
                 .foregroundColor(DesignSystem.mutedText)
 
             HStack(spacing: 0) {
-                // Below 1.35 - Red zone
+                // <1.35 noFade
                 Rectangle()
-                    .fill(Color.red.opacity(0.3))
+                    .fill(DesignSystem.short.opacity(0.45))
                     .frame(height: 8)
-                    .overlay(
-                        Text("1.35")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: -15, y: -10)
-                    )
+                    .overlay(zoneTick("1.35"))
 
-                // 1.35-1.45 - Orange zone
+                // 1.35-1.45 weakFade
                 Rectangle()
-                    .fill(Color.orange.opacity(0.3))
+                    .fill(DesignSystem.short.opacity(0.20))
                     .frame(height: 8)
-                    .overlay(
-                        Text("1.45")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: -15, y: -10)
-                    )
+                    .overlay(zoneTick("1.45"))
 
-                // 1.45-1.55 - Cyan zone
+                // 1.45-1.55 normalFade
                 Rectangle()
-                    .fill(Color.cyan.opacity(0.3))
+                    .fill(DesignSystem.amber.opacity(0.30))
                     .frame(height: 8)
-                    .overlay(
-                        Text("1.55")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: -15, y: -10)
-                    )
+                    .overlay(zoneTick("1.55"))
 
-                // 1.55-1.60 - Yellow zone
+                // 1.55-1.60 strongFade
                 Rectangle()
-                    .fill(Color.yellow.opacity(0.5))
+                    .fill(DesignSystem.long.opacity(0.30))
                     .frame(height: 8)
-                    .overlay(
-                        Text("1.60")
-                            .font(.system(size: 8))
-                            .foregroundColor(.black)
-                            .offset(x: -15, y: -10)
-                    )
+                    .overlay(zoneTick("1.60"))
 
-                // Above 1.60 - Green zone
+                // >1.60 premiumFade
                 Rectangle()
-                    .fill(Color.green.opacity(0.4))
+                    .fill(DesignSystem.long.opacity(0.55))
                     .frame(height: 8)
             }
-            .cornerRadius(4)
+            .cornerRadius(2)
             .overlay(
-                // Current position indicator
                 GeometryReader { geometry in
                     let position = ratioToPosition(ratio: currentRatio, width: geometry.size.width)
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 12, height: 12)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.black, lineWidth: 2)
-                        )
+                    Rectangle()
+                        .fill(DesignSystem.amber)
+                        .frame(width: 2, height: 14)
                         .position(x: position, y: 4)
                 }
             )
         }
+    }
+
+    private func zoneTick(_ label: String) -> some View {
+        Text(label)
+            .font(.system(size: 8, design: .monospaced))
+            .foregroundColor(DesignSystem.text2)
+            .offset(x: -15, y: -10)
     }
 
     // Convert ratio value to position on the guide
@@ -454,11 +436,11 @@ struct ManualDataEntryView: View {
     // Helper functions for ratio display
     private func ratioColor(for tier: VXXVIXRatio.RatioTier) -> Color {
         switch tier {
-        case .premiumFade: return DesignSystem.bullishColor
-        case .strongFade: return DesignSystem.primaryColor
-        case .normalFade: return Color.cyan
-        case .weakFade: return DesignSystem.warningColor
-        case .noFade: return DesignSystem.bearishColor
+        case .premiumFade: return DesignSystem.long
+        case .strongFade: return DesignSystem.long
+        case .normalFade: return DesignSystem.amber
+        case .weakFade: return DesignSystem.amber
+        case .noFade: return DesignSystem.short
         }
     }
 
@@ -509,9 +491,9 @@ struct ManualDataEntryView: View {
                     .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(viewModel.isValidEntry ? DesignSystem.primaryColor : DesignSystem.secondaryColor.opacity(0.7))
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
+                    .background(viewModel.isValidEntry ? DesignSystem.amber : DesignSystem.faint)
+                    .foregroundColor(viewModel.isValidEntry ? .black : DesignSystem.muted)
+                    .cornerRadius(2)
             }
             .disabled(!viewModel.isValidEntry)
 
@@ -550,7 +532,7 @@ struct ManualDataEntryView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(entry.ratioTier)
                         .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(entry.instrument == .vxx ? (entry.ratio >= 1.60 ? DesignSystem.bullishColor : entry.ratio >= 1.45 ? Color.cyan : DesignSystem.warningColor) : DesignSystem.mutedText)
+                        .foregroundColor(entry.instrument == .vxx ? (entry.ratio >= 1.60 ? DesignSystem.long : entry.ratio >= 1.45 ? DesignSystem.amber : DesignSystem.short) : DesignSystem.muted)
                     Text(entry.arrowSignal.displayName)
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(entry.arrowSignal.color)
@@ -611,7 +593,7 @@ private struct TapeOrderRow: View {
                 .foregroundColor(DesignSystem.primaryText)
                 .frame(width: 28, height: 28)
                 .background(state.color.opacity(0.16))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -632,10 +614,10 @@ private struct TapeOrderRow: View {
         .padding(12)
         .background(DesignSystem.panelBottom)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 2)
                 .stroke(state.color.opacity(state == .locked ? 0.16 : 0.32), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 }
 

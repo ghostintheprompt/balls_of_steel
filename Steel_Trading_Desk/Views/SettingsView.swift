@@ -26,7 +26,7 @@ struct SettingsView: View {
                     closeManagementCard
                     hoursCard
                 }
-                .padding(20)
+                .padding(DesignSystem.spacing)
             }
         }
         .task {

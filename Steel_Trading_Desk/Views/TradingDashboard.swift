@@ -183,7 +183,7 @@ private struct PhoneCommandCard: View {
                     .foregroundColor(state.commandColor)
                     .frame(width: 42, height: 42)
                     .background(state.commandColor.opacity(0.14))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(RoundedRectangle(cornerRadius: 2))
             }
 
             if state.ready {
@@ -325,10 +325,10 @@ private struct TapeMetric: View {
         .padding(10)
         .background(accent.opacity(0.08))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 2)
                 .stroke(accent.opacity(0.28), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 }
 
@@ -427,7 +427,7 @@ private struct StrategyGateRow: View {
                 .foregroundColor(DesignSystem.primaryText)
                 .frame(width: 28, height: 28)
                 .background(status.color.opacity(0.18))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -450,10 +450,10 @@ private struct StrategyGateRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(status == .locked ? DesignSystem.panelTop.opacity(0.55) : DesignSystem.panelTop)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 2)
                 .stroke(DesignSystem.panelStroke, lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 }
 
@@ -723,10 +723,10 @@ private struct PhoneStatusChip: View {
         .padding(12)
         .background(accent.opacity(0.08))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 2)
                 .stroke(accent.opacity(0.28), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 }
 
@@ -827,7 +827,7 @@ struct TestSessionBanner: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .clipShape(RoundedRectangle(cornerRadius: 2))
             .foregroundColor(DesignSystem.primaryText)
     }
 }
@@ -1151,7 +1151,7 @@ struct SPYTradingDashboard: View {
                             Button("Trade") {
                                 signalMonitor.startTrade(signal)
                             }
-                            .tint(.green)
+                            .tint(DesignSystem.long)
                         }
                 }
             }
@@ -1309,14 +1309,14 @@ final class SPYDashboardViewModel: ObservableObject {
                 title: "VWAP",
                 value: data.isAboveVWAP ? "Above VWAP" : "Below VWAP",
                 detail: isVWAPAligned(data) ? "Aligned with arrow" : "Conflicts with arrow",
-                color: isVWAPAligned(data) ? .green : .orange,
+                color: isVWAPAligned(data) ? DesignSystem.long : DesignSystem.amber,
                 systemImage: "waveform.path.ecg"
             ),
             SPYSetupMetric(
                 title: "Volume",
                 value: formattedVolumeMultiple(data.volumeMultiple),
                 detail: "Need \(formattedVolumeMultiple(requiredSPYVolumeMultiple(for: data)))",
-                color: isVolumeReady(data) ? .green : .orange,
+                color: isVolumeReady(data) ? DesignSystem.long : DesignSystem.amber,
                 systemImage: "chart.bar.fill"
             ),
             SPYSetupMetric(
@@ -1330,7 +1330,7 @@ final class SPYDashboardViewModel: ObservableObject {
                 title: "Daily Move",
                 value: String(format: "%+.2f%%", data.gapPercent),
                 detail: "Price $\(String(format: "%.2f", data.currentPrice))",
-                color: data.gapPercent >= 0 ? .green : .red,
+                color: data.gapPercent >= 0 ? DesignSystem.long : DesignSystem.short,
                 systemImage: "point.topleft.down.curvedto.point.bottomright.up"
             )
         ]
@@ -1442,8 +1442,8 @@ final class SPYDashboardViewModel: ObservableObject {
     }
 
     private func biasColor(for data: MarketData) -> Color {
-        guard let direction = data.arrowDirection else { return .secondary }
-        return direction == .bullish ? .green : .red
+        guard let direction = data.arrowDirection else { return DesignSystem.steel }
+        return direction == .bullish ? DesignSystem.long : DesignSystem.short
     }
 
     private func biasSystemImage(for data: MarketData) -> String {
@@ -1478,11 +1478,11 @@ final class SPYDashboardViewModel: ObservableObject {
     private func newsColor(for data: MarketData) -> Color {
         switch data.newsRisk {
         case .none:
-            return data.isHighVolatility ? .orange : .green
+            return data.isHighVolatility ? DesignSystem.amber : DesignSystem.long
         case .moderate:
-            return .orange
+            return DesignSystem.amber
         case .high:
-            return .red
+            return DesignSystem.short
         }
     }
 }

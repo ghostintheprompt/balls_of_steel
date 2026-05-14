@@ -5,27 +5,46 @@ import AppKit
 #endif
 
 struct DesignSystem {
-    // MARK: - Brand Colors (Black, Steel, Status)
-    static let backgroundTop = Color(red: 0.035, green: 0.037, blue: 0.040)
-    static let backgroundBottom = Color(red: 0.015, green: 0.016, blue: 0.018)
-    static let panelTop = Color(red: 0.105, green: 0.112, blue: 0.122)
-    static let panelBottom = Color(red: 0.075, green: 0.080, blue: 0.088)
-    static let panelStroke = Color.white.opacity(0.12)
+    // MARK: - Boiler-Room Palette
+    //
+    // CRT phosphor amber on near-black ground. Hex source: CLAUDE_CODE_DIRECTIONS.md.
+    // Legacy token names below are aliases preserved for Phase 1 — call sites are
+    // collapsed to the canonical names in later phases.
 
-    static let primaryColor = Color(red: 0.72, green: 0.82, blue: 0.86) // cold steel
-    static let successColor = Color(red: 0.12, green: 0.72, blue: 0.34)
-    static let dangerColor = Color(red: 0.88, green: 0.18, blue: 0.16)
-    static let warningColor = Color(red: 0.86, green: 0.70, blue: 0.24)
-    static let secondaryColor = Color(red: 0.62, green: 0.66, blue: 0.70)
+    static let bg = Color.black                                          // #000000
+    static let bg1 = Color(red: 0.0196, green: 0.0196, blue: 0.0196)     // #050505 sidebars
+    static let panel = Color(red: 0.0392, green: 0.0392, blue: 0.0392)   // #0a0a0a cards
+    static let hairline = Color(red: 0.1020, green: 0.1020, blue: 0.1020) // #1a1a1a borders
+    static let amber = Color(red: 1.0, green: 0.6902, blue: 0.0)         // #FFB000 primary
+    static let long = Color(red: 0.0, green: 0.8235, blue: 0.4157)       // #00D26A pass / win
+    static let short = Color(red: 1.0, green: 0.2196, blue: 0.2196)      // #FF3838 fail / loss
+    static let vwap = Color(red: 0.4039, green: 0.8510, blue: 1.0)       // #67D9FF chart only
+    static let steel = Color(red: 0.4863, green: 0.5412, blue: 0.6)      // #7C8A99 neutral
+    static let text = Color(red: 0.9098, green: 0.9098, blue: 0.9098)    // #E8E8E8
+    static let text2 = Color(red: 0.6588, green: 0.6588, blue: 0.6588)   // #A8A8A8
+    static let muted = Color(red: 0.4157, green: 0.4157, blue: 0.4157)   // #6A6A6A
+    static let faint = Color(red: 0.2275, green: 0.2275, blue: 0.2275)   // #3A3A3A
 
-    static let primaryText = Color(red: 0.94, green: 0.95, blue: 0.96)
-    static let mutedText = Color(red: 0.68, green: 0.71, blue: 0.74)
+    // MARK: - Legacy aliases (token-swap compatibility shims)
+    static let backgroundTop = bg
+    static let backgroundBottom = bg
+    static let panelTop = panel
+    static let panelBottom = panel
+    static let panelStroke = hairline
+
+    static let primaryColor = amber
+    static let successColor = long
+    static let dangerColor = short
+    static let warningColor = amber
+    static let secondaryColor = steel
+
+    static let primaryText = text
+    static let mutedText = muted
     static let edgeGlow = Color.clear
 
-    // MARK: - Trading Colors
-    static let bullishColor = successColor
-    static let bearishColor = dangerColor
-    static let neutralColor = secondaryColor
+    static let bullishColor = long
+    static let bearishColor = short
+    static let neutralColor = steel
 
     // MARK: - Spacing
     static let spacing: CGFloat = 16
@@ -33,38 +52,73 @@ struct DesignSystem {
     static let largeSpacing: CGFloat = 24
 
     // MARK: - Corner Radius
-    static let cornerRadius: CGFloat = 8
-    static let smallCornerRadius: CGFloat = 6
-    static let largeCornerRadius: CGFloat = 8
+    // Boiler-room corners: sharp. 2pt everywhere; 0 acceptable for industrial bars.
+    static let cornerRadius: CGFloat = 2
+    static let smallCornerRadius: CGFloat = 2
+    static let largeCornerRadius: CGFloat = 2
 
     // MARK: - Typography
+    //
+    // Spec calls for IBM Plex Sans Condensed (display), IBM Plex Sans (body),
+    // IBM Plex Mono (numbers / labels). Falling back to system fonts here.
+    // To switch to real Plex: drop the .ttf/.otf files into
+    // Steel_Trading_Desk/Resources/Fonts, register them in Info.plist under
+    // UIAppFonts, then change Typography.useSystemFallback to false.
     struct Typography {
-        static let heroFont = Font.system(size: 30, weight: .black, design: .default)
-        static let titleFont = Font.system(size: 23, weight: .bold, design: .default)
-        static let headlineFont = Font.system(size: 16, weight: .bold, design: .default)
-        static let bodyFont = Font.system(size: 15, weight: .medium, design: .default)
-        static let captionFont = Font.system(size: 13, weight: .semibold, design: .default)
-        static let labelFont = Font.system(size: 11, weight: .black, design: .monospaced)
-        static let monospacedFont = Font.system(size: 15, weight: .bold, design: .monospaced)
+        static let useSystemFallback = true
+
+        private static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+            if useSystemFallback {
+                return .system(size: size, weight: weight, design: .default)
+            }
+            return Font.custom("IBMPlexSans-Regular", size: size).weight(weight)
+        }
+
+        private static func display(_ size: CGFloat, weight: Font.Weight = .heavy) -> Font {
+            if useSystemFallback {
+                return .system(size: size, weight: weight, design: .default).width(.condensed)
+            }
+            return Font.custom("IBMPlexSansCondensed-Bold", size: size).weight(weight)
+        }
+
+        private static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+            if useSystemFallback {
+                return .system(size: size, weight: weight, design: .monospaced)
+            }
+            return Font.custom("IBMPlexMono-Regular", size: size).weight(weight)
+        }
+
+        // Hero command verb ("NO TRADE.", "CLOSE IT.")
+        static let heroFont = display(36, weight: .heavy)
+        // Section titles
+        static let titleFont = display(22, weight: .bold)
+        // Card headers
+        static let headlineFont = sans(16, weight: .semibold)
+        // Body copy
+        static let bodyFont = sans(13, weight: .regular)
+        // Inline numeric / dense readouts
+        static let captionFont = mono(12, weight: .semibold)
+        // Tiny uppercase labels — apply .tracking(1.4) at the call site
+        static let labelFont = mono(10, weight: .semibold)
+        // Primary number readouts (price, ratio)
+        static let monospacedFont = mono(15, weight: .semibold)
     }
 
     // MARK: - Shadows
-    static let cardShadow = Color.black.opacity(0.18)
-    static let shadowRadius: CGFloat = 4
+    // Boiler-room: flat panels with hairline borders. Phase 2 kills shadow modifiers
+    // at every call site; this stays neutral so the swap is one place to flip.
+    static let cardShadow = Color.clear
+    static let shadowRadius: CGFloat = 0
 
     // MARK: - Animation
-    static let defaultAnimation = Animation.easeInOut(duration: 0.3)
-    static let springAnimation = Animation.spring(response: 0.5, dampingFraction: 0.7)
+    static let defaultAnimation = Animation.easeInOut(duration: 0.2)
+    static let springAnimation = Animation.spring(response: 0.4, dampingFraction: 0.85)
 }
 
 struct TradingBackdrop: View {
     var body: some View {
-        LinearGradient(
-            colors: [DesignSystem.backgroundTop, DesignSystem.backgroundBottom],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
+        DesignSystem.bg
+            .ignoresSafeArea()
     }
 }
 
@@ -77,18 +131,17 @@ private struct DeskPanelModifier: ViewModifier {
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.largeCornerRadius)
-                    .fill(DesignSystem.panelTop)
+                    .fill(DesignSystem.panel)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.largeCornerRadius)
-                    .stroke(DesignSystem.panelStroke, lineWidth: 1)
+                    .stroke(DesignSystem.hairline, lineWidth: 1)
             )
-            .shadow(color: DesignSystem.cardShadow, radius: DesignSystem.shadowRadius, x: 0, y: 2)
     }
 }
 
 extension View {
-    func deskPanel(glow: Color = DesignSystem.edgeGlow.opacity(0.08), padding: CGFloat = DesignSystem.spacing) -> some View {
+    func deskPanel(glow: Color = DesignSystem.edgeGlow, padding: CGFloat = DesignSystem.spacing) -> some View {
         modifier(DeskPanelModifier(glow: glow, padding: padding))
     }
 }
@@ -97,7 +150,7 @@ struct InfoCard<Content: View>: View {
     let glow: Color
     let content: Content
 
-    init(glow: Color = DesignSystem.edgeGlow.opacity(0.08), @ViewBuilder content: () -> Content) {
+    init(glow: Color = DesignSystem.edgeGlow, @ViewBuilder content: () -> Content) {
         self.glow = glow
         self.content = content()
     }
@@ -119,8 +172,8 @@ struct DeskSectionHeader: View {
                 .foregroundColor(accent)
             Text(title.uppercased())
                 .font(DesignSystem.Typography.labelFont)
-                .tracking(1.2)
-                .foregroundColor(DesignSystem.mutedText)
+                .tracking(1.4)
+                .foregroundColor(DesignSystem.muted)
             Spacer()
         }
     }
@@ -135,13 +188,13 @@ struct DeskCountBadge: View {
             DeskPulseDot(accent: accent, size: 6)
             Text(value)
                 .font(DesignSystem.Typography.labelFont)
-                .tracking(0.8)
+                .tracking(1.2)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(accent.opacity(0.14))
+        .background(accent.opacity(0.10))
         .overlay(
-            Capsule().stroke(accent.opacity(0.35), lineWidth: 1)
+            Capsule().stroke(accent.opacity(0.4), lineWidth: 1)
         )
         .clipShape(Capsule())
         .foregroundColor(accent)
@@ -166,33 +219,22 @@ struct DeskSignalGlyph: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            accent.opacity(0.24),
-                            secondaryAccent.opacity(0.10),
-                            Color.white.opacity(0.03)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DesignSystem.bg1)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(accent.opacity(0.28), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(accent.opacity(0.5), lineWidth: 1)
                 )
                 .frame(width: 54, height: 54)
 
             Text(symbol)
                 .font(DesignSystem.Typography.headlineFont)
                 .kerning(0.6)
-                .foregroundColor(DesignSystem.primaryText)
+                .foregroundColor(DesignSystem.text)
 
             DeskPulseDot(accent: accent, size: 7)
                 .offset(x: 4, y: -4)
         }
-        .shadow(color: accent.opacity(0.20), radius: 10, x: 0, y: 6)
     }
 }
 
@@ -207,21 +249,15 @@ struct DeskMeterBar: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.06))
+                Rectangle()
+                    .fill(DesignSystem.faint)
 
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [accent.opacity(0.75), accent],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: max(12, geometry.size.width * clampedValue))
+                Rectangle()
+                    .fill(accent)
+                    .frame(width: max(2, geometry.size.width * clampedValue))
             }
         }
-        .frame(height: 6)
+        .frame(height: 4)
     }
 }
 
@@ -235,16 +271,16 @@ struct StandardButton: View {
 
         var backgroundColor: Color {
             switch self {
-            case .primary: return DesignSystem.primaryColor
-            case .secondary: return DesignSystem.secondaryColor
-            case .danger: return DesignSystem.dangerColor
+            case .primary: return DesignSystem.amber
+            case .secondary: return DesignSystem.steel
+            case .danger: return DesignSystem.short
             }
         }
 
         var foregroundColor: Color {
             switch self {
-            case .primary, .danger: return .white
-            case .secondary: return DesignSystem.primaryText
+            case .primary, .danger: return .black
+            case .secondary: return DesignSystem.text
             }
         }
     }
@@ -255,7 +291,7 @@ struct StandardButton: View {
                 .font(DesignSystem.Typography.headlineFont)
                 .foregroundColor(style.foregroundColor)
                 .textCase(.uppercase)
-                .tracking(0.8)
+                .tracking(1.2)
                 .padding(.horizontal, DesignSystem.spacing)
                 .padding(.vertical, DesignSystem.smallSpacing)
                 .background(style.backgroundColor)
@@ -274,9 +310,9 @@ struct PriceDisplay: View {
 
         var color: Color {
             switch self {
-            case .up: return DesignSystem.bullishColor
-            case .down: return DesignSystem.bearishColor
-            case .flat: return DesignSystem.neutralColor
+            case .up: return DesignSystem.long
+            case .down: return DesignSystem.short
+            case .flat: return DesignSystem.steel
             }
         }
 
@@ -293,7 +329,7 @@ struct PriceDisplay: View {
         HStack(spacing: 4) {
             Text("$\(price, specifier: "%.2f")")
                 .font(DesignSystem.Typography.monospacedFont)
-                .foregroundColor(trend?.color ?? DesignSystem.primaryText)
+                .foregroundColor(trend?.color ?? DesignSystem.text)
 
             if let trend = trend {
                 Image(systemName: trend.icon)
@@ -306,55 +342,43 @@ struct PriceDisplay: View {
 
 struct SteelDeskMark: View {
     var size: CGFloat = 72
-    var primaryAccent: Color = DesignSystem.primaryColor
-    var bullishAccent: Color = DesignSystem.bullishColor
-    var bearishAccent: Color = DesignSystem.bearishColor
+    var primaryAccent: Color = DesignSystem.amber
+    var bullishAccent: Color = DesignSystem.long
+    var bearishAccent: Color = DesignSystem.short
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            DesignSystem.panelTop,
-                            Color.black,
-                            DesignSystem.panelBottom
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .stroke(primaryAccent.opacity(0.4), lineWidth: size * 0.02)
-
-            // Sharp industrial elements
             Rectangle()
-                .fill(primaryAccent.opacity(0.1))
+                .fill(DesignSystem.bg)
+
+            Rectangle()
+                .stroke(primaryAccent, lineWidth: 1)
+
+            // Industrial crosshairs
+            Rectangle()
+                .fill(primaryAccent.opacity(0.20))
                 .frame(width: size, height: 1)
                 .offset(y: -size * 0.1)
-            
+
             Rectangle()
-                .fill(primaryAccent.opacity(0.1))
+                .fill(primaryAccent.opacity(0.20))
                 .frame(width: 1, height: size)
                 .offset(x: size * 0.1)
 
-            Capsule(style: .continuous)
+            Rectangle()
                 .fill(primaryAccent)
-                .frame(width: size * 0.7, height: size * 0.08)
+                .frame(width: size * 0.7, height: size * 0.06)
                 .rotationEffect(.degrees(-45))
-                .shadow(color: primaryAccent.opacity(0.5), radius: size * 0.05)
 
             Text("STEEL")
-                .font(.system(size: size * 0.16, weight: .black, design: .monospaced))
-                .foregroundColor(DesignSystem.primaryText)
+                .font(.system(size: size * 0.16, weight: .heavy, design: .monospaced))
+                .foregroundColor(DesignSystem.text)
                 .offset(y: size * 0.25)
 
-            Circle()
+            Rectangle()
                 .fill(primaryAccent)
                 .frame(width: size * 0.08, height: size * 0.08)
                 .offset(x: size * 0.35, y: -size * 0.35)
-                .shadow(color: primaryAccent, radius: 8)
         }
         .frame(width: size, height: size)
     }
@@ -369,13 +393,12 @@ struct SteelDeskWordmark: View {
         VStack(alignment: alignment, spacing: 4) {
             Text(title)
                 .font(DesignSystem.Typography.titleFont)
-                .fontWeight(.black)
                 .tracking(1.5)
-                .foregroundColor(DesignSystem.primaryText)
+                .foregroundColor(DesignSystem.text)
             Text(subtitle.uppercased())
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(2.0)
-                .foregroundColor(DesignSystem.primaryColor)
+                .foregroundColor(DesignSystem.amber)
         }
     }
 }
@@ -390,7 +413,7 @@ struct LaunchOverlayView: View {
 
             VStack(spacing: 24) {
                 SteelDeskMark(size: 120)
-                    .scaleEffect(reveal ? 1 : 0.9)
+                    .scaleEffect(reveal ? 1 : 0.96)
                     .opacity(reveal ? 1 : 0)
 
                 SteelDeskWordmark(
@@ -400,7 +423,7 @@ struct LaunchOverlayView: View {
                 )
                 .multilineTextAlignment(.center)
                 .opacity(reveal ? 1 : 0)
-                .offset(y: reveal ? 0 : 10)
+                .offset(y: reveal ? 0 : 6)
 
                 VStack(spacing: 8) {
                     launchLine("AGGRESSIVE TAPE READING")
@@ -410,10 +433,10 @@ struct LaunchOverlayView: View {
             }
         }
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            withAnimation(.easeOut(duration: 0.25)) {
                 reveal = true
             }
-            withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
+            withAnimation(.easeOut(duration: 0.3).delay(0.15)) {
                 tagLineVisible = true
             }
         }
@@ -421,10 +444,9 @@ struct LaunchOverlayView: View {
 
     private func launchLine(_ text: String) -> some View {
         Text(text)
-            .font(DesignSystem.Typography.captionFont)
-            .fontWeight(.bold)
+            .font(DesignSystem.Typography.labelFont)
             .tracking(1.5)
-            .foregroundColor(DesignSystem.primaryColor)
+            .foregroundColor(DesignSystem.amber)
     }
 }
 
@@ -434,22 +456,18 @@ enum BrandIconFactory {
         let image = NSImage(size: NSSize(width: size, height: size))
         image.lockFocus()
 
-        let rect = NSRect(x: 0, y: 0, width: size, height: size)
-        let background = NSBezierPath(roundedRect: rect, xRadius: size * 0.22, yRadius: size * 0.22)
-        let backgroundGradient = NSGradient(
-            colors: [
-                NSColor(calibratedRed: 0.09, green: 0.10, blue: 0.11, alpha: 1),
-                NSColor(calibratedRed: 0.02, green: 0.02, blue: 0.02, alpha: 1),
-                NSColor(calibratedRed: 0.06, green: 0.06, blue: 0.07, alpha: 1)
-            ]
-        )
-        backgroundGradient?.draw(in: background, angle: 300)
+        let amber = NSColor(calibratedRed: 1.0, green: 0.6902, blue: 0.0, alpha: 1)
+        let amberFaint = NSColor(calibratedRed: 1.0, green: 0.6902, blue: 0.0, alpha: 0.20)
 
-        NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 0.4).setStroke()
-        background.lineWidth = size * 0.02
+        let rect = NSRect(x: 0, y: 0, width: size, height: size)
+        let background = NSBezierPath(rect: rect)
+        NSColor.black.setFill()
+        background.fill()
+
+        amber.setStroke()
+        background.lineWidth = max(1, size * 0.005)
         background.stroke()
 
-        // Industrial crosshairs
         let lineLength = size * 0.1
         let horizontal = NSBezierPath()
         horizontal.move(to: NSPoint(x: size * 0.5 - lineLength, y: size * 0.5))
@@ -457,8 +475,8 @@ enum BrandIconFactory {
         let vertical = NSBezierPath()
         vertical.move(to: NSPoint(x: size * 0.5, y: size * 0.5 - lineLength))
         vertical.line(to: NSPoint(x: size * 0.5, y: size * 0.5 + lineLength))
-        
-        NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 0.15).setStroke()
+
+        amberFaint.setStroke()
         horizontal.lineWidth = 1
         vertical.lineWidth = 1
         horizontal.stroke()
@@ -467,9 +485,9 @@ enum BrandIconFactory {
         drawSlash(
             center: CGPoint(x: size * 0.5, y: size * 0.5),
             length: size * 0.7,
-            thickness: size * 0.08,
+            thickness: size * 0.06,
             angle: -45,
-            color: NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 1)
+            color: amber
         )
 
         let paragraph = NSMutableParagraphStyle()
@@ -479,15 +497,15 @@ enum BrandIconFactory {
         title.draw(
             in: titleRect,
             withAttributes: [
-                .font: NSFont.monospacedSystemFont(ofSize: size * 0.1, weight: .black),
+                .font: NSFont.monospacedSystemFont(ofSize: size * 0.1, weight: .heavy),
                 .foregroundColor: NSColor.white,
                 .paragraphStyle: paragraph
             ]
         )
 
         let pulseRect = NSRect(x: size * 0.8, y: size * 0.8, width: size * 0.08, height: size * 0.08)
-        let pulse = NSBezierPath(ovalIn: pulseRect)
-        NSColor(calibratedRed: 0.00, green: 0.95, blue: 1.00, alpha: 1).setFill()
+        let pulse = NSBezierPath(rect: pulseRect)
+        amber.setFill()
         pulse.fill()
 
         image.unlockFocus()
@@ -496,14 +514,12 @@ enum BrandIconFactory {
 
     private static func drawSlash(center: CGPoint, length: CGFloat, thickness: CGFloat, angle: CGFloat, color: NSColor) {
         let path = NSBezierPath(
-            roundedRect: NSRect(
+            rect: NSRect(
                 x: center.x - length / 2,
                 y: center.y - thickness / 2,
                 width: length,
                 height: thickness
-            ),
-            xRadius: thickness / 2,
-            yRadius: thickness / 2
+            )
         )
 
         var transform = AffineTransform()

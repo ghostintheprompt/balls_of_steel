@@ -87,10 +87,10 @@ struct PromptCoachView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(DesignSystem.panelTop)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 2)
                         .stroke(DesignSystem.panelStroke, lineWidth: 1)
                 )
         )
@@ -135,7 +135,7 @@ struct PromptCoachView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(DesignSystem.secondaryColor)
-                    .cornerRadius(8)
+                    .cornerRadius(2)
                 }
             }
 
@@ -146,17 +146,17 @@ struct PromptCoachView: View {
                     .font(.system(.caption, design: .monospaced))
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
+                    .background(DesignSystem.faint.opacity(0.40))
+                    .cornerRadius(2)
             }
             .frame(maxHeight: 160)
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(DesignSystem.panelTop)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 2)
                         .stroke(DesignSystem.secondaryColor.opacity(0.35), lineWidth: 1)
                 )
         )
@@ -169,15 +169,15 @@ struct PromptCoachView: View {
             HStack {
                 Image(systemName: prompt.type.icon)
                     .font(.title2)
-                    .foregroundColor(.green)
+                    .foregroundColor(DesignSystem.long)
                     .padding(12)
-                    .background(Circle().fill(Color.green.opacity(0.1)))
+                    .background(Circle().fill(DesignSystem.long.opacity(0.10)))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("WINDOW PROMPT")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(.green)
+                        .foregroundColor(DesignSystem.long)
                     Text(prompt.type.displayName)
                         .font(.headline)
                 }
@@ -195,8 +195,8 @@ struct PromptCoachView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .cornerRadius(8)
+                    .background(DesignSystem.amber)
+                    .cornerRadius(2)
                 }
             }
 
@@ -212,8 +212,8 @@ struct PromptCoachView: View {
                     .font(.system(.caption, design: .monospaced))
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
+                    .background(DesignSystem.faint.opacity(0.40))
+                    .cornerRadius(2)
             }
             .frame(maxHeight: 200)
 
@@ -234,11 +234,11 @@ struct PromptCoachView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.green.opacity(0.05))
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DesignSystem.long.opacity(0.06))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.green, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(DesignSystem.long, lineWidth: 1)
                 )
         )
     }
@@ -264,7 +264,7 @@ struct PromptCoachView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundColor(DesignSystem.short)
                 Text("Conditional Alerts")
                     .font(.headline)
             }
@@ -278,11 +278,11 @@ struct PromptCoachView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.05))
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DesignSystem.short.opacity(0.06))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(DesignSystem.short.opacity(0.30), lineWidth: 1)
                 )
         )
     }
@@ -318,7 +318,7 @@ struct FeatureBadge: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(color.opacity(0.1))
-        .cornerRadius(6)
+        .cornerRadius(2)
     }
 }
 
@@ -330,7 +330,7 @@ struct PromptScheduleRow: View {
     var body: some View {
         HStack {
             Image(systemName: prompt.type.icon)
-                .foregroundColor(isActive ? .green : .gray)
+                .foregroundColor(isActive ? DesignSystem.long : DesignSystem.muted)
                 .frame(width: 30)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -351,9 +351,9 @@ struct PromptScheduleRow: View {
                         .font(.caption)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue)
+                        .background(DesignSystem.amber)
                         .foregroundColor(.white)
-                        .cornerRadius(6)
+                        .cornerRadius(2)
                 }
             } else {
                 Text(timeUntil)
@@ -363,8 +363,8 @@ struct PromptScheduleRow: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isActive ? Color.green.opacity(0.1) : Color.gray.opacity(0.05))
+            RoundedRectangle(cornerRadius: 2)
+                .fill(isActive ? DesignSystem.long.opacity(0.10) : DesignSystem.faint.opacity(0.30))
         )
     }
 
@@ -408,7 +408,7 @@ struct ConditionalAlertRow: View {
     var body: some View {
         HStack {
             Image(systemName: prompt.type.icon)
-                .foregroundColor(.red)
+                .foregroundColor(DesignSystem.short)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(prompt.type.displayName)
@@ -426,15 +426,15 @@ struct ConditionalAlertRow: View {
                     .font(.caption)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.red)
+                    .background(DesignSystem.short)
                     .foregroundColor(.white)
-                    .cornerRadius(6)
+                    .cornerRadius(2)
             }
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.red.opacity(0.1))
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DesignSystem.short.opacity(0.10))
         )
     }
 }
@@ -445,7 +445,7 @@ struct PromptHistoryRow: View {
     var body: some View {
         HStack {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundColor(DesignSystem.long)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.promptType.displayName)
@@ -459,12 +459,12 @@ struct PromptHistoryRow: View {
 
             Text("Used")
                 .font(.caption)
-                .foregroundColor(.green)
+                .foregroundColor(DesignSystem.long)
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.05))
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DesignSystem.faint.opacity(0.30))
         )
     }
 }

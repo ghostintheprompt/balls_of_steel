@@ -169,7 +169,7 @@ struct FirstLaunchDisclaimerView: View {
                 .padding()
                 .background(hasReadDisclaimer && hasAgreedToTerms ? DesignSystem.primaryColor : DesignSystem.secondaryColor.opacity(0.7))
                 .foregroundColor(.white)
-                .cornerRadius(14)
+                .cornerRadius(2)
         }
         .disabled(!hasReadDisclaimer || !hasAgreedToTerms)
     }

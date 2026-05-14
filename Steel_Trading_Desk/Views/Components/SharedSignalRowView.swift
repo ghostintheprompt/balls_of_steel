@@ -144,10 +144,10 @@ private struct PriceTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(Color.white.opacity(0.05))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 2)
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )

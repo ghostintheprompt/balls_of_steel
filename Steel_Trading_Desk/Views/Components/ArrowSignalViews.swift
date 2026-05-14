@@ -45,17 +45,17 @@ struct ArrowSignalBadgeView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(directionColor.opacity(0.1))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 2)
                         .stroke(directionColor, lineWidth: 2)
                 )
         )
     }
 
     private var directionColor: Color {
-        signal.direction == .bullish ? .green : .red
+        signal.direction == .bullish ? DesignSystem.long : DesignSystem.short
     }
 
     private var volumeIcon: String {
@@ -72,7 +72,7 @@ struct ArrowSignalBadgeView: View {
     }
 
     private var volumeColor: Color {
-        signal.volumeConfirmation.isValid ? .green : .red
+        signal.volumeConfirmation.isValid ? DesignSystem.long : DesignSystem.short
     }
 }
 
@@ -113,7 +113,7 @@ struct SignalValidationMatrixView: View {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.caption)
-                                .foregroundColor(.green)
+                                .foregroundColor(DesignSystem.long)
                             Text(confluence.displayName)
                                 .font(.caption)
                             Spacer()
@@ -162,9 +162,9 @@ struct SignalValidationMatrixView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(DesignSystem.panelTop)
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                .overlay(RoundedRectangle(cornerRadius: 2).stroke(DesignSystem.hairline, lineWidth: 1))
         )
     }
 
@@ -174,31 +174,31 @@ struct SignalValidationMatrixView: View {
                 Text("VALID (Confirmed)")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .foregroundColor(.green)
+                    .foregroundColor(DesignSystem.long)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(6)
+                    .background(DesignSystem.long.opacity(0.10))
+                    .cornerRadius(2)
             } else {
                 Text("SKIP (X)")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .foregroundColor(.red)
+                    .foregroundColor(DesignSystem.short)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(6)
+                    .background(DesignSystem.short.opacity(0.10))
+                    .cornerRadius(2)
             }
         }
     }
 
     private var probabilityColor: Color {
         if signal.totalProbabilityBonus >= 0.80 {
-            return .green
+            return DesignSystem.long
         } else if signal.totalProbabilityBonus >= 0.60 {
-            return .orange
+            return DesignSystem.amber
         } else {
-            return .red
+            return DesignSystem.short
         }
     }
 }
@@ -224,7 +224,7 @@ struct ValidationRow: View {
 
             VStack(alignment: .trailing, spacing: 2) {
                 Image(systemName: isValid ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundColor(isValid ? .green : .red)
+                    .foregroundColor(isValid ? DesignSystem.long : DesignSystem.short)
                 Text(priority)
                     .font(.caption2)
                     .foregroundColor(.secondary)
@@ -240,64 +240,62 @@ struct InstitutionalFlowAlertView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon with animation
             ZStack {
-                Circle()
-                    .fill(Color.purple.opacity(0.2))
+                Rectangle()
+                    .fill(DesignSystem.amber.opacity(0.15))
                     .frame(width: 50, height: 50)
 
                 Image(systemName: "building.columns.fill")
                     .font(.title2)
-                    .foregroundColor(.purple)
+                    .foregroundColor(DesignSystem.amber)
             }
-            .scaleEffect(isActive ? 1.1 : 1.0)
+            .scaleEffect(isActive ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isActive)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Institutional Flow Window")
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(DesignSystem.text)
 
                 if isActive {
-                    Text("WINDOW ACTIVE NOW! (Rating)")
+                    Text("WINDOW OPEN")
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundColor(.purple)
+                        .foregroundColor(DesignSystem.amber)
                 } else {
                     Text("Opens in \(minutesUntil) minutes")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.muted)
                 }
 
-                Text("90% Reliability - 300%+ Volume Required")
+                Text("Wait for 300%+ volume")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(DesignSystem.muted)
             }
 
             Spacer()
 
-            // Time range badge
             VStack(alignment: .trailing, spacing: 2) {
                 Text("3:45-4:10 PM")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.purple)
-                Text("Priority #1")
+                    .foregroundColor(DesignSystem.amber)
+                Text("Priority")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(DesignSystem.muted)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.purple.opacity(0.1))
-            .cornerRadius(6)
+            .background(DesignSystem.amber.opacity(0.10))
+            .cornerRadius(2)
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isActive ? Color.purple.opacity(0.1) : Color.orange.opacity(0.05))
+            Rectangle()
+                .fill(isActive ? DesignSystem.amber.opacity(0.08) : DesignSystem.panel)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isActive ? Color.purple : Color.orange, lineWidth: 2)
+                    Rectangle()
+                        .stroke(isActive ? DesignSystem.amber : DesignSystem.hairline, lineWidth: 1)
                 )
         )
     }
@@ -332,8 +330,8 @@ struct EventDayAlertView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.red)
-                        .cornerRadius(6)
+                        .background(DesignSystem.short)
+                        .cornerRadius(2)
                 }
             }
 
@@ -376,10 +374,10 @@ struct EventDayAlertView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(impactColor.opacity(0.1))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 2)
                         .stroke(impactColor, lineWidth: 2)
                 )
         )
@@ -388,11 +386,11 @@ struct EventDayAlertView: View {
     private var impactColor: Color {
         switch event.impactLevel {
         case .high:
-            return .red
+            return DesignSystem.short
         case .medium:
-            return .orange
+            return DesignSystem.amber
         case .low:
-            return .yellow
+            return DesignSystem.amber
         }
     }
 }
@@ -439,32 +437,32 @@ struct DynamicPositionSizingView: View {
             if result.size >= 1.0 {
                 HStack {
                     Image(systemName: "hand.raised.fill")
-                        .foregroundColor(.orange)
+                        .foregroundColor(DesignSystem.amber)
                     Text("Greed Control: 1 contract maximum")
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(.orange)
+                        .foregroundColor(DesignSystem.amber)
                 }
                 .padding(.top, 4)
             }
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(DesignSystem.panelTop)
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                .overlay(RoundedRectangle(cornerRadius: 2).stroke(DesignSystem.hairline, lineWidth: 1))
         )
     }
 
     private var sizeColor: Color {
         if result.size >= 1.0 {
-            return .green
+            return DesignSystem.long
         } else if result.size >= 0.5 {
-            return .orange
+            return DesignSystem.amber
         } else if result.size > 0 {
-            return .yellow
+            return DesignSystem.amber
         } else {
-            return .red
+            return DesignSystem.short
         }
     }
 }
