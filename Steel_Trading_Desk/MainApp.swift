@@ -11,6 +11,12 @@ struct MainApp: App {
     #endif
     @StateObject private var updateChecker = UpdateChecker.shared
 
+    init() {
+        // DEBUG-only: seed Keychain from bundled .env if present.
+        // No-op in Release builds.
+        EnvSeeder.seedFromBundleEnvIfNeeded()
+    }
+
     var body: some Scene {
         WindowGroup {
             MainView()
