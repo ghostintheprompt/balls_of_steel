@@ -15,6 +15,7 @@ struct CandlestickPattern {
         case doji = "Doji"
         case hammer = "Hammer"
         case hangingMan = "Hanging Man"
+        case bearishEngulfing = "Bearish Engulfing"
 
         var description: String {
             switch self {
@@ -26,17 +27,30 @@ struct CandlestickPattern {
                 return "Bullish reversal at support - potential call entry"
             case .hangingMan:
                 return "Bearish reversal at tops - put entry signal"
+            case .bearishEngulfing:
+                return "Sellers took full control - aggressive put entry"
             }
         }
 
         var tradingBias: TradingBias {
             switch self {
-            case .shootingStar, .hangingMan:
+            case .shootingStar, .hangingMan, .bearishEngulfing:
                 return .bearish // Put entries
             case .hammer:
                 return .bullish // Call entries
             case .doji:
                 return .neutral // Wait for confirmation
+            }
+        }
+
+        /// Compact label suitable for chart annotations.
+        var shortCode: String {
+            switch self {
+            case .shootingStar:     return "SS"
+            case .doji:             return "DJ"
+            case .hammer:           return "HM"
+            case .hangingMan:       return "HG"
+            case .bearishEngulfing: return "BE"
             }
         }
     }
@@ -92,7 +106,27 @@ class PatternRecognizer {
             patterns.append(pattern)
         }
 
+        // Bearish Engulfing detection
+        if let pattern = detectBearishEngulfing(current: currentCandle, previous: previousCandles, avgVolume: averageVolume) {
+            patterns.append(pattern)
+        }
+
         return patterns
+    }
+
+    /// Scan the entire candle series and surface every pattern hit, indexed by
+    /// the candle that triggered it. Used by chart overlays that mark every
+    /// historical pattern, not just the most recent.
+    func detectPatternsAcrossSeries(candles: [Candle], averageVolume: Int) -> [(candle: Candle, pattern: CandlestickPattern)] {
+        guard candles.count >= 3 else { return [] }
+        var out: [(Candle, CandlestickPattern)] = []
+        // Need at least 2 prior candles for trend / engulfing context.
+        for i in 2..<candles.count {
+            let context = Array(candles[0...i])
+            let patterns = detectPatterns(candles: context, averageVolume: averageVolume)
+            for p in patterns { out.append((candles[i], p)) }
+        }
+        return out
     }
 
     // MARK: - Shooting Star Detection
@@ -254,6 +288,46 @@ class PatternRecognizer {
         return CandlestickPattern(
             type: .hangingMan,
             candles: Array(previous.suffix(2)) + [current],
+            timestamp: current.timestamp,
+            signal: signal,
+            strength: strength
+        )
+    }
+
+    // MARK: - Bearish Engulfing Detection
+    //
+    // Criteria mirror the strategy doc exactly:
+    //   1. Prior candle bullish.
+    //   2. Current candle bearish.
+    //   3. Current body fully engulfs prior body (current.open > prior.close
+    //      AND current.close < prior.open).
+    //   4. Volume confirmation (≥200% of 30-period avg per ToS).
+    //
+    // Earlier code added `current.bodyPercent >= 0.4` to reject "small-body
+    // fakes." The doc doesn't have that rule — it was a bolt-on heuristic. Per
+    // memory/feedback_catch_drift_always.md we don't add criteria the doc
+    // doesn't enforce. Drift fix 2026-05-14.
+    private func detectBearishEngulfing(current: Candle, previous: [Candle], avgVolume: Int) -> CandlestickPattern? {
+        guard let prior = previous.last else { return nil }
+        guard prior.isBullish,
+              current.isBearish,
+              current.open > prior.close,
+              current.close < prior.open,
+              current.volume >= Int(Double(avgVolume) * volumeFactorThreshold) else {
+            return nil
+        }
+
+        // Strength: how much of the prior body the current wraps + volume premium.
+        let priorBody = max(prior.bodySize, 0.0001)
+        let wrapMultiple = min(current.bodySize / priorBody, 3.0) / 3.0   // 0..1
+        let volumeScore = min(Double(current.volume) / Double(max(avgVolume, 1)) / volumeFactorThreshold, 1.0)
+        let strength = wrapMultiple * 0.55 + volumeScore * 0.45
+
+        let signal: CandlestickPattern.PatternSignal = strength >= 0.75 ? .strong : strength >= 0.55 ? .moderate : .weak
+
+        return CandlestickPattern(
+            type: .bearishEngulfing,
+            candles: Array(previous.suffix(1)) + [current],
             timestamp: current.timestamp,
             signal: signal,
             strength: strength

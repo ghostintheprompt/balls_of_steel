@@ -96,3 +96,34 @@ struct Candle: Codable, Identifiable {
         close < open
     }
 }
+
+extension Array where Element == Candle {
+    /// Bucket 1-minute bars into a coarser timeframe. The bucket is bounded by
+    /// `bucketSeconds` and time-aligned to the unix epoch (so 5m buckets land on
+    /// the :00 / :05 / :10 minutes). OHLC follows the standard rollup: first open,
+    /// running high/low, last close, summed volume.
+    func aggregated(bucketSeconds: TimeInterval) -> [Candle] {
+        guard bucketSeconds > 60 else { return self }
+        guard !isEmpty else { return [] }
+
+        var buckets: [TimeInterval: [Candle]] = [:]
+        var order: [TimeInterval] = []
+        for c in self {
+            let bucketStart = floor(c.timestamp.timeIntervalSince1970 / bucketSeconds) * bucketSeconds
+            if buckets[bucketStart] == nil { order.append(bucketStart) }
+            buckets[bucketStart, default: []].append(c)
+        }
+
+        return order.compactMap { start in
+            guard let bars = buckets[start], let first = bars.first, let last = bars.last else { return nil }
+            return Candle(
+                open: first.open,
+                high: bars.map(\.high).max() ?? first.high,
+                low: bars.map(\.low).min() ?? first.low,
+                close: last.close,
+                volume: bars.reduce(0) { $0 + $1.volume },
+                timestamp: Date(timeIntervalSince1970: start)
+            )
+        }
+    }
+}

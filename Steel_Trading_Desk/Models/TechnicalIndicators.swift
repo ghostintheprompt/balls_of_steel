@@ -407,11 +407,11 @@ struct VXXVIXRatio {
 
         var displayName: String {
             switch self {
-            case .premiumFade: return "Premium Fade (Rating: 3)"
-            case .strongFade: return "Strong Fade (Rating: 2)"
-            case .normalFade: return "Normal Fade (Rating: 1)"
-            case .weakFade: return "Weak Fade (Caution)"
-            case .noFade: return "No Fade"
+            case .premiumFade: return "Premium Fade"
+            case .strongFade:  return "Strong Fade"
+            case .normalFade:  return "Normal Fade"
+            case .weakFade:    return "Weak Fade · Caution"
+            case .noFade:      return "No Fade"
             }
         }
 

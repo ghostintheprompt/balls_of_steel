@@ -76,8 +76,8 @@ struct FirstLaunchDisclaimerView: View {
             - Options trading is highly risky and not suitable for all investors
             - You can lose your entire investment
             - Past performance does NOT guarantee future results
-            - Win rates and strategies shown are educational examples
-            - Market conditions change - no checklist guarantees profits
+            - Strategies shown are educational examples, not promises
+            - Market conditions change — no checklist guarantees profits
 
             Only trade with money you can afford to lose.
             """)
@@ -286,12 +286,14 @@ struct AboutLegalView: View {
             List {
                 Section(header: Text("About")) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("STEEL TRADING DESK v3.0")
+                        Text("STEEL TRADING DESK")
                             .font(.headline)
-                        Text("Institutional Flow Edition")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text("\nFree educational desk for manual SPY and VXX trading discipline.")
+                        if let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+                            Text("Version \(v)")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        Text("\nFree educational desk for manual VXX trading discipline.")
                             .font(.caption)
                     }
                     .padding(.vertical, 8)
@@ -313,7 +315,13 @@ struct AboutLegalView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("3.0.0")
+                        Text((Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "—")
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Build")
+                        Spacer()
+                        Text((Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "—")
                             .foregroundColor(.secondary)
                     }
                     HStack {
@@ -360,7 +368,7 @@ struct TermsOfServiceView: View {
                 - A source of financial advice
                 - A guarantee of profits or trading success
 
-                1.3 All strategies, win rates, and examples provided are for educational purposes only and do not constitute recommendations to buy or sell any security.
+                1.3 All strategies and examples provided are for educational purposes only and do not constitute recommendations to buy or sell any security.
 
                 ------------------------------------
 
@@ -415,7 +423,7 @@ struct TermsOfServiceView: View {
                 5.1 The App is provided "AS IS" without warranty of any kind, express or implied.
 
                 5.2 We make no guarantees about:
-                - Accuracy of strategies or win rates
+                - Accuracy or outcomes of any strategy
                 - Availability or reliability of the App
                 - Suitability for any particular purpose
                 - Freedom from errors or bugs
@@ -601,15 +609,17 @@ struct PrivacyPolicyView: View {
                 **2. LOCAL STORAGE ONLY**
 
                 2.1 The App stores data locally on YOUR device using:
-                - UserDefaults (macOS system storage)
+                - UserDefaults (iOS / macOS system storage)
+                - Keychain (only for API keys you paste in Settings — never read by us)
                 - Local file storage
                 - No cloud sync
-                - No remote servers
+                - No remote servers operated by us
 
                 2.2 Data stored locally includes:
                 - Manual data entries (VXX price, volume, etc.)
                 - App preferences (haptic settings, platform choice)
                 - Onboarding completion status
+                - API keys for the optional market-data provider (in Keychain)
 
                 2.3 This data:
                 - Never leaves your device
@@ -619,15 +629,23 @@ struct PrivacyPolicyView: View {
 
                 ------------------------------------
 
-                **3. NO THIRD-PARTY SERVICES**
+                **3. OPTIONAL MARKET DATA PROVIDER**
 
                 3.1 The App does NOT use:
                 - Analytics services (no Google Analytics, Mixpanel, etc.)
                 - Advertising networks
                 - Social media SDKs
                 - Cloud storage services
-                - External APIs for data collection
                 - Tracking pixels or beacons
+
+                3.2 OPTIONAL: If you enable Live Mode in Settings → Data Source and provide an API key, the App will make network requests directly from your device to the market data provider you choose (Finnhub, Polygon, Schwab, or Yahoo) to fetch VXX and VIX market data. Specifically:
+                - Requests contain only ticker symbols and your API key
+                - Responses (current price, previous close, intraday candles) are processed on-device
+                - No part of these requests is routed through us
+                - We never see your API key, your queries, or any returned data
+                - Disabling Live Mode in Settings stops all network requests
+
+                3.3 Your relationship with the data provider is governed by THEIR privacy policy and terms — not ours.
 
                 ------------------------------------
 
@@ -648,9 +666,10 @@ struct PrivacyPolicyView: View {
                 5.1 Since we don't collect data, there's no data to secure on our end.
 
                 5.2 Local data on your device is protected by:
-                - macOS encryption (if enabled on your device)
-                - macOS app sandboxing
-                - Your device passcode/biometric lock
+                - iOS / macOS encryption (if enabled on your device)
+                - System app sandboxing
+                - Keychain for API keys (hardware-backed where available)
+                - Your device passcode / biometric lock
 
                 5.3 Best practices:
                 - Use a strong device passcode
@@ -729,19 +748,17 @@ struct PrivacyPolicyView: View {
 
                 **What we collect:** NOTHING
 
-                **Where your data goes:** NOWHERE (stays on your device)
+                **Where your data goes:** stays on your device, except for the optional market-data API call you opt into (your device → your chosen provider, never through us)
 
                 **Who we share with:** NO ONE
 
-                **Third-party services:** NONE
-
                 **Analytics/tracking:** NONE
 
-                **Your privacy:** 100% PROTECTED
+                **Your privacy:** locked down
 
-                This is the simplest privacy policy you'll ever read because we genuinely don't collect your data. Your trading strategies, manual entries, and app usage stay private on YOUR device.
+                Your trading strategies, manual entries, and app usage stay private on YOUR device. The only optional outbound traffic is the market-data API you turn on in Settings, and even that bypasses us entirely — your device talks to the provider directly.
 
-                Your privacy is respected. Trade with confidence.
+                Your privacy is respected.
                 """)
                 .font(.subheadline)
             }
@@ -779,7 +796,7 @@ struct RiskDisclaimerView: View {
 
                 **System Limitations:**
                 - Past performance does not guarantee future results
-                - Win rates are historical examples, not promises
+                - Any historical examples shown are educational, not promises
                 - Market conditions change constantly
                 - No system eliminates risk
                 - You can lose your entire investment

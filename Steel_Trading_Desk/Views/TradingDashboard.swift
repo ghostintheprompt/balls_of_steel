@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Charts
 
 struct TradingDashboard: View {
     @ObservedObject var signalMonitor: SignalMonitor
@@ -56,9 +57,14 @@ struct TradingDashboard: View {
                 }
             }
         }
+        // Force stack navigation on iPad. Without this, NavigationView defaults
+        // to split-view: the desk gets squeezed into a sidebar pane and the
+        // right ~72% of the iPad screen is empty. Fix 2026-05-14.
+        .navigationViewStyle(.stack)
     }
 
     @State private var selectedPhoneGate: PhoneGate?
+    @State private var isChartSheetOpen = false
 
     private var phoneDeskContent: some View {
         Group {
@@ -73,7 +79,9 @@ struct TradingDashboard: View {
                     PhoneTickerStrip(entry: lastMarketDataEntry, phase: marketPulse.currentPhase)
                     PhoneCommandCard(state: phoneStrategyState, signalMonitor: signalMonitor, openTape: openTape, openRisk: openRisk)
                     PhoneStrategyRail(entry: lastMarketDataEntry, openTape: openTape, onSelectGate: { selectedPhoneGate = $0 })
-                    PhoneMiniChart(symbol: lastMarketDataEntry?.instrument ?? .vxx)
+                    PhoneCandleStrip(symbol: lastMarketDataEntry?.instrument ?? .vxx) {
+                        isChartSheetOpen = true
+                    }
                     PhoneClockFooter()
 
                     if !signalMonitor.activeTrades.isEmpty {
@@ -83,6 +91,9 @@ struct TradingDashboard: View {
                 .sheet(item: $selectedPhoneGate) { gate in
                     PhoneGateDetailSheet(gate: gate, state: phoneStrategyState, entry: lastMarketDataEntry, openTape: openTape)
                 }
+                .sheet(isPresented: $isChartSheetOpen) {
+                    PhoneChartSheet(symbol: lastMarketDataEntry?.instrument ?? .vxx)
+                }
             }
         }
     }
@@ -91,7 +102,8 @@ struct TradingDashboard: View {
     private var currentDeskState: DeskState {
         DeskState.current(
             timeManager: timeManager,
-            openPositions: signalMonitor.activeTrades.count
+            openPositions: signalMonitor.activeTrades.count,
+            openPositionTimestamps: signalMonitor.activeTrades.map(\.timestamp)
         )
     }
 
@@ -613,7 +625,7 @@ private struct VXXStrategyState {
 
     var volumePass: Bool {
         guard let entry else { return false }
-        return entry.volumePercent >= 200
+        return entry.volumePercent >= entry.timeWindow.requiredVolumePercent
     }
 
     var windowPass: Bool {
@@ -636,10 +648,12 @@ private struct VXXStrategyState {
 
     var ratioPass: Bool {
         guard let entry else { return false }
-        guard entry.instrument == .vxx, entry.ratio >= 1.45 else { return false }
-        // Divergence direction is part of the entry constraint: never fade a
-        // ratio that is compressing, regardless of absolute level.
-        return !ratioConverging
+        // Strict doc rule: ratio ≥ 1.45. Convergence is now surfaced as a
+        // soft warning in `ratioDetail` rather than blocking the gate —
+        // [[feedback-catch-drift-always]] said don't bolt on heuristics the
+        // doc doesn't enforce, and the strategy prompts list ratio>=1.45 as
+        // the only ratio rule. Drift fix 2026-05-14.
+        return entry.instrument == .vxx && entry.ratio >= StrategySpec.minimumRatioForEntry
     }
 
     var levelPass: Bool {
@@ -688,11 +702,12 @@ private struct VXXStrategyState {
 
     var volumeWindowDetail: String {
         guard let entry else { return "Start here. Enter current VXX tape." }
+        let req = Int(entry.timeWindow.requiredVolumePercent)
         if !volumePass && !windowPass {
-            return "Need volume >200% and valid VXX window. Now: \(Int(entry.volumePercent))%, \(entry.timeWindow.displayName)."
+            return "Need volume >\(req)% and valid VXX window. Now: \(Int(entry.volumePercent))%, \(entry.timeWindow.displayName)."
         }
         if !volumePass {
-            return "Volume is \(Int(entry.volumePercent))%. Need >200% before anything else."
+            return "Volume is \(Int(entry.volumePercent))%. Need >\(req)% in this window before anything else."
         }
         if !windowPass {
             return "\(entry.timeWindow.displayName) is not a VXX window. Wait."
@@ -704,11 +719,13 @@ private struct VXXStrategyState {
         guard let entry else { return "Locked until tape is entered." }
         if !volumeWindowPass { return "Locked until volume and time pass." }
         if entry.instrument != .vxx { return "This desk is for VXX. Switch the tape to VXX." }
-        if entry.ratio < 1.45 {
-            return "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >1.45."
+        if entry.ratio < StrategySpec.minimumRatioForEntry {
+            return "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >\(String(format: "%.2f", StrategySpec.minimumRatioForEntry))."
         }
         if ratioConverging, let snap = liveSnapshot {
-            return "Ratio \(String(format: "%.2f", entry.ratio)) cheap but VIX is outpacing VXX (\(String(format: "%+.2f", snap.divergencePoints))pp). Ratio is compressing — do not fade."
+            // Soft warning — gate still passes per doc, but the convergence
+            // direction is worth knowing before sizing up.
+            return "Ratio \(String(format: "%.2f", entry.ratio)) passes (\(entry.ratioTier)). HEADS UP: VIX outpacing VXX (\(String(format: "%+.2f", snap.divergencePoints))pp). Ratio is compressing — size smaller or wait for a cleaner read."
         }
         return "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
     }
@@ -2510,33 +2527,941 @@ private struct PhoneTickerStrip: View {
     }
 }
 
-// MARK: Phone Mini Chart (Phase 5 wires real data)
+// MARK: Phone Candle Strip + Chart Sheet
+//
+// Two-tier chart for the iPhone home, matching the pattern Robinhood / Webull /
+// Schwab / ToS mobile / TradingView's own iOS app use: a compact native candle
+// preview inline on the dense view, and a fullscreen native chart on tap.
+//
+// Strategy context (see docs/trading docs/): the trader reads candle shape at
+// VWAP / 20 SMA / 50 SMA to confirm entry. A 140pt squashed TradingView embed
+// hides exactly that wick-vs-body detail. Swift Charts gives crisp candles at
+// 96pt and lets us draw the ToS overlays at the right colors.
 
-private struct PhoneMiniChart: View {
+private struct PhoneChartSeries {
+    let candles: [Candle]
+    let vwap: [(Date, Double)]
+    let sma20: [(Date, Double)]
+    let sma50: [(Date, Double)]
+    let priceLow: Double
+    let priceHigh: Double
+    let tradingWindows: [(start: Date, end: Date, label: String)]
+    let avgVolume: Double  // 30-period (or shorter if fewer bars) — for 200% threshold
+    let patterns: [(candle: Candle, pattern: CandlestickPattern)]
+
+    static func build(from raw: [Candle], bucketSeconds: TimeInterval) -> PhoneChartSeries {
+        let bars = bucketSeconds > 60 ? raw.aggregated(bucketSeconds: bucketSeconds) : raw
+        let candles = Array(bars.suffix(160))  // hard cap so the chart stays readable
+        let vwap = runningVWAP(candles)
+        let sma20 = sma(candles, period: 20)
+        let sma50 = sma(candles, period: 50)
+
+        let allLows = candles.map(\.low)
+        let allHighs = candles.map(\.high)
+        let low = allLows.min() ?? 0
+        let high = allHighs.max() ?? 0
+        // 4% headroom either side so candles don't kiss the chart edges
+        let pad = max((high - low) * 0.04, 0.05)
+
+        // Trading-window stripes — keep only the windows that overlap visible candles.
+        let firstTime = candles.first?.timestamp ?? Date()
+        let lastTime = candles.last?.timestamp ?? Date()
+        let windows = tradingWindowsForToday(reference: lastTime).filter { w in
+            w.end >= firstTime && w.start <= lastTime
+        }
+
+        // 30-period rolling volume average for the 200% threshold on the volume panel.
+        let recent = Array(candles.suffix(30))
+        let avgVol = recent.isEmpty ? 0 : Double(recent.reduce(0) { $0 + $1.volume }) / Double(recent.count)
+
+        // Pattern hits across the whole visible series — Shooting Star / Doji /
+        // Hammer / Hanging Man / Bearish Engulfing per the ToS strategy doc.
+        let recognizer = PatternRecognizer()
+        let patterns = recognizer.detectPatternsAcrossSeries(candles: candles, averageVolume: Int(avgVol))
+
+        return PhoneChartSeries(
+            candles: candles,
+            vwap: vwap,
+            sma20: sma20,
+            sma50: sma50,
+            priceLow: low - pad,
+            priceHigh: high + pad,
+            tradingWindows: windows,
+            avgVolume: avgVol,
+            patterns: patterns
+        )
+    }
+
+    /// The 3 ToS windows expressed as absolute Date ranges in the reference date's
+    /// ET calendar day. Order matches the strategy doc.
+    private static func tradingWindowsForToday(reference: Date) -> [(start: Date, end: Date, label: String)] {
+        guard let etZone = TimeZone(identifier: "America/New_York") else { return [] }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = etZone
+        let comps = cal.dateComponents([.year, .month, .day], from: reference)
+
+        func make(_ h1: Int, _ m1: Int, _ h2: Int, _ m2: Int, _ label: String) -> (Date, Date, String)? {
+            var s = comps; s.hour = h1; s.minute = m1; s.timeZone = etZone
+            var e = comps; e.hour = h2; e.minute = m2; e.timeZone = etZone
+            guard let sd = cal.date(from: s), let ed = cal.date(from: e) else { return nil }
+            return (sd, ed, label)
+        }
+
+        return [
+            make(9, 50, 10, 15, "MORN"),
+            make(15, 10, 15, 25, "POWER"),
+            make(15, 45, 16, 10, "INST")
+        ].compactMap { $0 }
+    }
+
+    private static func runningVWAP(_ candles: [Candle]) -> [(Date, Double)] {
+        var num: Double = 0
+        var den: Double = 0
+        var out: [(Date, Double)] = []
+        for c in candles {
+            let typical = (c.high + c.low + c.close) / 3
+            num += typical * Double(c.volume)
+            den += Double(c.volume)
+            if den > 0 {
+                out.append((c.timestamp, num / den))
+            }
+        }
+        return out
+    }
+
+    private static func sma(_ candles: [Candle], period: Int) -> [(Date, Double)] {
+        guard candles.count >= period, period > 0 else { return [] }
+        var out: [(Date, Double)] = []
+        for i in (period - 1)..<candles.count {
+            let window = candles[(i - period + 1)...i]
+            let avg = window.map(\.close).reduce(0, +) / Double(period)
+            out.append((candles[i].timestamp, avg))
+        }
+        return out
+    }
+}
+
+private struct PhoneCandleChart: View {
+    let series: PhoneChartSeries
+    let showAxisLabels: Bool
+    var windowStripeOpacity: Double = 0.06   // subtle on tile; raise on the sheet
+    var showPatternMarkers: Bool = false
+    var enableSelection: Bool = false
+    @Binding var selectedCandle: Candle?
+
+    init(series: PhoneChartSeries,
+         showAxisLabels: Bool,
+         windowStripeOpacity: Double = 0.06,
+         showPatternMarkers: Bool = false,
+         enableSelection: Bool = false,
+         selectedCandle: Binding<Candle?> = .constant(nil)) {
+        self.series = series
+        self.showAxisLabels = showAxisLabels
+        self.windowStripeOpacity = windowStripeOpacity
+        self.showPatternMarkers = showPatternMarkers
+        self.enableSelection = enableSelection
+        self._selectedCandle = selectedCandle
+    }
+
+    var body: some View {
+        baseChart
+            .chartOverlay { proxy in
+                if enableSelection {
+                    selectionOverlay(proxy: proxy)
+                }
+            }
+    }
+
+    private var baseChart: some View {
+        Chart {
+            // Trading-window stripes (underlay) — faint amber bands for the 3 ToS windows
+            ForEach(Array(series.tradingWindows.enumerated()), id: \.offset) { _, w in
+                RectangleMark(
+                    xStart: .value("Start", w.start),
+                    xEnd: .value("End", w.end),
+                    yStart: .value("Low", series.priceLow),
+                    yEnd: .value("High", series.priceHigh)
+                )
+                .foregroundStyle(DesignSystem.amber.opacity(windowStripeOpacity))
+            }
+
+            // Selected-candle vertical guide (only when something is picked)
+            if enableSelection, let sel = selectedCandle {
+                RuleMark(x: .value("Selected", sel.timestamp))
+                    .foregroundStyle(DesignSystem.text.opacity(0.45))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+            }
+
+            // Wick (high to low) — thin rectangle
+            ForEach(series.candles) { c in
+                RectangleMark(
+                    x: .value("Time", c.timestamp),
+                    yStart: .value("Low", c.low),
+                    yEnd: .value("High", c.high),
+                    width: .fixed(1)
+                )
+                .foregroundStyle(c.isBullish ? DesignSystem.long : DesignSystem.short)
+            }
+
+            // Body (open to close)
+            ForEach(series.candles) { c in
+                RectangleMark(
+                    x: .value("Time", c.timestamp),
+                    yStart: .value("Open", c.open),
+                    yEnd: .value("Close", c.close),
+                    width: .ratio(0.65)
+                )
+                .foregroundStyle(c.isBullish ? DesignSystem.long : DesignSystem.short)
+            }
+
+            // VWAP (cyan) — primary institutional bias line
+            ForEach(Array(series.vwap.enumerated()), id: \.offset) { _, point in
+                LineMark(
+                    x: .value("Time", point.0),
+                    y: .value("VWAP", point.1),
+                    series: .value("Overlay", "VWAP")
+                )
+                .foregroundStyle(DesignSystem.vwap)
+                .lineStyle(StrokeStyle(lineWidth: 1.4))
+            }
+
+            // 20 SMA (steel yellow-ish — short-term trend)
+            ForEach(Array(series.sma20.enumerated()), id: \.offset) { _, point in
+                LineMark(
+                    x: .value("Time", point.0),
+                    y: .value("20 SMA", point.1),
+                    series: .value("Overlay", "20SMA")
+                )
+                .foregroundStyle(DesignSystem.amber.opacity(0.6))
+                .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [3, 3]))
+            }
+
+            // 50 SMA (amber — medium-term, the resistance line)
+            ForEach(Array(series.sma50.enumerated()), id: \.offset) { _, point in
+                LineMark(
+                    x: .value("Time", point.0),
+                    y: .value("50 SMA", point.1),
+                    series: .value("Overlay", "50SMA")
+                )
+                .foregroundStyle(DesignSystem.amber)
+                .lineStyle(StrokeStyle(lineWidth: 1.2))
+            }
+
+            // Pattern markers — only on the sheet. Bearish triggers point down
+            // above the candle (puts entry signal); doji is a small amber dot;
+            // hammer is a muted up-triangle below the low (warning for puts).
+            if showPatternMarkers {
+                ForEach(Array(series.patterns.enumerated()), id: \.offset) { _, hit in
+                    let above = hit.pattern.type.tradingBias != .bullish
+                    PointMark(
+                        x: .value("Time", hit.candle.timestamp),
+                        y: .value("Marker", above ? hit.candle.high : hit.candle.low)
+                    )
+                    .symbolSize(0)  // hide the dot itself; we render via annotation
+                    .annotation(position: above ? .top : .bottom, spacing: 2) {
+                        PatternMarker(pattern: hit.pattern)
+                    }
+                }
+            }
+        }
+        .chartYScale(domain: series.priceLow...series.priceHigh)
+        .chartXAxis {
+            if showAxisLabels {
+                AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                    AxisValueLabel(format: .dateTime.hour().minute(), centered: true)
+                        .font(DesignSystem.Typography.labelFont)
+                        .foregroundStyle(DesignSystem.muted)
+                    AxisGridLine().foregroundStyle(DesignSystem.hairline)
+                }
+            } else {
+                AxisMarks { _ in AxisGridLine().foregroundStyle(DesignSystem.hairline.opacity(0.4)) }
+            }
+        }
+        .chartYAxis {
+            if showAxisLabels {
+                AxisMarks(position: .trailing, values: .automatic(desiredCount: 5)) { value in
+                    AxisValueLabel()
+                        .font(DesignSystem.Typography.labelFont)
+                        .foregroundStyle(DesignSystem.muted)
+                    AxisGridLine().foregroundStyle(DesignSystem.hairline)
+                }
+            } else {
+                AxisMarks(position: .trailing) { _ in
+                    AxisGridLine().foregroundStyle(DesignSystem.hairline.opacity(0.4))
+                }
+            }
+        }
+        .chartPlotStyle { plot in
+            plot.background(DesignSystem.bg)
+        }
+    }
+
+    @ViewBuilder
+    private func selectionOverlay(proxy: ChartProxy) -> some View {
+        GeometryReader { geo in
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let origin: CGPoint = proxy.plotFrame.map { geo[$0].origin } ?? .zero
+                            let xInPlot = value.location.x - origin.x
+                            if let date: Date = proxy.value(atX: xInPlot) {
+                                selectedCandle = nearestCandle(to: date)
+                            }
+                        }
+                )
+        }
+    }
+
+    private func nearestCandle(to date: Date) -> Candle? {
+        guard !series.candles.isEmpty else { return nil }
+        return series.candles.min(by: { a, b in
+            abs(a.timestamp.timeIntervalSince(date)) < abs(b.timestamp.timeIntervalSince(date))
+        })
+    }
+}
+
+// Small pattern annotation chip. Color + shape encode the trading bias; the
+// short code keeps it readable when several land in a row.
+private struct PatternMarker: View {
+    let pattern: CandlestickPattern
+
+    var body: some View {
+        VStack(spacing: 1) {
+            shape
+                .fill(color)
+                .frame(width: 8, height: 6)
+            Text(pattern.type.shortCode)
+                .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                .foregroundColor(color)
+        }
+        .padding(.horizontal, 2)
+    }
+
+    private var shape: AnyShape {
+        // `Triangle` (defined alongside the ratio band) has its tip at the
+        // bottom-center → that's a down-pointing triangle. Bearish triggers use
+        // it as-is; bullish flips it 180° to point up under the candle.
+        switch pattern.type.tradingBias {
+        case .bearish: return AnyShape(Triangle())
+        case .bullish: return AnyShape(Triangle().rotation(.degrees(180)))
+        case .neutral: return AnyShape(Circle())
+        }
+    }
+
+    private var color: Color {
+        let base: Color
+        switch pattern.type.tradingBias {
+        case .bearish: base = DesignSystem.amber
+        case .bullish: base = DesignSystem.steel
+        case .neutral: base = DesignSystem.amber.opacity(0.7)
+        }
+        switch pattern.signal {
+        case .strong:   return base
+        case .moderate: return base.opacity(0.75)
+        case .weak:     return base.opacity(0.5)
+        }
+    }
+}
+
+private struct PhoneCandleStrip: View {
     let symbol: TradingInstrument
+    let onTap: () -> Void
+
+    @ObservedObject private var liveTape = LiveTapeService.shared
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("CHART · \(symbol.displayName.uppercased()) · 5M")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.6)
+                        .foregroundColor(DesignSystem.amber)
+                    Spacer()
+                    Text("TAP TO READ →")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.4)
+                        .foregroundColor(DesignSystem.muted)
+                }
+
+                HStack(alignment: .top, spacing: 10) {
+                    chartBlock
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 110)
+                    readoutBlock
+                        .frame(width: 76, alignment: .trailing)
+                }
+
+                HStack(spacing: 10) {
+                    LegendDot(color: DesignSystem.vwap, label: "VWAP")
+                    LegendDot(color: DesignSystem.amber, label: "50 SMA")
+                    LegendDot(color: DesignSystem.amber.opacity(0.6), label: "20 SMA")
+                    Spacer()
+                    if let candleCount = currentSeries?.candles.count {
+                        Text("\(candleCount) BARS")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1.2)
+                            .foregroundColor(DesignSystem.muted)
+                    }
+                }
+            }
+            .padding(10)
+            .background(DesignSystem.bg1)
+            .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var chartBlock: some View {
+        if let series = currentSeries, !series.candles.isEmpty {
+            PhoneCandleChart(series: series, showAxisLabels: false)
+        } else {
+            VStack(spacing: 4) {
+                Text("NO TAPE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.muted)
+                Text("ENABLE LIVE IN SETTINGS")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.faint)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DesignSystem.bg)
+            .overlay(Rectangle().stroke(DesignSystem.hairline.opacity(0.5), lineWidth: 1))
+        }
+    }
+
+    @ViewBuilder
+    private var readoutBlock: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text(priceText)
+                .font(DesignSystem.Typography.monospacedFont)
+                .foregroundColor(priceAccent)
+            Text("PRICE")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.faint)
+            Spacer().frame(height: 4)
+            Text(ratioText)
+                .font(DesignSystem.Typography.monospacedFont)
+                .foregroundColor(ratioAccent)
+            Text("RATIO")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.faint)
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private var currentSeries: PhoneChartSeries? {
+        let bars = liveTape.lastSnapshot?.vxxCandles ?? []
+        guard !bars.isEmpty else { return nil }
+        return PhoneChartSeries.build(from: bars, bucketSeconds: 5 * 60)
+    }
+
+    private var priceText: String {
+        guard let p = liveTape.lastSnapshot?.vxxPrice, p > 0 else { return "—" }
+        return String(format: "$%.2f", p)
+    }
+
+    private var ratioText: String {
+        guard let r = liveTape.lastSnapshot?.ratio, r > 0 else { return "—" }
+        return String(format: "%.2f", r)
+    }
+
+    private var priceAccent: Color {
+        guard let snap = liveTape.lastSnapshot else { return DesignSystem.text }
+        return snap.vxxPctChange >= 0 ? DesignSystem.long : DesignSystem.short
+    }
+
+    private var ratioAccent: Color {
+        guard let r = liveTape.lastSnapshot?.ratio else { return DesignSystem.muted }
+        if r >= 1.55 { return DesignSystem.long }
+        if r >= 1.45 { return DesignSystem.amber }
+        if r < 1.35  { return DesignSystem.short }
+        return DesignSystem.steel
+    }
+}
+
+private struct LegendDot: View {
+    let color: Color
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Rectangle().fill(color).frame(width: 8, height: 2)
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.muted)
+        }
+    }
+}
+
+private struct PhoneChartSheet: View {
+    let symbol: TradingInstrument
+
+    @ObservedObject private var liveTape = LiveTapeService.shared
+    @Environment(\.dismiss) private var dismiss
+    @State private var interval: ChartInterval = .fiveMin
+    @State private var selectedCandle: Candle?
+
+    enum ChartInterval: String, CaseIterable, Identifiable {
+        case oneMin = "1M"
+        case fiveMin = "5M"
+        case fifteenMin = "15M"
+
+        var id: String { rawValue }
+        var bucketSeconds: TimeInterval {
+            switch self {
+            case .oneMin:     return 60
+            case .fiveMin:    return 5 * 60
+            case .fifteenMin: return 15 * 60
+            }
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            intervalPicker
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+
+            if let series = currentSeries, !series.candles.isEmpty {
+                PhoneCandleChart(
+                    series: series,
+                    showAxisLabels: true,
+                    windowStripeOpacity: 0.12,
+                    showPatternMarkers: true,
+                    enableSelection: true,
+                    selectedCandle: $selectedCandle
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+                .padding(.bottom, 6)
+                .background(DesignSystem.bg)
+
+                OHLCVReadout(selected: selectedCandle, avgVolume: series.avgVolume) {
+                    selectedCandle = nil
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+
+                PhoneVolumePanel(series: series)
+                    .frame(height: 96)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 6)
+
+                PhoneRatioTierBand(ratio: liveTape.lastSnapshot?.ratio)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            } else {
+                emptyState
+            }
+
+            footer
+        }
+        .background(DesignSystem.bg.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("READ THE TAPE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.amber)
+                Text("\(symbol.displayName.uppercased()) · \(interval.rawValue)")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.text)
+            }
+            Spacer()
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(DesignSystem.text2)
+                    .padding(8)
+                    .background(DesignSystem.bg1)
+                    .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+    }
+
+    private var intervalPicker: some View {
+        HStack(spacing: 6) {
+            ForEach(ChartInterval.allCases) { opt in
+                Button {
+                    interval = opt
+                } label: {
+                    Text(opt.rawValue)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(opt == interval ? DesignSystem.bg : DesignSystem.text2)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(opt == interval ? DesignSystem.amber : DesignSystem.bg1)
+                        .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        VStack(spacing: 6) {
+            Text("NO TAPE")
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(DesignSystem.muted)
+            Text("ENABLE LIVE MODE IN SETTINGS.")
+                .font(DesignSystem.Typography.bodyFont)
+                .foregroundColor(DesignSystem.faint)
+            Text("OR PASTE A FINNHUB KEY UNDER DATA SOURCE.")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.faint)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.bg)
+    }
+
+    private var footer: some View {
+        HStack {
+            Text("FINNHUB · 1-MIN BARS AGGREGATED · 15M DELAYED")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.4)
+                .foregroundColor(DesignSystem.muted)
+            Spacer()
+            if let tick = liveTape.lastTickAt {
+                Text("LAST · \(Self.tickFormatter.string(from: tick))")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.faint)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(DesignSystem.bg1)
+        .overlay(Rectangle().frame(height: 1).foregroundColor(DesignSystem.hairline), alignment: .top)
+    }
+
+    private var currentSeries: PhoneChartSeries? {
+        let bars = liveTape.lastSnapshot?.vxxCandles ?? []
+        guard !bars.isEmpty else { return nil }
+        return PhoneChartSeries.build(from: bars, bucketSeconds: interval.bucketSeconds)
+    }
+
+    private static let tickFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+}
+
+// MARK: Phone Volume Panel
+//
+// Sub-panel under the price chart in the fullscreen sheet. Green/red bars by
+// candle direction, dashed RuleMark at 2× the 30-period average (the 200%
+// institutional-participation threshold from the ToS setup).
+
+private struct PhoneVolumePanel: View {
+    let series: PhoneChartSeries
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text("VOLUME")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.amber)
+                Text("· 30 AVG · 200% LINE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.muted)
+                Spacer()
+                if let last = series.candles.last {
+                    let pct = series.avgVolume > 0 ? Double(last.volume) / series.avgVolume * 100 : 0
+                    Text(String(format: "LAST %.0f%%", pct))
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(pct >= 200 ? DesignSystem.long : DesignSystem.muted)
+                }
+            }
+
+            Chart {
+                ForEach(series.candles) { c in
+                    BarMark(
+                        x: .value("Time", c.timestamp),
+                        y: .value("Volume", c.volume),
+                        width: .ratio(0.65)
+                    )
+                    .foregroundStyle(c.isBullish ? DesignSystem.long : DesignSystem.short)
+                }
+
+                if series.avgVolume > 0 {
+                    RuleMark(y: .value("200% Avg", series.avgVolume * 2))
+                        .foregroundStyle(DesignSystem.amber)
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                }
+            }
+            .chartXAxis(.hidden)
+            .chartYAxis {
+                AxisMarks(position: .trailing, values: .automatic(desiredCount: 2)) { _ in
+                    AxisGridLine().foregroundStyle(DesignSystem.hairline.opacity(0.4))
+                    AxisValueLabel()
+                        .font(DesignSystem.Typography.labelFont)
+                        .foregroundStyle(DesignSystem.muted)
+                }
+            }
+            .chartPlotStyle { plot in
+                plot.background(DesignSystem.bg)
+            }
+        }
+    }
+}
+
+// MARK: Phone Ratio Tier Band
+//
+// Horizontal level meter for the current VXX/VIX ratio against the 5 tiers from
+// the ToS strategy doc. Not a time series — the actionable read on a phone is
+// "where are we vs the tiers RIGHT NOW." Bigger zones on the band signal more
+// of the ratio's typical operating range, which is roughly 1.30–1.70.
+
+private struct PhoneRatioTierBand: View {
+    let ratio: Double?
+
+    private struct Tier {
+        let upperBound: Double
+        let color: Color
+        let label: String
+    }
+
+    private static let lowerBound: Double = 1.20
+    private static let upperBound: Double = 1.80
+    private static let tiers: [Tier] = [
+        Tier(upperBound: 1.35, color: DesignSystem.short,                   label: "<1.35 NO FADE"),
+        Tier(upperBound: 1.45, color: DesignSystem.amber.opacity(0.45),     label: "1.35-1.45 WEAK"),
+        Tier(upperBound: 1.55, color: DesignSystem.amber.opacity(0.85),     label: "1.45-1.55 NORMAL"),
+        Tier(upperBound: 1.60, color: DesignSystem.long.opacity(0.55),      label: "1.55-1.60 STRONG"),
+        Tier(upperBound: 1.80, color: DesignSystem.long,                    label: "≥1.60 PREMIUM")
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("CHART")
+            HStack(spacing: 8) {
+                Text("VXX / VIX RATIO")
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
                 Spacer()
-                Text(symbol.displayName)
+                Text(readout)
                     .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.text2)
+                    .foregroundColor(readoutAccent)
             }
 
-            ChartWebView(symbol: ChartWebView.tradingViewSymbol(for: symbol))
-                .frame(height: 140)
-                .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+            GeometryReader { geo in
+                ZStack(alignment: .topLeading) {
+                    HStack(spacing: 1) {
+                        ForEach(Array(Self.tiers.enumerated()), id: \.offset) { _, tier in
+                            Rectangle()
+                                .fill(tier.color)
+                                .frame(width: zoneWidth(tier: tier, total: geo.size.width))
+                        }
+                    }
+                    .frame(height: 18)
+                    .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
 
-            Text("SRC · TRADINGVIEW · 15M DELAYED")
-                .font(DesignSystem.Typography.labelFont)
-                .tracking(1.4)
-                .foregroundColor(DesignSystem.muted)
+                    if let r = ratio, r > 0 {
+                        let x = position(for: r, total: geo.size.width)
+                        Rectangle()
+                            .fill(DesignSystem.text)
+                            .frame(width: 2, height: 22)
+                            .offset(x: max(0, min(geo.size.width - 2, x - 1)), y: -2)
+                        Triangle()
+                            .fill(DesignSystem.text)
+                            .frame(width: 8, height: 6)
+                            .offset(x: max(0, min(geo.size.width - 8, x - 4)), y: -8)
+                    }
+                }
+            }
+            .frame(height: 22)
+
+            HStack {
+                Text("1.20").tierLabel()
+                Spacer()
+                Text("1.35").tierLabel()
+                Spacer()
+                Text("1.45").tierLabel()
+                Spacer()
+                Text("1.55").tierLabel()
+                Spacer()
+                Text("1.60").tierLabel()
+                Spacer()
+                Text("1.80").tierLabel()
+            }
         }
+    }
+
+    private func zoneWidth(tier: Tier, total: CGFloat) -> CGFloat {
+        let prev = Self.tiers.first(where: { $0.upperBound < tier.upperBound })?.upperBound ?? Self.lowerBound
+        let lower = max(prev, Self.lowerBound)
+        let span = (tier.upperBound - lower) / (Self.upperBound - Self.lowerBound)
+        return max(0, total * CGFloat(span))
+    }
+
+    private func position(for ratio: Double, total: CGFloat) -> CGFloat {
+        let clamped = min(max(ratio, Self.lowerBound), Self.upperBound)
+        let frac = (clamped - Self.lowerBound) / (Self.upperBound - Self.lowerBound)
+        return total * CGFloat(frac)
+    }
+
+    private var readout: String {
+        guard let r = ratio, r > 0 else { return "— · NO LIVE TAPE" }
+        return String(format: "%.2f · %@", r, tierLabel(for: r))
+    }
+
+    private var readoutAccent: Color {
+        guard let r = ratio, r > 0 else { return DesignSystem.muted }
+        if r >= 1.60 { return DesignSystem.long }
+        if r >= 1.55 { return DesignSystem.long.opacity(0.85) }
+        if r >= 1.45 { return DesignSystem.amber }
+        if r >= 1.35 { return DesignSystem.amber.opacity(0.7) }
+        return DesignSystem.short
+    }
+
+    private func tierLabel(for ratio: Double) -> String {
+        if ratio >= 1.60 { return "PREMIUM FADE" }
+        if ratio >= 1.55 { return "STRONG FADE" }
+        if ratio >= 1.45 { return "NORMAL FADE" }
+        if ratio >= 1.35 { return "WEAK · CAUTION" }
+        return "NO FADE"
+    }
+}
+
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+private extension Text {
+    func tierLabel() -> some View {
+        self
+            .font(DesignSystem.Typography.labelFont)
+            .tracking(1.0)
+            .foregroundColor(DesignSystem.faint)
+    }
+}
+
+// MARK: OHLCV Readout
+//
+// Floating row that surfaces when the user taps/scrubs a candle in the sheet.
+// Sparse boiler-room formatting: T · O · H · L · C · V · VOL%. Tap the X to
+// clear the selection.
+
+private struct OHLCVReadout: View {
+    let selected: Candle?
+    let avgVolume: Double
+    let onClear: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if let c = selected {
+                Group {
+                    field("T", value: Self.timeFormatter.string(from: c.timestamp))
+                    divider
+                    field("O", value: String(format: "%.2f", c.open))
+                    divider
+                    field("H", value: String(format: "%.2f", c.high), accent: DesignSystem.long)
+                    divider
+                    field("L", value: String(format: "%.2f", c.low), accent: DesignSystem.short)
+                    divider
+                    field("C", value: String(format: "%.2f", c.close),
+                          accent: c.isBullish ? DesignSystem.long : DesignSystem.short)
+                    divider
+                    field("V", value: Self.compactVolume(c.volume))
+                    divider
+                    field("VOL%", value: Self.volPercent(c.volume, avg: avgVolume),
+                          accent: c.volume > 0 && avgVolume > 0 && (Double(c.volume) / avgVolume) >= 2 ? DesignSystem.long : DesignSystem.muted)
+                }
+                Spacer(minLength: 6)
+                Button(action: onClear) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DesignSystem.muted)
+                        .frame(width: 22, height: 22)
+                        .background(DesignSystem.bg)
+                        .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("TAP A CANDLE FOR OHLCV")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.4)
+                    .foregroundColor(DesignSystem.muted)
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(DesignSystem.bg1)
+        .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private func field(_ label: String, value: String, accent: Color = DesignSystem.text) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.faint)
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundColor(accent)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var divider: some View {
+        Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 18)
+    }
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+
+    private static func compactVolume(_ v: Int) -> String {
+        if v >= 1_000_000 { return String(format: "%.1fM", Double(v) / 1_000_000) }
+        if v >= 1_000     { return String(format: "%.0fK", Double(v) / 1_000) }
+        return "\(v)"
+    }
+
+    private static func volPercent(_ v: Int, avg: Double) -> String {
+        guard avg > 0 else { return "—" }
+        return String(format: "%.0f%%", Double(v) / avg * 100)
     }
 }
 

@@ -45,17 +45,31 @@ extension DeskState {
     /// Compute the current desk state from clock + open positions.
     /// Hard-exit / close-warning take precedence over open position so the
     /// takeover always fires in the correct window.
+    ///
+    /// `openPositionTimestamps` lets the cutoff shift: if any position was
+    /// opened in the Institutional window (≥ 15:45 ET) the doc allows holding
+    /// to 16:05; the takeover defers to that. Otherwise the default 15:55
+    /// cutoff applies. This is a doc-faithful drift fix from 2026-05-14 —
+    /// previously the takeover forced everyone out at 15:55, which clipped
+    /// the Institutional swing (3:40-4:15 is the user's primary opportunity).
     @MainActor
-    static func current(timeManager: TimeManager, openPositions: Int) -> DeskState {
+    static func current(
+        timeManager: TimeManager,
+        openPositions: Int,
+        openPositionTimestamps: [Date] = []
+    ) -> DeskState {
         let eastern = TimeZone(identifier: "America/New_York")!
         let comps = Calendar.current.dateComponents(in: eastern, from: Date())
         guard let h = comps.hour, let m = comps.minute else { return .betweenWindows }
         let t = h * 60 + m
 
-        if t < 9 * 60 + 30 { return .preMarket }
-        if t >= 16 * 60 + 10 { return .afterHours }
-        if t >= 15 * 60 + 55 { return .hardExit }
-        if t >= 15 * 60 + 50 { return .closeWarning }
+        if t < StrategySpec.preMarketCutoffMinutes { return .preMarket }
+        if t >= StrategySpec.afterHoursMinutes { return .afterHours }
+
+        let hardExit = StrategySpec.hardExitMinutes(forOpenedAt: openPositionTimestamps)
+        let closeWarning = hardExit - 5   // 5-minute warning regardless of cutoff
+        if t >= hardExit { return .hardExit }
+        if t >= closeWarning { return .closeWarning }
 
         if openPositions > 0 { return .openPosition(activeCount: openPositions) }
         if let window = timeManager.activeWindow { return .windowOpen(window) }

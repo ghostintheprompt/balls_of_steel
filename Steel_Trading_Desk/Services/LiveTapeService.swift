@@ -26,12 +26,14 @@ final class LiveTapeService: ObservableObject {
     /// looks at absolute ratio; this snapshot adds the *direction* of the move
     /// — VXX outpacing VIX is the fade-worthy expansion the strategy is built
     /// around.
-    struct LiveSnapshot: Equatable {
+    struct LiveSnapshot {
         let vxxPrice: Double
         let vxxPctChange: Double      // vs previous close, %
         let vixPrice: Double
         let vixPctChange: Double      // vs previous close, %
         let ratio: Double
+        let vxxVwap: Double
+        let vxxCandles: [Candle]      // today's 1m bars from the provider
         let timestamp: Date
 
         /// VXX moving more than VIX = divergence. Positive = VXX outpacing
@@ -104,6 +106,8 @@ final class LiveTapeService: ObservableObject {
                 vixPrice: vix.price,
                 vixPctChange: pctChange(price: vix.price, prevClose: vix.previousClose),
                 ratio: vix.price > 0 ? vxx.price / vix.price : 0,
+                vxxVwap: vxx.vwap,
+                vxxCandles: vxx.recentCandles,
                 timestamp: Date()
             )
             lastTickAt = Date()
@@ -161,6 +165,12 @@ final class LiveTapeService: ObservableObject {
     }
 
     /// Map the current ET clock to the closest `TimeWindowInput` case.
+    ///
+    /// IMPORTANT: cases are ordered so the doc's three high-conviction entry
+    /// windows (Morning 9:50-10:15, Power 15:10-15:25, Institutional 15:45-16:10
+    /// per StrategySpec) WIN over the surrounding bookend cases. Earlier
+    /// drift had `.open` (9:30-10:05) matching first and silently shadowing
+    /// the first 15 minutes of `.morning`. Fixed 2026-05-14.
     private func currentTimeWindow() -> TimeWindowInput {
         let cal = Calendar(identifier: .gregorian)
         let comps = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: Date())
@@ -168,17 +178,34 @@ final class LiveTapeService: ObservableObject {
         let m = comps.minute ?? 0
         let t = h * 60 + m
 
+        // Entry windows checked first so they take precedence over `.open` /
+        // `.close` / `.afternoonFlex` bookends.
+        if t >= StrategySpec.morningWindow.startMinutes && t < StrategySpec.morningWindow.endMinutes {
+            return .morning
+        }
+        if t >= StrategySpec.powerHourWindow.startMinutes && t < StrategySpec.powerHourWindow.endMinutes {
+            return .powerHour
+        }
+        if t >= StrategySpec.institutionalWindow.startMinutes && t < StrategySpec.institutionalWindow.endMinutes {
+            return .institutional
+        }
+
         switch t {
-        case ..<(9 * 60 + 30):                   return .preMarket
-        case (9 * 60 + 30)..<(10 * 60 + 5):      return .open
-        case (9 * 60 + 50)..<(10 * 60 + 15):     return .morning
-        case (12 * 60 + 20)..<(12 * 60 + 40):    return .lunch
-        case (13 * 60 + 30)..<(15 * 60 + 10):    return .afternoonFlex
-        case (15 * 60 + 10)..<(15 * 60 + 25):    return .powerHour
-        case (15 * 60 + 30)..<(15 * 60 + 45):    return .close
-        case (15 * 60 + 45)..<(16 * 60 + 10):    return .institutional
-        case (16 * 60 + 10)...:                  return .afterHours
-        default:                                  return .morning
+        case ..<StrategySpec.preMarketCutoffMinutes:        return .preMarket
+        case StrategySpec.preMarketCutoffMinutes..<(9 * 60 + 50):
+            return .open                                    // 9:30 → 9:50
+        case (10 * 60 + 15)..<(12 * 60 + 20):
+            return .afternoonFlex                           // 10:15 → 12:20 dead zone
+        case (12 * 60 + 20)..<(12 * 60 + 40):
+            return .lunch                                   // 12:20-12:40 (NOT an entry window)
+        case (12 * 60 + 40)..<(15 * 60 + 10):
+            return .afternoonFlex                           // 12:40 → 15:10
+        case (15 * 60 + 25)..<(15 * 60 + 45):
+            return .close                                   // 15:25 → 15:45 dead zone between Power and Institutional
+        case StrategySpec.afterHoursMinutes...:
+            return .afterHours
+        default:
+            return .afternoonFlex
         }
     }
 }

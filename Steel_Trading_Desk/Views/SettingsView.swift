@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var finnhubKey: String = KeychainService.load(key: FinnhubProvider.keychainKey) ?? ""
     @State private var polygonKey: String = KeychainService.load(key: PolygonProvider.keychainKey) ?? ""
     @State private var liveEnabled: Bool = LiveTapeService.shared.isEnabled
+    @State private var isAuditSheetOpen: Bool = false
 
     var body: some View {
         ZStack {
@@ -26,6 +27,7 @@ struct SettingsView: View {
                     accessCard
                     playtestCard
                     dataSourceCard
+                    strategyAuditCard
                     brokerCard
                     monitoringCard
                     notificationsCard
@@ -37,6 +39,42 @@ struct SettingsView: View {
         }
         .task {
             await notifications.refreshAuthorizationStatus()
+        }
+        .sheet(isPresented: $isAuditSheetOpen) {
+            StrategyAuditView()
+        }
+    }
+
+    private var strategyAuditCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("STRATEGY AUDIT")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.4)
+                    .foregroundColor(DesignSystem.amber)
+
+                Text("Verifies code thresholds, time windows, exits, pattern criteria, and sizing against the strategy doc. Run it after any code change that touches the system.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    isAuditSheetOpen = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.shield")
+                        Text("RUN AUDIT")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(1.6)
+                    }
+                    .foregroundColor(DesignSystem.bg)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(DesignSystem.amber)
+                    .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -378,5 +416,261 @@ struct SettingsView: View {
                 timeString.wrappedValue = AppConfig.CloseManagement.storageTime(from: newValue)
             }
         )
+    }
+}
+
+// MARK: - Strategy Audit Sheet
+//
+// One-button "is the code still doing what the strategy doc says?" check.
+// Runs StrategyAuditor (which compares StrategySpec + a battery of runtime
+// probes against the canonical doc values) and renders a categorised result
+// list. Failures land at the top.
+
+struct StrategyAuditView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var results: [AuditResult] = []
+    @State private var lastRunAt: Date?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            if results.isEmpty {
+                emptyState
+            } else {
+                summaryBanner
+                resultsList
+            }
+        }
+        .background(DesignSystem.bg.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .task { await runAudit() }
+    }
+
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("STRATEGY AUDIT")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.amber)
+                Text("CODE vs docs/trading docs/")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.text)
+            }
+            Spacer()
+            Button {
+                Task { await runAudit() }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(DesignSystem.text)
+                    .padding(8)
+                    .background(DesignSystem.bg1)
+                    .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(DesignSystem.text2)
+                    .padding(8)
+                    .background(DesignSystem.bg1)
+                    .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 6) {
+            ProgressView().tint(DesignSystem.amber)
+            Text("RUNNING AUDIT")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.6)
+                .foregroundColor(DesignSystem.muted)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var summaryBanner: some View {
+        let summary = AuditSummary(results: results)
+        return HStack(spacing: 0) {
+            summaryTile(value: "\(summary.passes)", label: "PASS", color: DesignSystem.long)
+            divider
+            summaryTile(value: "\(summary.failures)", label: "FAIL", color: summary.failures > 0 ? DesignSystem.short : DesignSystem.muted)
+            divider
+            summaryTile(value: "\(summary.warnings)", label: "WARN", color: summary.warnings > 0 ? DesignSystem.amber : DesignSystem.muted)
+            divider
+            summaryTile(value: "\(summary.total)", label: "TOTAL", color: DesignSystem.text2)
+        }
+        .background(DesignSystem.bg1)
+        .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+        .padding(.horizontal, 12)
+    }
+
+    private func summaryTile(value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(color)
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.4)
+                .foregroundColor(DesignSystem.muted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+    }
+
+    private var divider: some View {
+        Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 36)
+    }
+
+    private var resultsList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                if let when = lastRunAt {
+                    Text("LAST RUN · \(Self.timestampFormatter.string(from: when))")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(DesignSystem.faint)
+                        .padding(.horizontal, 16)
+                }
+
+                ForEach(AuditCategory.allCases, id: \.self) { category in
+                    let inCategory = results.filter { $0.category == category }
+                    if !inCategory.isEmpty {
+                        section(title: category.rawValue, rows: inCategory)
+                    }
+                }
+            }
+            .padding(.vertical, 12)
+        }
+    }
+
+    private func section(title: String, rows: [AuditResult]) -> some View {
+        let failuresFirst = rows.sorted { a, b in
+            statusRank(a.status) < statusRank(b.status)
+        }
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.8)
+                .foregroundColor(DesignSystem.amber)
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 0) {
+                ForEach(failuresFirst) { row in
+                    AuditRow(result: row)
+                    Rectangle().fill(DesignSystem.hairline).frame(height: 1)
+                }
+            }
+            .background(DesignSystem.bg1)
+            .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+            .padding(.horizontal, 12)
+        }
+    }
+
+    private func statusRank(_ s: AuditStatus) -> Int {
+        switch s {
+        case .fail:    return 0
+        case .warning: return 1
+        case .pass:    return 2
+        }
+    }
+
+    @MainActor
+    private func runAudit() async {
+        results = StrategyAuditor.run()
+        lastRunAt = Date()
+    }
+
+    private static let timestampFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd · HH:mm:ss zzz"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+}
+
+private struct AuditRow: View {
+    let result: AuditResult
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            statusBadge
+            VStack(alignment: .leading, spacing: 3) {
+                Text(result.title)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text)
+                HStack(spacing: 6) {
+                    Text("DOC")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.0)
+                        .foregroundColor(DesignSystem.faint)
+                    Text(result.expected)
+                        .font(DesignSystem.Typography.labelFont)
+                        .foregroundColor(DesignSystem.text2)
+                    Text("→")
+                        .font(DesignSystem.Typography.labelFont)
+                        .foregroundColor(DesignSystem.faint)
+                    Text("CODE")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.0)
+                        .foregroundColor(DesignSystem.faint)
+                    Text(result.actual)
+                        .font(DesignSystem.Typography.labelFont)
+                        .foregroundColor(actualColor)
+                }
+                Text(result.docSource)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.0)
+                    .foregroundColor(DesignSystem.faint)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private var statusBadge: some View {
+        Image(systemName: iconName)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(badgeColor)
+            .frame(width: 22, height: 22)
+            .background(DesignSystem.bg)
+            .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+    }
+
+    private var iconName: String {
+        switch result.status {
+        case .pass:    return "checkmark"
+        case .fail:    return "xmark"
+        case .warning: return "exclamationmark"
+        }
+    }
+
+    private var badgeColor: Color {
+        switch result.status {
+        case .pass:    return DesignSystem.long
+        case .fail:    return DesignSystem.short
+        case .warning: return DesignSystem.amber
+        }
+    }
+
+    private var actualColor: Color {
+        switch result.status {
+        case .pass:    return DesignSystem.long
+        case .fail:    return DesignSystem.short
+        case .warning: return DesignSystem.amber
+        }
     }
 }

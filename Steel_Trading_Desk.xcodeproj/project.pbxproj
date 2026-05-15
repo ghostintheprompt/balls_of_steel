@@ -28,6 +28,8 @@
 		1A000023000000000000001A /* StrategyParams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000024000000000000001A /* StrategyParams.swift */; };
 		1A000025000000000000001A /* Trade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000026000000000000001A /* Trade.swift */; };
 		1ADS01000000000000000001 /* DeskState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADS01000000000000000002 /* DeskState.swift */; };
+		1ASS01000000000000000001 /* StrategySpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASS01000000000000000002 /* StrategySpec.swift */; };
+		1ASA01000000000000000001 /* StrategyAuditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASA01000000000000000002 /* StrategyAuditor.swift */; };
 		1A000027000000000000001A /* TradingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000028000000000000001A /* TradingCriteria.swift */; };
 		1A00002D000000000000001A /* ValidationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00002E000000000000001A /* ValidationModels.swift */; };
 		1A00002F000000000000001A /* ExitSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000030000000000000001A /* ExitSignalService.swift */; };
@@ -65,11 +67,7 @@
 		00000000000000001A000081 /* ManualDataEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000082 /* ManualDataEntryView.swift */; };
 		00000000000000001A000083 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000084 /* OnboardingView.swift */; };
 		00000000000000001A000085 /* PromptCoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000086 /* PromptCoachView.swift */; };
-		00000000000000001A000087 /* StrategiesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000088 /* StrategiesListView.swift */; };
-		00000000000000001A00008B /* VXXTradingDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00008C /* VXXTradingDashboard.swift */; };
 		00000000000000001A00008D /* SharedSignalRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A00008E /* SharedSignalRowView.swift */; };
-		00000000000000001A00008F /* ArrowSignalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000090 /* ArrowSignalViews.swift */; };
-		00000000000000001A000091 /* PatternIndicatorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000092 /* PatternIndicatorViews.swift */; };
 		00000000000000001A000093 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000001A000094 /* DesignSystem.swift */; };
 		1ACW01000000000000000001 /* ChartWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACW01000000000000000002 /* ChartWebView.swift */; };
 		B000000000000001A000002 /* DailyRiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000001 /* DailyRiskManager.swift */; };
@@ -109,6 +107,8 @@
 		1A000024000000000000001A /* StrategyParams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyParams.swift; sourceTree = "<group>"; };
 		1A000026000000000000001A /* Trade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Trade.swift; sourceTree = "<group>"; };
 		1ADS01000000000000000002 /* DeskState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskState.swift; sourceTree = "<group>"; };
+		1ASS01000000000000000002 /* StrategySpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategySpec.swift; sourceTree = "<group>"; };
+		1ASA01000000000000000002 /* StrategyAuditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyAuditor.swift; sourceTree = "<group>"; };
 		1A000028000000000000001A /* TradingCriteria.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradingCriteria.swift; sourceTree = "<group>"; };
 		1A00002E000000000000001A /* ValidationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationModels.swift; sourceTree = "<group>"; };
 		1A000030000000000000001A /* ExitSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitSignalService.swift; sourceTree = "<group>"; };
@@ -150,12 +150,7 @@
 		00000000000000001A000082 /* ManualDataEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualDataEntryView.swift; sourceTree = "<group>"; };
 		00000000000000001A000084 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		00000000000000001A000086 /* PromptCoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCoachView.swift; sourceTree = "<group>"; };
-		00000000000000001A000088 /* StrategiesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategiesListView.swift; sourceTree = "<group>"; };
-		00000000000000001A00008C /* VXXTradingDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VXXTradingDashboard.swift; sourceTree = "<group>"; };
-
 		00000000000000001A00008E /* SharedSignalRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSignalRowView.swift; sourceTree = "<group>"; };
-		00000000000000001A000090 /* ArrowSignalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrowSignalViews.swift; sourceTree = "<group>"; };
-		00000000000000001A000092 /* PatternIndicatorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternIndicatorViews.swift; sourceTree = "<group>"; };
 		00000000000000001A000094 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		1ACW01000000000000000002 /* ChartWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWebView.swift; sourceTree = "<group>"; };
 		B000000000000001A000001 /* DailyRiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRiskManager.swift; sourceTree = "<group>"; };
@@ -260,6 +255,7 @@
 				1A000024000000000000001A /* StrategyParams.swift */,
 				1A000026000000000000001A /* Trade.swift */,
 				1ADS01000000000000000002 /* DeskState.swift */,
+				1ASS01000000000000000002 /* StrategySpec.swift */,
 				1AES0001000000000000001A /* ExitSignal.swift */,
 				1AOR0001000000000000001A /* Order.swift */,
 				1A000028000000000000001A /* TradingCriteria.swift */,
@@ -277,6 +273,7 @@
 		1A00005F000000000000001A /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				1ASA01000000000000000002 /* StrategyAuditor.swift */,
 				1A000030000000000000001A /* ExitSignalService.swift */,
 				1A000032000000000000001A /* MarketDataService.swift */,
 				1A000034000000000000001A /* MarketPulse.swift */,
@@ -316,8 +313,6 @@
 				00000000000000001A000082 /* ManualDataEntryView.swift */,
 				00000000000000001A000084 /* OnboardingView.swift */,
 				00000000000000001A000086 /* PromptCoachView.swift */,
-				00000000000000001A000088 /* StrategiesListView.swift */,
-				00000000000000001A00008C /* VXXTradingDashboard.swift */,
 								1A000062000000000000001A /* Components */,
 			);
 			path = Views;
@@ -328,8 +323,6 @@
 			children = (
 				1A000052000000000000001A /* StrategyBadge.swift */,
 				00000000000000001A00008E /* SharedSignalRowView.swift */,
-				00000000000000001A000090 /* ArrowSignalViews.swift */,
-				00000000000000001A000092 /* PatternIndicatorViews.swift */,
 				00000000000000001A000094 /* DesignSystem.swift */,
 				1ACW01000000000000000002 /* ChartWebView.swift */,
 			);
@@ -456,6 +449,8 @@
 				1A000023000000000000001A /* StrategyParams.swift in Sources */,
 				1A000025000000000000001A /* Trade.swift in Sources */,
 				1ADS01000000000000000001 /* DeskState.swift in Sources */,
+				1ASS01000000000000000001 /* StrategySpec.swift in Sources */,
+				1ASA01000000000000000001 /* StrategyAuditor.swift in Sources */,
 				1AES0002000000000000001A /* ExitSignal.swift in Sources */,
 				1AOR0002000000000000001A /* Order.swift in Sources */,
 				1A000027000000000000001A /* TradingCriteria.swift in Sources */,
@@ -488,11 +483,7 @@
 				00000000000000001A000081 /* ManualDataEntryView.swift in Sources */,
 				00000000000000001A000083 /* OnboardingView.swift in Sources */,
 				00000000000000001A000085 /* PromptCoachView.swift in Sources */,
-				00000000000000001A000087 /* StrategiesListView.swift in Sources */,
-				00000000000000001A00008B /* VXXTradingDashboard.swift in Sources */,
 				00000000000000001A00008D /* SharedSignalRowView.swift in Sources */,
-				00000000000000001A00008F /* ArrowSignalViews.swift in Sources */,
-				00000000000000001A000091 /* PatternIndicatorViews.swift in Sources */,
 				00000000000000001A000093 /* DesignSystem.swift in Sources */,
 				1ACW01000000000000000001 /* ChartWebView.swift in Sources */,
 				B000000000000001A000002 /* DailyRiskManager.swift in Sources */,

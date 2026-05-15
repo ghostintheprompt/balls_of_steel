@@ -942,19 +942,13 @@ struct MarketDataEntry: Codable {
         instrument == .vxx && vixLevel > 0 ? price / vixLevel : 0
     }
 
+    /// Doc-faithful tier label. Sources the boundary table from `StrategySpec`
+    /// so the audit catches any drift. Drops the old "(Rating: N)" notation —
+    /// the doc doesn't use a numeric scoring system, so we shouldn't render one
+    /// in primary UI.
     var ratioTier: String {
         guard instrument == .vxx else { return "N/A" }
-        if ratio >= 1.60 {
-            return "Premium Fade (Rating: 3)"
-        } else if ratio >= 1.55 {
-            return "Strong Fade (Rating: 2)"
-        } else if ratio >= 1.45 {
-            return "Normal Fade (Rating: 1)"
-        } else if ratio >= 1.35 {
-            return "Weak Fade"
-        } else {
-            return "No Fade"
-        }
+        return StrategySpec.tier(forRatio: ratio).label
     }
 }
 
@@ -1029,24 +1023,45 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         }
     }
 
+    /// Per the strategy doc, only three windows are valid VXX entry windows:
+    /// Morning Fade (9:50-10:15), Power Hour (3:10-3:25), Institutional Flow
+    /// (3:45-4:10). Lunch is explicitly NOT a trading window — the doc lists
+    /// it as a "skip trade" example. Open and Close are bookends, not entry
+    /// windows. Drift fix 2026-05-14 (previous code accepted `.lunch`).
     var isVXXEntryWindow: Bool {
         switch self {
-        case .morning, .lunch, .powerHour, .institutional:
+        case .morning, .powerHour, .institutional:
             return true
-        case .open, .preMarket, .afternoonFlex, .close, .afterHours:
+        case .open, .preMarket, .lunch, .afternoonFlex, .close, .afterHours:
             return false
         }
     }
 
-    var reliability: String {
+    /// Only the doc-published reliability numbers (Morning 85, Power 80,
+    /// Institutional 90). Returning fabricated numbers for the other windows
+    /// violated [[feedback-tone-rules]] ("no win-rate % in primary UI") and
+    /// was strategy drift — the doc doesn't quantify reliability for `.open`,
+    /// `.close`, `.lunch`, etc. Drift fix 2026-05-14.
+    var reliability: String? {
         switch self {
         case .institutional: return "90%"
-        case .morning: return "85%"
-        case .powerHour: return "80%"
-        case .afternoonFlex: return "72%"
-        case .open, .close: return "78%"
-        case .lunch: return "70%"
-        default: return "50%"
+        case .morning:       return "85%"
+        case .powerHour:     return "80%"
+        default:             return nil
+        }
+    }
+
+    /// Volume requirement for criteria-1 (volume) gate, percent of 30-period
+    /// average. Window-dependent per `StrategySpec`: Morning + Power = 200,
+    /// Institutional = 300. Returns the gate-1 default 200 for non-entry
+    /// windows so the read-out remains sensible, but those don't pass anyway
+    /// via `isVXXEntryWindow`.
+    var requiredVolumePercent: Double {
+        switch self {
+        case .morning:       return StrategySpec.morningWindow.volumeThresholdPercent
+        case .powerHour:     return StrategySpec.powerHourWindow.volumeThresholdPercent
+        case .institutional: return StrategySpec.institutionalWindow.volumeThresholdPercent
+        default:             return StrategySpec.morningWindow.volumeThresholdPercent
         }
     }
 }
