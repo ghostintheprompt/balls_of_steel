@@ -99,7 +99,7 @@ Tradeoff: Release builds skip `EnvSeeder` (it's `#if DEBUG`-gated), so you'll ne
 6. **Validate** in the Organizer (catches most App Store Connect issues early).
 7. **Distribute** to App Store Connect.
 
-The full submission checklist lives in `docs/LAUNCH_GUIDE.md`. Marketing copy is in `docs/APP_STORE_CONNECT_COPY.md` (canonical paste sheet) and `docs/AppStoreMetadata.md` (companion summary).
+The full submission checklist lives in `docs/LAUNCH_GUIDE.md`. App Store metadata (description, keywords, review notes, privacy manifest) is in `docs/APP_STORE_CONNECT_COPY.md` — the canonical paste sheet.
 
 ## Troubleshooting
 

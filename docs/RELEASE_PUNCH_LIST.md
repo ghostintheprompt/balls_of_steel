@@ -73,7 +73,7 @@ Replaced the squashed 140pt TradingView WebView on the iPhone home with an all-n
    - `VXXTradingWindow.winRate` getter (unused, had "highest probability" comment + fabricated 70% for lunch) removed.
    - `MarketDataEntry.ratioTier` now routes through `StrategySpec.tier(forRatio:).label` — drops the "(Rating: 1/2/3)" notation that wasn't in the doc.
    - `TechnicalIndicators.RatioTier.displayName` cleaned of "(Rating: N)".
-   - `APP_STORE_CONNECT_COPY.md`, `AppStoreMetadata.md`, `MARKETING.md`, `LAUNCH_GUIDE.md`, `LAUNCH_PLAN.md` all scanned — already clean. No "win rate / highest probability / guaranteed / will spike" language in public-facing copy.
+   - `APP_STORE_CONNECT_COPY.md` and `LAUNCH_GUIDE.md` scanned — clean. No "win rate / highest probability / guaranteed / will spike" language in public-facing copy. (`LAUNCH_PLAN.md`, `MARKETING.md`, and `AppStoreMetadata.md` were consolidated on 2026-05-16: PLAN merged into LAUNCH_GUIDE; MARKETING + AppStoreMetadata merged into APP_STORE_CONNECT_COPY; all three deleted.)
 
 6. **Test target.**
    - Add an XCTest target.
@@ -106,4 +106,4 @@ Replaced the squashed 140pt TradingView WebView on the iPhone home with an all-n
 1. **watchOS punch list.** Companion only. Trading-window reminders, risk timer, alert glance. No order entry.
 2. **iPad optimization.** The Mac terminal layout already works on iPad — review touch-target sizes.
 3. **Mac App Store polish.** Confirm menu commands. Decide whether the GitHub `UpdateChecker` should be disabled for App Store builds.
-4. **Docs consolidation.** `LAUNCH_GUIDE.md`, `LAUNCH_PLAN.md`, `MARKETING.md`, and `AppStoreMetadata.md` overlap with `APP_STORE_CONNECT_COPY.md`. Pick one source of truth and delete the others or mark them as superseded.
+4. **Docs consolidation — DONE 2026-05-16.** Three redundant docs collapsed into two canonical sources: `LAUNCH_PLAN.md` merged into `LAUNCH_GUIDE.md` (runbook + status), and `MARKETING.md` + `AppStoreMetadata.md` merged into `APP_STORE_CONNECT_COPY.md` (App Store paste sheet, single source). All three originals deleted. Cross-references in `BUILD.md` and `HANDOFF.md` patched.

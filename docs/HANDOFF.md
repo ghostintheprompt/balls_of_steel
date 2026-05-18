@@ -1,6 +1,6 @@
 # Steel Trading Desk Handoff
 
-Last updated: May 14, 2026
+Last updated: May 16, 2026
 
 ## Current State
 
@@ -34,6 +34,41 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 
 ## What Changed In This Pass
 
+**Provider reality + architecture decisions — May 16, 2026.** Session opened with a panic ("APIs not connecting before release"), turned into a deeper conversation about long-term product direction. No rush — user confirmed this is a multi-year, self-first tool. Multiple memory + STRATEGY_NOTES.md updates were saved through the session to capture learnings.
+
+**Discoveries logged in `STRATEGY_NOTES.md` "Provider reality" section:**
+- **Finnhub free tier paywalled `/stock/candle` mid-2024.** The user-visible "Finnhub rejected the API key" error in Settings → Data Source is actually the endpoint paywall, not the key. `FinnhubProvider.quote()` parallel-fetches `/quote` (still free) + `/stock/candle` (now 403) and requires both.
+- **All other providers in this repo are stubs.** `PolygonProvider`, `YahooProvider`, `SchwabProviderAdapter` all throw `.notImplemented`. `SchwabService` returns hardcoded sample data — never live.
+- **Schwab is the durable home.** User had a Schwab developer ID registered ~2025; an earlier prototype had working Schwab integration before the Nov 2025 pivot to ToS + manual mode. User can't currently log in to `developer.schwab.com` — account recovery is the long-pole. Pre-strip code lives at `git show 0115bf5:Balls_of_Steel/Services/SchwabService.swift`. Strip commit is `26d6ee3`.
+
+**Architecture decisions locked in `STRATEGY_NOTES.md`:**
+- Two App Store apps shipped in parallel: **Steel VXX Desk** (free) and **Steel SPY Desk** (paid, one-time). Shared `SteelStrategyKit` Swift Package as the durable engine.
+- Both desks options-only, never shares. VXX uses puts, SPY uses calls + candlestick-direction confirmation. Same 5-criteria gate, same time windows, same circuit breakers — execution vehicle differs.
+- Manual entry is the fallback, not the design. "Why do manual unless I have to — it's the AI automation age."
+- Product framing locked: **"a discipline engine."** Deliberately niche; don't widen the market.
+
+**Code changes:**
+- `Steel_Trading_Desk/Views/SettingsView.swift` — `dataSourceCard` replaced. Removed the broken provider picker, API-key SecureField, auto-populate toggle, live status row, and 5 computed properties (`liveModeBinding`, `liveStatusText`, `providerBinding`, `keyBinding`, `keyPlaceholder`). Now shows "MANUAL ENTRY — FALLBACK" + "LIVE FEED — RESTORING" placeholder copy in the same `InfoCard` styling with `DesignSystem.amber` accents.
+- `Steel_Trading_Desk/Views/SettingsView.swift` — `brokerCard` similarly rewritten. Removed the broken Connect button + `apiKey` SecureField (which silently called `SchwabService.streamQuotes` that throws `.educationalModeOnly`). Now shows "SCHWAB — INTEGRATION PENDING" placeholder.
+- `Steel_Trading_Desk/Views/SettingsView.swift` — removed unused `@State apiKey`, `@StateObject connectionManager`, `@StateObject marketDataRegistry`, `@StateObject liveTape`, `@State finnhubKey`, `@State polygonKey`, `@State liveEnabled` declarations.
+- `Steel_Trading_Desk/Services/LiveTapeService.swift` — `init()` no longer auto-starts. Any existing user with `liveTape.enabled = true` in UserDefaults will stop silently polling the dead Finnhub endpoint on next launch.
+- `STRATEGY_NOTES.md` — expanded with "Product framing" (discipline engine, niche), "Provider reality (2026-05-16)", revised "Paid product" decision (parallel two-app architecture + shared Swift Package + options-only mechanics), Finnhub affiliate section marked STALE.
+- New doc: **`docs/SCHWAB_API_READINESS.md`** — full readiness assessment for the Schwab Trader API integration. Current state, historical-code review, real API requirements (with explicit "confirm against live docs at implementation time" caveats), gap analysis, sequenced plan for when dev-portal access is restored, open questions for next session.
+
+**Memory updates this session (`~/.claude/projects/.../memory/`):**
+- `feedback_no_weak_assumptions.md` — confirm before proposing providers/architecture/monetization; verify external claims.
+- `feedback_docs_track_reality.md` — keep STRATEGY_NOTES + docs current as reality is learned.
+- `feedback_options_only_never_shares.md` — both desks trade options exclusively. VXX puts, SPY calls.
+- `feedback_niche_positioning.md` — deliberately niche; select for the right user, don't maximize installs.
+- `feedback_preserve_design.md` — function-only changes; replace broken interactive guts with informative copy in the same card.
+- `feedback_automation_not_manual.md` — automation is destination, manual is fallback.
+- `user_boiler_room_background.md` — user is a former boiler-room broker; the voice and method are earned, not constructed.
+- `project_schwab_dev_history.md` — Schwab dev account exists from ~2025; recovery work, not fresh build.
+
+**Builds:** Not verified this session (no Xcode build run). SourceKit showed spurious "type not in scope" diagnostics during edits but those are indexing artifacts on types defined in the same module — should heal on next clean build. Verify with the canonical iOS + macOS Debug builds before installing.
+
+---
+
 **Disclaimer + privacy + compliance scrub — DONE (May 14, 2026).** Three release-blocker punchlist items closed.
 
 - **Disclaimer text** (`DisclaimerView.swift`) scrubbed of all 4 "win rate" mentions → "strategies/examples are educational, not promises."
@@ -42,7 +77,7 @@ xcrun devicectl device process launch --device DC63616F-433E-5833-9255-BE85AAFC9
 - **4 dead view files deleted**: `StrategiesListView.swift` (16 fabricated win-rate rows — biggest App Review risk), `ArrowSignalViews.swift` (reliability % displays), `VXXTradingDashboard.swift` (pre-redesign legacy), `PatternIndicatorViews.swift` (confidence % display). All only referenced by their own previews or the dead VXX dashboard. pbxproj cleaned.
 - **`VXXTradingWindow.winRate`** getter removed (unused, contained "highest probability" comment + fabricated lunch %).
 - **`MarketDataEntry.ratioTier`** and **`TechnicalIndicators.RatioTier.displayName`** now use `StrategySpec.tier(forRatio:).label` — dropped "(Rating: 1/2/3)" parenthetical that wasn't in the doc.
-- App Store metadata docs scanned — `APP_STORE_CONNECT_COPY.md`, `AppStoreMetadata.md`, `MARKETING.md`, `LAUNCH_GUIDE.md`, `LAUNCH_PLAN.md` already clean.
+- App Store metadata docs scanned — `APP_STORE_CONNECT_COPY.md` and `LAUNCH_GUIDE.md` already clean. (Later, on 2026-05-16: `LAUNCH_PLAN.md` was merged into `LAUNCH_GUIDE.md`; `MARKETING.md` and `AppStoreMetadata.md` were merged into `APP_STORE_CONNECT_COPY.md`. All three originals deleted.)
 
 Both iOS + macOS Debug builds green.
 
@@ -121,33 +156,42 @@ Boiler-room redesign per `CLAUDE_CODE_DIRECTIONS.md`. All 9 phases shipped.
 
 ## Suggested Next Session
 
-1. **Build + install signed Release on `ZZZ`** to evaluate the complete native chart (tile + fullscreen sheet with VWAP / 20-50 SMA / window stripes / volume panel / ratio tier band / pattern markers / tap-to-OHLCV) during market hours. Verify:
-   - Finnhub free tier returns enough 1-min bars for 50 SMA to plot
-   - `^VIX` returns data — fall back to `INDEX:VIX` / `TVC:VIX` in `LiveTapeService.fetchAndPersist` if not
-   - Pattern markers fire on real candles at sane positions (Shooting Star at tops, Hammer at bottoms, etc.)
-   - Tap-to-OHLCV reads cleanly at thumb distance
-   - Live-tape end-to-end still works (gates flip without touching manual entry)
-4. Refresh App Store screenshots: the iPhone home now shows the new chart tile — screenshots should reflect it. Re-render the icon since SteelDeskMark is amber-on-black.
-5. Add an XCTest target. Cover `TimeManager` window logic, `DeskState.current(...)` boundary times, `VXXStrategyState.firstFailingGateIndex`, ratio threshold tiers, candle aggregation rollup math.
-6. Scrub `LAUNCH_GUIDE.md` / `LAUNCH_PLAN.md` / `MARKETING.md` for any remaining "Pro/Premium/Coach/win-rate %" leakage and reconcile with `APP_STORE_CONNECT_COPY.md` as the canonical source.
+**Read first:** `STRATEGY_NOTES.md` (especially the new "Provider reality" + "Paid product" sections), `docs/SCHWAB_API_READINESS.md` (the full Schwab integration plan), and the memory files added this session — they encode product direction that the May 14 punch list predates.
+
+**Highest-priority work, in order:**
+
+1. **User: recover `developer.schwab.com` login.** That's the long-pole. Until this lands, code work on the Schwab API is blocked. See "Open questions / blockers" in `docs/SCHWAB_API_READINESS.md` for what's needed from the dev portal (client ID, registered redirect URI, decision on multi-account vs single-user).
+2. **Once dev portal is back:** Work through `docs/SCHWAB_API_READINESS.md` "The plan" section — OAuth flow first, REST second, streamer third. Re-verify the endpoint/protocol claims against current Schwab docs before writing code (per the no-weak-assumptions rule).
+3. **Capture SPY execution rules into `docs/trading docs/spy_execution.md`.** User confirmed 2026-05-16 that SPY uses the exact same setup as VXX but with calls + candlestick-direction confirmation. The specifics (candle-direction logic, strike selection, DTE choice for SPY vs VXX) need to be written down before SPY app shell work begins. Capture from user via Q&A — `vxx_trading_philosophy_discipline.md` is the template.
+4. **Map `SteelStrategyKit` Swift Package extraction.** Audit `Steel_Trading_Desk` and produce a categorized plan: shared engine (strategy gates, divergence read, alerts, design system, audit, time windows, position sizing) vs VXX-app-specific surfaces (VXX trade execution UI, VXX-specific copy). Pure research, no input from user needed. Output: a doc + an extraction-order plan.
+
+**Lower-priority carryover from May 14:**
+- Build + install signed Release on `ZZZ` to evaluate the May-14 chart work (native chart tile, fullscreen sheet, VWAP/SMA/window stripes/volume panel/ratio tier band/pattern markers/tap-OHLCV) during market hours. **Important:** with `LiveTapeService` auto-start now disabled and the Finnhub flow removed from Settings, end-to-end "live-tape feeds the gates" can't be tested this build — verify only the manual-entry path on device for now.
+- Refresh App Store screenshots: iPhone home now shows the new chart tile. Re-render icon since SteelDeskMark is amber-on-black.
+- Add an XCTest target. Cover `TimeManager` window logic, `DeskState.current(...)` boundary times, `VXXStrategyState.firstFailingGateIndex`, ratio threshold tiers, candle aggregation rollup math.
+- Docs consolidation complete (2026-05-16). Three docs (`LAUNCH_PLAN.md`, `MARKETING.md`, `AppStoreMetadata.md`) deleted and folded into `LAUNCH_GUIDE.md` (runbook) and `APP_STORE_CONNECT_COPY.md` (App Store paste sheet). No further action.
 
 ## Files To Start With
 
-- `docs/RELEASE_PUNCH_LIST.md`
-- `docs/AppStoreMetadata.md`
-- `docs/MARKETING.md`
+- `STRATEGY_NOTES.md` (root) — product direction, niche framing, paid-product architecture
+- `docs/RELEASE_PUNCH_LIST.md` — day-to-day P0
+- `docs/LAUNCH_GUIDE.md` — submission runbook + status
+- `docs/APP_STORE_CONNECT_COPY.md` — App Store paste sheet (canonical metadata)
+- `docs/SCHWAB_API_READINESS.md` — v1.1 provider plan
 - `Steel_Trading_Desk/Views/MainView.swift`
 - `Steel_Trading_Desk/Views/TradingDashboard.swift`
-- `Steel_Trading_Desk/Views/VXXTradingDashboard.swift`
 - `Steel_Trading_Desk/Views/ManualDataEntryView.swift`
 - `Steel_Trading_Desk/Views/PromptCoachView.swift`
 - `Steel_Trading_Desk/Views/Components/DesignSystem.swift`
 
 ## Open Risks
 
+- **Schwab dev-portal account recovery is the long-pole for v1.1.** If account recovery fails outright (e.g., dev portal closed the registration after a year of inactivity), full re-application + approval could take weeks. Worth user reaching out to Schwab developer support proactively.
+- **The historical Schwab code in `0115bf5` is not actually production-validated against the real Schwab Trader API.** The static `Bearer <apiKey>` auth pattern is generic, not real Schwab OAuth. Plan for substantial rewrite, not resurrection — see `docs/SCHWAB_API_READINESS.md` "Historical Schwab code" section for what's actually salvageable (~30% plumbing, 70% rewrite).
 - App Review may object to performance claims or language that sounds like actionable financial advice.
 - The iPhone UI may still be too dense in VXX, Tape, Prompt, and Risk flows.
 - Some screens may still contain UI without enough function. These should be cut or rewritten before TestFlight.
 - Background monitoring on iOS needs a stricter review before it is described as a release feature.
 - Mac App Store builds may need different update-checker behavior than direct-distribution builds.
 - External TestFlight should wait until first-run disclaimer, privacy copy, and manual-only positioning are clear.
+- **The two-app shipping plan** (VXX free + SPY paid sharing `SteelStrategyKit`) hasn't been validated against App Store review for the SPY paid app. Apple sometimes scrutinizes paid trading-adjacent apps more carefully. Worth checking review guidelines before SPY app submission, especially around the "discipline engine" framing vs anything that could read as a signals subscription.

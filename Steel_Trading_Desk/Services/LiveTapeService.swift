@@ -59,7 +59,10 @@ final class LiveTapeService: ObservableObject {
     }
 
     private init() {
-        if isEnabled { start() }
+        // No auto-start. The Settings UI no longer exposes a toggle for this
+        // service while the Schwab integration is being restored; any stored
+        // `liveTape.enabled` UserDefault from a prior session is ignored so
+        // existing users don't keep silently polling a broken endpoint.
     }
 
     func start() {

@@ -1,20 +1,13 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var apiKey = AppConfig.apiKey
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @AppStorage("alertVolume") private var alertVolume: Double = 0.7 // Default 70%
     @AppStorage(AppConfig.CloseManagement.generalWarningKey) private var generalWarningTime = AppConfig.CloseManagement.defaultGeneralWarning
     @AppStorage(AppConfig.CloseManagement.generalHardExitKey) private var generalHardExitTime = AppConfig.CloseManagement.defaultGeneralHardExit
     @AppStorage(AppConfig.CloseManagement.institutionalWarningKey) private var institutionalWarningTime = AppConfig.CloseManagement.defaultInstitutionalWarning
     @AppStorage(AppConfig.CloseManagement.institutionalHardExitKey) private var institutionalHardExitTime = AppConfig.CloseManagement.defaultInstitutionalHardExit
-    @StateObject private var connectionManager = SchwabService.shared
     @StateObject private var notifications = SignalNotification.shared
-    @StateObject private var marketDataRegistry = MarketDataRegistry.shared
-    @StateObject private var liveTape = LiveTapeService.shared
-    @State private var finnhubKey: String = KeychainService.load(key: FinnhubProvider.keychainKey) ?? ""
-    @State private var polygonKey: String = KeychainService.load(key: PolygonProvider.keychainKey) ?? ""
-    @State private var liveEnabled: Bool = LiveTapeService.shared.isEnabled
     @State private var isAuditSheetOpen: Bool = false
 
     var body: some View {
@@ -86,124 +79,33 @@ struct SettingsView: View {
                     .tracking(1.4)
                     .foregroundColor(DesignSystem.amber)
 
-                Picker("Provider", selection: providerBinding) {
-                    ForEach(MarketDataProviderID.allCases) { id in
-                        Text(id.displayName).tag(id)
-                    }
-                }
-                .pickerStyle(.segmented)
-
-                Text(marketDataRegistry.active.setupNote)
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.text2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if marketDataRegistry.active.requiresApiKey {
-                    SecureField(keyPlaceholder, text: keyBinding)
-                        .textFieldStyle(.roundedBorder)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("MANUAL ENTRY — FALLBACK")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(DesignSystem.text)
+                    Text("The desk runs on what you enter right now. Same gates, same alerts, same discipline. This is the bridge — not the destination.")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.text2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Divider().background(DesignSystem.hairline)
 
-                Toggle(isOn: liveModeBinding) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("AUTO-POPULATE FROM PROVIDER")
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        DeskPulseDot(accent: DesignSystem.amber, size: 6)
+                        Text("LIVE FEED — RESTORING")
                             .font(DesignSystem.Typography.labelFont)
                             .tracking(1.4)
-                            .foregroundColor(DesignSystem.text)
-                        Text("Polls VXX + VIX every 30s and writes into the tape. Pattern, level, and news stay manual.")
-                            .font(DesignSystem.Typography.captionFont)
-                            .foregroundColor(DesignSystem.muted)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .foregroundColor(DesignSystem.amber)
                     }
-                }
-
-                if liveEnabled {
-                    HStack(spacing: 6) {
-                        DeskPulseDot(accent: liveTape.isLive ? DesignSystem.long : DesignSystem.short, size: 6)
-                        Text(liveStatusText)
-                            .font(DesignSystem.Typography.labelFont)
-                            .tracking(1.2)
-                            .foregroundColor(DesignSystem.text2)
-                        Spacer()
-                        Button("Refresh") {
-                            Task { await liveTape.tickNow() }
-                        }
-                        .font(DesignSystem.Typography.labelFont)
-                    }
-                    if let err = liveTape.lastError {
-                        Text(err.uppercased())
-                            .font(DesignSystem.Typography.labelFont)
-                            .tracking(1.0)
-                            .foregroundColor(DesignSystem.short)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    Text("Real-time VXX + VIX through your own Schwab account. No third-party middlemen, no paywalled endpoints, no faked feeds. Coming back online when the integration lands.")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.text2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-        }
-    }
-
-    private var liveModeBinding: Binding<Bool> {
-        Binding(
-            get: { liveEnabled },
-            set: { newValue in
-                liveEnabled = newValue
-                liveTape.isEnabled = newValue
-            }
-        )
-    }
-
-    private var liveStatusText: String {
-        if let last = liveTape.lastTickAt {
-            let delta = Int(Date().timeIntervalSince(last))
-            return liveTape.isLive ? "LAST TICK \(delta)s AGO" : "STALE \(delta)s"
-        }
-        return liveTape.isLive ? "WAITING FOR FIRST TICK" : "OFF"
-    }
-
-    private var providerBinding: Binding<MarketDataProviderID> {
-        Binding(
-            get: { marketDataRegistry.active.id },
-            set: { marketDataRegistry.use($0) }
-        )
-    }
-
-    private var keyBinding: Binding<String> {
-        switch marketDataRegistry.active.id {
-        case .finnhub:
-            return Binding(
-                get: { finnhubKey },
-                set: { newValue in
-                    finnhubKey = newValue
-                    if newValue.isEmpty {
-                        KeychainService.delete(key: FinnhubProvider.keychainKey)
-                    } else {
-                        KeychainService.save(key: FinnhubProvider.keychainKey, value: newValue)
-                    }
-                }
-            )
-        case .polygon:
-            return Binding(
-                get: { polygonKey },
-                set: { newValue in
-                    polygonKey = newValue
-                    if newValue.isEmpty {
-                        KeychainService.delete(key: PolygonProvider.keychainKey)
-                    } else {
-                        KeychainService.save(key: PolygonProvider.keychainKey, value: newValue)
-                    }
-                }
-            )
-        default:
-            return .constant("")
-        }
-    }
-
-    private var keyPlaceholder: String {
-        switch marketDataRegistry.active.id {
-        case .finnhub: return "Finnhub API key"
-        case .polygon: return "Polygon API key"
-        default:       return "API Key"
         }
     }
 
@@ -260,38 +162,25 @@ struct SettingsView: View {
     private var brokerCard: some View {
         InfoCard {
             VStack(alignment: .leading, spacing: 12) {
-                Text("BROKER PLACEHOLDER")
+                Text("BROKER")
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1)
                     .foregroundColor(DesignSystem.mutedText)
 
-                SecureField("API Key", text: $apiKey)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: apiKey) { _, newValue in AppConfig.apiKey = newValue }
-
-                Button(connectionManager.isConnected ? "Disconnect" : "Connect") {
-                    Task {
-                        if connectionManager.isConnected {
-                            // Disconnect logic
-                        } else {
-                            try? await connectionManager.streamQuotes(symbols: [])
-                        }
-                    }
-                }
-                .disabled(apiKey.isEmpty)
-
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(connectionManager.isConnected ? DesignSystem.bullishColor : DesignSystem.bearishColor)
+                        .fill(DesignSystem.amber)
                         .frame(width: 8, height: 8)
-                    Text(connectionManager.isConnected ? "Connected" : "Disconnected")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.mutedText)
+                    Text("SCHWAB — INTEGRATION PENDING")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(DesignSystem.amber)
                 }
 
-                Text("Still manual-first. The field stays here so the workflow is ready when the live broker path comes back.")
+                Text("Trade execution stays on your platform — ThinkOrSwim, Schwab, whatever you already use. The desk fires the read; you fire the order. Live quote feed and one-click broker handoff land alongside the Schwab Trader API wire-up.")
                     .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(DesignSystem.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
