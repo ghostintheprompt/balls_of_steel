@@ -27,7 +27,8 @@ class OrderService: ObservableObject {
 
         let optionsEntry = optionsCalculator.calculateOptionsEntry(
             stockPrice: signal.entry,
-            strategy: signal.strategy
+            strategy: signal.strategy,
+            direction: signal.direction
         )
 
         guard let contract = try await getBestContract(

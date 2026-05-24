@@ -37,6 +37,7 @@
 		1A000033000000000000001A /* MarketPulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000034000000000000001A /* MarketPulse.swift */; };
 		1A000035000000000000001A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000036000000000000001A /* NotificationService.swift */; };
 		1A000037000000000000001A /* OptionsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000038000000000000001A /* OptionsCalculator.swift */; };
+		1A000200000000000000001A /* OptionSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000201000000000000001A /* OptionSelector.swift */; };
 		1A000039000000000000001A /* OrderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00003A000000000000001A /* OrderService.swift */; };
 		1A00003B000000000000001A /* SchwabService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00003C000000000000001A /* SchwabService.swift */; };
 		1A00003D000000000000001A /* SignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00003E000000000000001A /* SignalMonitor.swift */; };
@@ -116,6 +117,7 @@
 		1A000034000000000000001A /* MarketPulse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketPulse.swift; sourceTree = "<group>"; };
 		1A000036000000000000001A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		1A000038000000000000001A /* OptionsCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionsCalculator.swift; sourceTree = "<group>"; };
+		1A000201000000000000001A /* OptionSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionSelector.swift; sourceTree = "<group>"; };
 		1A00003A000000000000001A /* OrderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderService.swift; sourceTree = "<group>"; };
 		1A00003C000000000000001A /* SchwabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchwabService.swift; sourceTree = "<group>"; };
 		1A00003E000000000000001A /* SignalMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalMonitor.swift; sourceTree = "<group>"; };
@@ -279,6 +281,7 @@
 				1A000034000000000000001A /* MarketPulse.swift */,
 				1A000036000000000000001A /* NotificationService.swift */,
 				1A000038000000000000001A /* OptionsCalculator.swift */,
+				1A000201000000000000001A /* OptionSelector.swift */,
 				1A00003A000000000000001A /* OrderService.swift */,
 				1A00003C000000000000001A /* SchwabService.swift */,
 				1A00003E000000000000001A /* SignalMonitor.swift */,
@@ -460,6 +463,7 @@
 				1A000033000000000000001A /* MarketPulse.swift in Sources */,
 				1A000035000000000000001A /* NotificationService.swift in Sources */,
 				1A000037000000000000001A /* OptionsCalculator.swift in Sources */,
+				1A000200000000000000001A /* OptionSelector.swift in Sources */,
 				1A000039000000000000001A /* OrderService.swift in Sources */,
 				1A00003B000000000000001A /* SchwabService.swift in Sources */,
 				1A00003D000000000000001A /* SignalMonitor.swift in Sources */,

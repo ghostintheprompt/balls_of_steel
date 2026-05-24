@@ -41,12 +41,13 @@ struct AuditResult: Identifiable {
 }
 
 enum AuditCategory: String, CaseIterable {
-    case ratio     = "RATIO"
-    case volume    = "VOLUME"
-    case windows   = "WINDOWS"
-    case exits     = "EXITS"
-    case patterns  = "PATTERNS"
-    case sizing    = "SIZING"
+    case ratio          = "RATIO"
+    case volume         = "VOLUME"
+    case windows        = "WINDOWS"
+    case exits          = "EXITS"
+    case patterns       = "PATTERNS"
+    case sizing         = "SIZING"
+    case optionSelector = "OPTION SELECTOR"
 }
 
 struct StrategyAuditor {
@@ -62,6 +63,7 @@ struct StrategyAuditor {
         out.append(contentsOf: exitChecks())
         out.append(contentsOf: patternChecks())
         out.append(contentsOf: sizingChecks())
+        out.append(contentsOf: optionSelectorChecks())
         return out
     }
 
@@ -360,6 +362,218 @@ struct StrategyAuditor {
 
     private static func formatMinutes(_ m: Int) -> String {
         String(format: "%d:%02d", m / 60, m % 60)
+    }
+
+    // MARK: - Option Selector
+    //
+    // Verifies the tightened-suggestion picker doesn't drift on its own
+    // bounds. These checks run against synthetic contracts so the audit is
+    // deterministic regardless of the live chain. Rule from
+    // [[feedback-catch-drift-always]] applies here too.
+
+    private static func optionSelectorChecks() -> [AuditResult] {
+        var r: [AuditResult] = []
+
+        // Bound constants — locked at known values, not arbitrary literals.
+        r.append(checkConstant(
+            title: "Target delta",
+            expected: "0.55",
+            actual: String(format: "%.2f", OptionSelector.targetDelta),
+            pass: OptionSelector.targetDelta == 0.55
+        ))
+        r.append(checkConstant(
+            title: "Delta band half-width",
+            expected: "0.05 (|Δ| 0.50–0.60)",
+            actual: String(format: "%.2f", OptionSelector.deltaBandHalfWidth),
+            pass: OptionSelector.deltaBandHalfWidth == 0.05
+        ))
+        r.append(checkConstant(
+            title: "DTE bounds",
+            expected: "3–7 days",
+            actual: "\(OptionSelector.dteMin)–\(OptionSelector.dteMax) days",
+            pass: OptionSelector.dteMin == 3 && OptionSelector.dteMax == 7
+        ))
+
+        // Band edges — verify boundary inclusion behavior.
+        let bandEdgeCases: [(Double, Bool, String)] = [
+            (0.49, false, "Δ 0.49 (just below band)"),
+            (0.50, true,  "Δ 0.50 (lower edge)"),
+            (0.55, true,  "Δ 0.55 (target)"),
+            (0.60, true,  "Δ 0.60 (upper edge)"),
+            (0.61, false, "Δ 0.61 (just above band)"),
+            (-0.55, true, "Δ -0.55 (put target)"),
+            (-0.49, false, "Δ -0.49 (just inside zero for puts)")
+        ]
+        for (delta, shouldPass, label) in bandEdgeCases {
+            let actual = OptionSelector.isWithinDeltaBand(delta)
+            r.append(AuditResult(
+                category: .optionSelector,
+                title: "Delta band: \(label)",
+                expected: shouldPass ? "in band" : "rejected",
+                actual: actual ? "in band" : "rejected",
+                status: actual == shouldPass ? .pass : .fail,
+                docSource: "OptionSelector.swift / tightened bounds"
+            ))
+        }
+
+        // DTE bounds — boundary inclusion.
+        let now = Date()
+        let cal = Calendar(identifier: .gregorian)
+        let dteCases: [(Int, Bool, String)] = [
+            (0, false, "0 DTE (below band)"),
+            (2, false, "2 DTE (below band)"),
+            (3, true,  "3 DTE (lower edge)"),
+            (5, true,  "5 DTE (middle)"),
+            (7, true,  "7 DTE (upper edge)"),
+            (8, false, "8 DTE (above band)")
+        ]
+        for (days, shouldPass, label) in dteCases {
+            guard let expiration = cal.date(byAdding: .day, value: days, to: now) else { continue }
+            let actual = OptionSelector.isWithinDTE(expiration, now: now)
+            r.append(AuditResult(
+                category: .optionSelector,
+                title: "DTE band: \(label)",
+                expected: shouldPass ? "in band" : "rejected",
+                actual: actual ? "in band" : "rejected",
+                status: actual == shouldPass ? .pass : .fail,
+                docSource: "OptionSelector.swift / dteMin–dteMax"
+            ))
+        }
+
+        // Spread gate — wide spread must be rejected.
+        let tight = syntheticContract(strike: 100, ask: 1.02, bid: 0.98, expiration: now)
+        let wide  = syntheticContract(strike: 100, ask: 1.20, bid: 0.80, expiration: now)
+        r.append(AuditResult(
+            category: .optionSelector,
+            title: "Spread gate: tight ($0.04 on $1.00)",
+            expected: "accepted",
+            actual: OptionSelector.passesSpreadGate(tight) ? "accepted" : "rejected",
+            status: OptionSelector.passesSpreadGate(tight) ? .pass : .fail,
+            docSource: "OptionSelector.swift / passesSpreadGate"
+        ))
+        r.append(AuditResult(
+            category: .optionSelector,
+            title: "Spread gate: wide ($0.40 on $1.00)",
+            expected: "rejected",
+            actual: OptionSelector.passesSpreadGate(wide) ? "accepted" : "rejected",
+            status: !OptionSelector.passesSpreadGate(wide) ? .pass : .fail,
+            docSource: "OptionSelector.swift / passesSpreadGate"
+        ))
+
+        // Sizing — contract count must floor and clamp to absoluteMaxContracts.
+        let chain = makeAuditChain(side: .call, deltas: [0.55], strike: 100, ask: 2.00, bid: 1.96, dte: 4, now: now)
+        if let small = OptionSelector.suggest(side: .call, chain: chain, budget: 1000, now: now) {
+            r.append(AuditResult(
+                category: .optionSelector,
+                title: "Sizing floor: $1000 / $200 = 5 contracts",
+                expected: "5",
+                actual: "\(small.contractCount)",
+                status: small.contractCount == 5 ? .pass : .fail,
+                docSource: "OptionSelector.swift / floor(budget / ask*100)"
+            ))
+        } else {
+            r.append(AuditResult(
+                category: .optionSelector,
+                title: "Sizing floor: $1000 / $200 = 5 contracts",
+                expected: "5",
+                actual: "no suggestion",
+                status: .fail,
+                docSource: "OptionSelector.swift / floor(budget / ask*100)"
+            ))
+        }
+        // Clamp — over-budget must still cap at StrategySpec.absoluteMaxContracts.
+        let cheapChain = makeAuditChain(side: .call, deltas: [0.55], strike: 100, ask: 0.20, bid: 0.18, dte: 4, now: now)
+        if let big = OptionSelector.suggest(side: .call, chain: cheapChain, budget: 1000, now: now) {
+            r.append(AuditResult(
+                category: .optionSelector,
+                title: "Sizing clamp at absoluteMaxContracts (\(StrategySpec.absoluteMaxContracts))",
+                expected: "\(StrategySpec.absoluteMaxContracts)",
+                actual: "\(big.contractCount)",
+                status: big.contractCount == StrategySpec.absoluteMaxContracts ? .pass : .fail,
+                docSource: "StrategySpec.absoluteMaxContracts"
+            ))
+        }
+
+        // Band miss — feeding a chain with no in-band delta must return nil
+        // (selector must NEVER silently widen).
+        let offBandChain = makeAuditChain(side: .call, deltas: [0.30, 0.40, 0.75], strike: 100, ask: 1.00, bid: 0.98, dte: 4, now: now)
+        let bandMiss = OptionSelector.suggest(side: .call, chain: offBandChain, budget: 1000, now: now)
+        r.append(AuditResult(
+            category: .optionSelector,
+            title: "Band miss returns nil (no silent widening)",
+            expected: "nil",
+            actual: bandMiss == nil ? "nil" : "non-nil",
+            status: bandMiss == nil ? .pass : .fail,
+            docSource: "OptionSelector.swift / closest match within band"
+        ))
+
+        return r
+    }
+
+    private static func checkConstant(title: String, expected: String, actual: String, pass: Bool) -> AuditResult {
+        AuditResult(
+            category: .optionSelector,
+            title: title,
+            expected: expected,
+            actual: actual,
+            status: pass ? .pass : .fail,
+            docSource: "OptionSelector.swift / suggestion bounds"
+        )
+    }
+
+    private static func syntheticContract(
+        strike: Double,
+        ask: Double,
+        bid: Double,
+        expiration: Date,
+        delta: Double = 0.55,
+        type: OptionType = .call
+    ) -> OptionContract {
+        OptionContract(
+            symbol: "AUDIT",
+            strike: strike,
+            expiration: expiration,
+            type: type,
+            bid: bid,
+            ask: ask,
+            last: (bid + ask) / 2,
+            volume: 100,
+            openInterest: 100,
+            delta: delta,
+            gamma: 0.05,
+            theta: -0.05,
+            vega: 0.10,
+            impliedVolatility: 50
+        )
+    }
+
+    private static func makeAuditChain(
+        side: OptionType,
+        deltas: [Double],
+        strike: Double,
+        ask: Double,
+        bid: Double,
+        dte: Int,
+        now: Date
+    ) -> OptionsChain {
+        let cal = Calendar(identifier: .gregorian)
+        let expiration = cal.date(byAdding: .day, value: dte, to: now) ?? now
+        let contracts = deltas.enumerated().map { idx, delta in
+            syntheticContract(
+                strike: strike + Double(idx),
+                ask: ask,
+                bid: bid,
+                expiration: expiration,
+                delta: side == .call ? delta : -delta,
+                type: side
+            )
+        }
+        return OptionsChain(
+            symbol: "AUDIT",
+            calls: side == .call ? contracts : [],
+            puts:  side == .put  ? contracts : [],
+            underlyingPrice: strike
+        )
     }
 }
 

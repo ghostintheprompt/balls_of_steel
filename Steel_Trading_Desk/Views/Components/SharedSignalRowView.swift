@@ -72,9 +72,35 @@ struct SharedSignalRowView: View {
                     PriceTile(label: "Stop", value: signal.stop, color: DesignSystem.dangerColor)
                     PriceTile(label: "Target", value: signal.target, color: DesignSystem.successColor)
                 }
+
+                if let suggestion = contractSuggestion {
+                    SuggestionStrip(
+                        suggestion: suggestion,
+                        side: suggestionSide,
+                        underlying: signal.symbol
+                    )
+                }
             }
         }
         .animation(DesignSystem.defaultAnimation, value: signal.id)
+    }
+
+    // MARK: - Tightened-contract suggestion
+    //
+    // Sits NEXT TO the price tiles, never replaces them. Silent (`nil`) when
+    // nothing in the chain hits the OptionSelector bounds. Educational-mode
+    // chain for now; switches to live Schwab chain when that account lands.
+
+    private var suggestionSide: OptionType {
+        signal.direction == .bullish ? .call : .put
+    }
+
+    private var contractSuggestion: ContractSuggestion? {
+        guard signal.kind == .entry else { return nil }
+        let chain = SchwabService.shared.sampleChain(symbol: signal.symbol)
+        let budget = Double(StrategySpec.tier(forRatio: signal.vxxVixRatio).maxPositionDollars)
+        guard budget > 0 else { return nil }
+        return OptionSelector.suggest(side: suggestionSide, chain: chain, budget: budget)
     }
 
     private var kindColor: Color {
@@ -123,6 +149,79 @@ private struct DirectionPill: View {
 
     private var color: Color {
         direction == .bullish ? DesignSystem.bullishColor : DesignSystem.bearishColor
+    }
+}
+
+private struct SuggestionStrip: View {
+    let suggestion: ContractSuggestion
+    let side: OptionType
+    let underlying: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text("Suggested".uppercased())
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.0)
+                    .foregroundColor(DesignSystem.mutedText)
+
+                Text("tightened pick · doc default still stands")
+                    .font(DesignSystem.Typography.labelFont)
+                    .foregroundColor(DesignSystem.mutedText.opacity(0.7))
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                Text(contractLabel)
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.primaryText)
+
+                Text("·")
+                    .foregroundColor(DesignSystem.mutedText.opacity(0.5))
+
+                Text("\(suggestion.daysToExpiration) DTE")
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.mutedText)
+
+                Text("·")
+                    .foregroundColor(DesignSystem.mutedText.opacity(0.5))
+
+                Text("Δ \(deltaString)")
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.mutedText)
+
+                Spacer()
+
+                Text(sizingLabel)
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.primaryText)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.white.opacity(0.03))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+        )
+    }
+
+    private var contractLabel: String {
+        let strike = String(format: "%g", suggestion.contract.strike)
+        let mark = side == .call ? "C" : "P"
+        return "\(underlying) \(strike)\(mark)"
+    }
+
+    private var deltaString: String {
+        String(format: "%.2f", suggestion.contract.delta)
+    }
+
+    private var sizingLabel: String {
+        let ask = String(format: "$%.2f", suggestion.contract.ask)
+        let cost = String(format: "$%.0f", suggestion.estimatedCost)
+        return "\(ask) · \(suggestion.contractCount) ct · \(cost)"
     }
 }
 

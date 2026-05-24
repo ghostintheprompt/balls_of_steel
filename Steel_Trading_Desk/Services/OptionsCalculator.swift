@@ -1,46 +1,30 @@
 class OptionsCalculator {
     static let shared = OptionsCalculator()
     
-    func calculateOptionsEntry(stockPrice: Double, strategy: Strategy) -> OptionsEntry {
+    func calculateOptionsEntry(stockPrice: Double, strategy: Strategy, direction: TradeDirection) -> OptionsEntry {
         let params = getParams(for: strategy)
-        let strike = roundToNearestStrike(stockPrice, strategy: strategy)
-        
+        let type = optionType(for: direction)
+        let strike = roundToNearestStrike(stockPrice, type: type)
+
         return OptionsEntry(
             strike: strike,
             stopPrice: calculateStopPrice(stockPrice, params: params),
             targetPrice: calculateTargetPrice(stockPrice, params: params),
-            type: getOptionType(strategy)
+            type: type
         )
     }
-    
-    // Select options based purely on the signal
-    func selectBestOption(chain: [OptionContract], signal: Signal) -> OptionContract? {
-        // Filter by basic liquidity only
-        let liquid = chain.filter { $0.volume > 0 && $0.openInterest > 0 }
-        
-        // Target delta around 0.40 for leverage
-        return liquid
-            .filter { $0.delta >= 0.35 && $0.delta <= 0.45 }
-            .first
+
+    private func optionType(for direction: TradeDirection) -> OptionType {
+        direction == .bullish ? .call : .put
     }
-    
-    private func getOptionType(_ strategy: Strategy) -> OptionType {
-        switch strategy {
-        case .gapAndGo: return .call     // Gap up = calls
-        case .vwapReversal: return .call // VWAP bounce = calls
-        case .powerHour: return .call    // Power hour momentum = calls
-        case .panicReversal: return .put // Panic = puts
-        default: return .call // Default for other strategies
-        }
-    }
-    
-    private func roundToNearestStrike(_ price: Double, strategy: Strategy) -> Double {
+
+    private func roundToNearestStrike(_ price: Double, type: OptionType) -> Double {
         let strikeInterval = price < 50 ? 0.5 : 1.0
         let baseStrike = (price / strikeInterval).rounded() * strikeInterval
-        
-        switch getOptionType(strategy) {
+
+        switch type {
         case .call: return baseStrike + strikeInterval
-        case .put: return baseStrike - strikeInterval
+        case .put:  return baseStrike - strikeInterval
         }
     }
     

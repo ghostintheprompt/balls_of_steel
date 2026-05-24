@@ -98,13 +98,29 @@ class SchwabService: ObservableObject {
     /// IMPORTANT: Use real options data from your platform
     func fetchOptionsChain(symbol: String, daysToExpiration: Int = 4) async throws -> OptionsChain {
         try await Task.sleep(nanoseconds: 500_000_000)
+        return sampleChain(symbol: symbol)
+    }
 
+    /// Synchronous educational chain — used by the entry card's suggestion
+    /// strip so it can render without async plumbing. Live wire-up will
+    /// replace this with a cached chain from the live Schwab feed.
+    func sampleChain(symbol: String) -> OptionsChain {
+        let underlying = sampleUnderlyingPrice(for: symbol)
         return OptionsChain(
             symbol: symbol,
-            calls: generateSampleOptions(symbol: symbol, type: .call, underlying: 42.15),
-            puts: generateSampleOptions(symbol: symbol, type: .put, underlying: 42.15),
-            underlyingPrice: 42.15
+            calls: generateSampleOptions(symbol: symbol, type: .call, underlying: underlying),
+            puts: generateSampleOptions(symbol: symbol, type: .put, underlying: underlying),
+            underlyingPrice: underlying
         )
+    }
+
+    private func sampleUnderlyingPrice(for symbol: String) -> Double {
+        switch symbol {
+        case "VXX": return 42.15
+        case "SPY": return 450.00
+        case "VIX": return 18.50
+        default:    return 100.00
+        }
     }
 
     /// Returns sample IV data for learning
@@ -139,30 +155,69 @@ class SchwabService: ObservableObject {
 
     // MARK: - Helper Methods
     private func generateSampleOptions(symbol: String, type: OptionType, underlying: Double) -> [OptionContract] {
-        let strikes = stride(from: underlying - 5, through: underlying + 5, by: 1.0)
-        let expiration = Calendar.current.date(byAdding: .day, value: 3, to: Date())!
+        // Multiple expirations across the DTE band (1, 4, 7) so the
+        // tightened-suggestion path can find a candidate in 3–7.
+        let dteValues = [1, 4, 7]
+        let strikeStep = underlying < 50 ? 0.5 : 1.0
+        let strikeRange = strikeStep * 6   // ±6 strikes from spot
+        let strikes = stride(from: underlying - strikeRange, through: underlying + strikeRange, by: strikeStep)
 
-        return strikes.map { strike in
-            let distance = abs(strike - underlying)
-            let premium = max(0.1, 2.0 - distance * 0.3)
-
-            return OptionContract(
-                symbol: "\(symbol)\(type == .call ? "C" : "P")\(Int(strike))",
-                strike: strike,
-                expiration: expiration,
-                type: type,
-                bid: premium - 0.05,
-                ask: premium + 0.05,
-                last: premium,
-                volume: Int.random(in: 100...1000),
-                openInterest: Int.random(in: 500...5000),
-                delta: type == .call ? 0.5 : -0.5,
-                gamma: 0.05,
-                theta: -0.08,
-                vega: 0.12,
-                impliedVolatility: 85.5
-            )
+        var contracts: [OptionContract] = []
+        for dte in dteValues {
+            guard let expiration = Calendar.current.date(byAdding: .day, value: dte, to: Date()) else { continue }
+            for strike in strikes {
+                contracts.append(syntheticContract(
+                    symbol: symbol,
+                    type: type,
+                    underlying: underlying,
+                    strike: strike,
+                    expiration: expiration
+                ))
+            }
         }
+        return contracts
+    }
+
+    /// One contract worth of sample data with a realistic delta gradient and
+    /// premium curve. Calls: higher Δ when strike < underlying. Puts: higher
+    /// |Δ| when strike > underlying. Spread tightens near ATM.
+    private func syntheticContract(
+        symbol: String,
+        type: OptionType,
+        underlying: Double,
+        strike: Double,
+        expiration: Date
+    ) -> OptionContract {
+        let moneyness = (strike - underlying) / underlying    // <0 = ITM call / OTM put
+        // Linear-ish delta proxy clamped to (0.02, 0.98). Slope tuned so ATM
+        // sits near 0.50 and one-strike-OTM lands in the 0.40–0.45 band.
+        let rawCallDelta = 0.50 - moneyness * 8.0
+        let callDelta = min(0.98, max(0.02, rawCallDelta))
+        let putDelta  = callDelta - 1.0                       // put-call parity proxy
+        let delta = type == .call ? callDelta : putDelta
+
+        // Premium curve: peak at ATM, decays with |moneyness|.
+        let basePremium = underlying * 0.03
+        let premium = max(0.10, basePremium * (1 - min(0.85, abs(moneyness) * 8)))
+        // Spread tighter when |Δ| is near 0.5 (most liquid strikes).
+        let spread = max(0.03, 0.10 * (1 - (1 - abs(abs(delta) - 0.5) * 2)))
+
+        return OptionContract(
+            symbol: "\(symbol)\(type == .call ? "C" : "P")\(Int(strike * 100))",
+            strike: strike,
+            expiration: expiration,
+            type: type,
+            bid: max(0.01, premium - spread / 2),
+            ask: premium + spread / 2,
+            last: premium,
+            volume: Int.random(in: 100...1000),
+            openInterest: Int.random(in: 500...5000),
+            delta: delta,
+            gamma: 0.05,
+            theta: -0.08,
+            vega: 0.12,
+            impliedVolatility: 85.5
+        )
     }
 
     private func generateSampleCandles(symbol: String, count: Int) -> [Candle] {
