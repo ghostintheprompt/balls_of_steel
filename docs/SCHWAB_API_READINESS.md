@@ -1,12 +1,18 @@
 # Schwab Trader API — Readiness Assessment
 
-Last updated: 2026-05-16
+Last updated: 2026-05-25
 
 ## Why this doc exists
 
-The desk's automation destination is the Schwab Trader API. User had a working developer registration ~2025 and an earlier prototype that pulled live quotes before the project retreated to manual-entry mode. This doc inventories what's in the repo today, what the real Schwab Trader API actually requires, and a concrete plan for when dev-portal access is restored.
+The desk's live-data destination is Schwab Trader API market-data streaming. User had a working developer registration ~2025 and an earlier prototype that pulled live quotes before the project retreated to manual-entry mode. This doc inventories what's in the repo today, what the real Schwab Trader API actually requires, and a concrete plan for a market-data-only integration.
 
-This is a **readiness audit**, not an implementation. No code is written here. Implementation grounds in the official Schwab developer docs at the time of work — **do not** rely on the endpoint/protocol claims in this doc without re-verifying at implementation time.
+Non-negotiable product posture: Steel Trading Desk is not an automated trading system. It does not place orders, read balances, manage positions, or require Schwab account/trading permissions. The intended workflow is phone alert → quick human review to confirm the read is not bad → manual execution in Thinkorswim/Schwab or another brokerage platform.
+
+Core value: a personal five-condition setup checker with accuracy-gated alerting. The app exists so the trader can multitask while it watches volume, time window, VXX/VIX ratio, VWAP/key level, and rejection pattern. A live alert is valid only when the app can prove the data is live, fresh, sourced, and complete. If market data is stale, delayed, simulated, partial, disconnected, or unverifiable, the app must label the condition and suppress the alert.
+
+This is a **readiness audit**, not a completed implementation. Implementation grounds in the official Schwab developer docs at the time of work — **do not** rely on the endpoint/protocol claims in this doc without re-verifying at implementation time.
+
+Portal walkthrough: `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`.
 
 ---
 
@@ -18,11 +24,15 @@ This is a **readiness audit**, not an implementation. No code is written here. I
 - `placeOrder`, `streamQuotes`, `subscribeToQuotes`, `exchangeCodeForToken` all `throw .educationalModeOnly` (or return `Empty()` publishers).
 - `SchwabProviderAdapter` in `MarketDataProvider.swift` wraps `SchwabService` but every protocol method `throw .notImplemented`.
 
-`Steel_Trading_Desk/Config/AppConfig.swift` has:
-- `baseURL = "https://api.schwab.com/v1"` — **wrong base, real API is `api.schwabapi.com`**.
-- `streamURL = "wss://api.schwab.com/v1/stream"` — also wrong, real streamer base is different.
-- `clientId = ""` — empty, needs to come from dev portal after account recovery.
-- `apiKey` getter/setter persists a single string in Keychain at `app.mdrn.steel.schwabApiKey` — wrong shape (Schwab is OAuth, not a single bearer key).
+`Steel_Trading_Desk/Config/AppConfig.swift` now has a Schwab section with:
+- `apiBaseURL = "https://api.schwabapi.com"`.
+- OAuth authorize/token URLs under `/v1/oauth`.
+- Market-data and trader base paths under `/marketdata/v1` and `/trader/v1`.
+- Schwab portal callback for local testing: `https://127.0.0.1:8182`.
+- Internal native return URL: `steeltradingdesk://oauth/callback`. Do not register this with Schwab; the portal requires HTTPS.
+- Keychain slots for Schwab app key, app secret, access token, and refresh token.
+
+The old `apiKey` getter/setter remains as a legacy alias until the Schwab service rewrite removes the single-bearer-token shape.
 
 After 2026-05-16 cleanup, **the Settings UI no longer exposes any of this** — both the Data Source card and Broker card show "RESTORING" / "INTEGRATION PENDING" copy. The underlying stubs are still callable from code but no view surfaces them.
 
@@ -70,7 +80,7 @@ Pre-strip `Balls_of_Steel/Services/SchwabService.swift` was 266 lines with REST 
 - Refresh flow: POST `refresh_token` to `/v1/oauth/token` to get a new `access_token` before TTL expires.
 - All API requests carry `Authorization: Bearer <access_token>`.
 
-### REST endpoints (market data — what the desk needs)
+### REST endpoints (market data — bootstrap/fallback only)
 
 - `GET /marketdata/v1/quotes?symbols=VXX,VIX` — current quote snapshot for one or more symbols.
 - `GET /marketdata/v1/<symbol>/pricehistory?frequencyType=minute&frequency=1&period=1&periodType=day` — intraday candles (1-min bars for today).
@@ -78,13 +88,16 @@ Pre-strip `Balls_of_Steel/Services/SchwabService.swift` was 266 lines with REST 
 - `GET /marketdata/v1/chains?symbol=VXX&...` — options chain (for SPY/VXX call/put selection).
 - `GET /marketdata/v1/markets?markets=equity` — market hours.
 
+REST is not the primary alert feed. It is useful for OAuth validation, initial snapshots, historical candles, and recovery. The live alert path must be streaming-first.
+
 ### Streaming
 
-- WebSocket endpoint at `wss://streamer-api.schwabapi.com/ws` (confirm).
+- WebSocket endpoint should come from the authenticated `streamerInfo` payload returned by Schwab, not a hardcoded URL. Confirm the exact field names in the logged-in docs.
 - Login frame: ADMIN service with `command=LOGIN`, carries access token + credential payload.
 - Subscribe frames: SERVICE-specific (e.g., `LEVELONE_EQUITIES`, `CHART_EQUITY`) with `command=SUBS` and a comma-separated symbol list.
 - Receive frames: JSON payloads keyed by service, with field maps that need to be decoded against Schwab's documented field index.
-- Heartbeats, sequence numbers, and reconnect on disconnect are required for production.
+- Heartbeats, sequence numbers, source timestamps, stale-tick detection, and reconnect on disconnect are required for production.
+- Alerts must fail closed when the streamer disconnects, heartbeats stop, sequence/timestamp validation fails, or either required symbol is missing.
 
 ### VIX symbol on Schwab
 
@@ -97,11 +110,12 @@ Real Schwab Trader API uses `$VIX.X` for the VIX index (CBOE Volatility Index). 
 | Need | Have | Gap |
 | --- | --- | --- |
 | OAuth 2.0 flow | Nothing | Full implementation: `ASWebAuthenticationSession`, code-exchange POST, token refresh logic, Keychain storage of refresh token. |
-| Client ID + redirect URI | `AppConfig.clientId = ""` | User restores dev-portal access; copies client ID; registers/confirms redirect URI matches what code uses. |
-| REST quote endpoint | `fetchQuote` shape from `0115bf5` | Rewrite for correct URL + auth header + response shape. |
+| Client ID + redirect URI | App key/app secret Keychain slots + HTTPS loopback callback | User creates the Schwab portal app, copies credentials, and registers `https://127.0.0.1:8182` exactly for local testing. |
+| REST quote endpoint | `fetchQuote` shape from `0115bf5` | Rewrite for correct URL + auth header + response shape. Use for bootstrap/fallback, not primary alerts. |
 | Intraday candles | Nothing usable (Finnhub provider doesn't apply) | New `fetchPriceHistory` method. |
 | Daily candles for vol average | Nothing usable | Same method, different params. |
-| WebSocket streamer | Generic WS scaffold from `0115bf5` | Replace handshake + subscribe + frame parsing entirely against Schwab Streamer spec. |
+| WebSocket streamer | Generic WS scaffold from `0115bf5` | Replace handshake + subscribe + frame parsing entirely against Schwab Streamer spec. This is the primary alert feed. |
+| Alert integrity | Nothing | Add feed source, feed timestamp, local receipt timestamp, freshness threshold, complete-symbol checks, delayed/simulated flags where available, and fail-closed suppression. |
 | VIX symbol | `^VIX` literal in `LiveTapeService` | Change to `$VIX.X` (verify). |
 | Provider integration | `SchwabProviderAdapter` throws `.notImplemented` | Wire the new SchwabService through the adapter so the rest of the strategy engine doesn't change. |
 | Rate-limit handling | 429 handler from `0115bf5` | Keep; Schwab's actual limits documented in dev portal. |
@@ -109,18 +123,18 @@ Real Schwab Trader API uses `$VIX.X` for the VIX index (CBOE Volatility Index). 
 
 ---
 
-## The plan (when dev-portal access is restored)
+## The plan
 
 Sequenced. Each step blocks the next.
 
-1. **Recover dev-portal access.** User logs into `developer.schwab.com`. Confirms the app registration from ~2025 is still active. If not, re-register.
-2. **Capture the integration parameters.** Client ID, client secret (regenerate if lost — store in `.env` or a non-tracked secrets file, never in git), registered redirect URI. Update `AppConfig.swift` constants. Add a `clientSecret` Keychain entry.
+1. **Create the Schwab portal app.** Use `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`: Market Data Production, order limit `0` if accepted, market-data-only description, and HTTPS callback `https://127.0.0.1:8182`.
+2. **Capture the integration parameters.** Client ID / app key, client secret, registered callback URLs. For local Debug tests, Xcode scheme environment variables can seed Keychain. For normal app use, enter credentials in Settings -> Schwab Developer Access. Never commit credentials or ship a shared secret.
 3. **Read the live Schwab docs.** Confirm: OAuth flow shape, REST base URL, market-data endpoints, streamer URL + protocol, current rate limits, VIX symbol convention. Reconcile against this doc; update this doc if anything's drifted.
-4. **OAuth flow first, REST second, streamer third.** Build in that order so each lands on top of the previous. Don't try to do streaming before REST quotes are confirmed working.
+4. **OAuth flow first, REST sanity check second, streamer third.** REST proves tokens and symbols; streaming is the product path.
 5. **Wire through `SchwabProviderAdapter`.** Replace the `.notImplemented` stubs so the rest of `MarketDataRegistry` + `LiveTapeService` works without changes. Keep the protocol clean so a future provider could be swapped in.
-6. **Re-enable the Live Feed UI in Settings.** Replace the "RESTORING" placeholder with the real toggle. Add an OAuth status row ("Connected as <Schwab account>").
+6. **Re-enable the Live Feed UI in Settings.** Replace the "RESTORING" placeholder with the real toggle. Add OAuth status and feed-integrity rows.
 7. **Audit pass.** Run the existing `StrategyAuditor`. Verify gates still trip on real data the same way they did on manual entry. Fix any drift.
-8. **TestFlight.** Send a build to user device, run during market hours, confirm tape ticks match the user's Schwab platform display side-by-side.
+8. **TestFlight.** Send a build to user device, run during market hours, confirm tape ticks match Thinkorswim/Schwab side-by-side. Force airplane-mode/disconnect/stale-feed cases and verify alerts are suppressed.
 
 ---
 
@@ -132,7 +146,7 @@ These need user input before code work begins:
 2. **Refresh-token storage policy.** Keychain with biometric gate (Face ID / Touch ID), or Keychain without? Biometric is more secure but adds a launch-time friction step.
 3. **What happens when the refresh token expires?** Force re-auth interactively, or show a passive "RE-AUTHENTICATE" card in Settings? The latter is gentler; the former is more boiler-room.
 4. **Does the streamer subscribe to options chains too**, or only the underlying quotes? Options chain subscriptions consume more streamer quota; underlyings + on-demand chain pulls might be enough.
-5. **What's the dev-portal app's current registered redirect URI?** This determines whether the iOS app uses a custom scheme (e.g. `steeldesk://oauth-callback`) or a registered universal link. Code can't be written until this is confirmed.
+5. **What is the App Store-grade iPhone callback?** Schwab requires HTTPS. Local testing can use `https://127.0.0.1:8182`; native iPhone OAuth needs either an HTTPS universal link on a controlled domain or a deliberately implemented local HTTPS listener.
 
 ---
 

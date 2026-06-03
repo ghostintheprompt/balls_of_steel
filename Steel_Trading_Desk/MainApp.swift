@@ -12,14 +12,17 @@ struct MainApp: App {
     @StateObject private var updateChecker = UpdateChecker.shared
 
     init() {
-        // DEBUG-only: seed Keychain from bundled .env if present.
+        // DEBUG-only: seed Keychain from Xcode scheme environment values.
         // No-op in Release builds.
-        EnvSeeder.seedFromBundleEnvIfNeeded()
+        EnvSeeder.seedFromDebugEnvironmentIfNeeded()
     }
 
     var body: some Scene {
         WindowGroup {
             MainView()
+                .onOpenURL { url in
+                    SchwabOAuthCallbackHandler.handle(url)
+                }
                 .task {
                     // 3s delay before silent check on launch
                     try? await Task.sleep(nanoseconds: 3_000_000_000)

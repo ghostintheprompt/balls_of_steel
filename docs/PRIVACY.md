@@ -1,6 +1,6 @@
 # Steel Trading Desk: Privacy Policy
 
-**Effective Date:** May 13, 2026
+**Effective Date:** May 25, 2026
 
 ## 1. What we collect
 
@@ -11,7 +11,7 @@ Nothing. Steel Trading Desk does not collect, store, or transmit personal inform
 All data you enter into the app is stored exclusively on your device:
 
 - **Tape entries** (VXX/VIX/volume/VWAP/level/pattern/window/news) live in `UserDefaults` on the device.
-- **API keys** (Finnhub, Polygon, Schwab) are stored in the platform Keychain, scoped to this app and your device.
+- **API keys and Schwab developer credentials** are stored in the platform Keychain, scoped to this app and your device. Steel ships with no shared Schwab secret; users with Schwab developer access enter their own app key and app secret.
 - **Trade history / journal** lives in local app storage.
 
 When you delete the app, all of this is removed by the operating system.
@@ -25,10 +25,12 @@ The app makes outbound HTTPS calls only to services *you explicitly configure* i
 | TradingView | `s3.tradingview.com`, `tradingview.com` | Embedded chart widget (15-min delayed quotes) | Used whenever the chart is visible. No account / no auth. |
 | Finnhub | `finnhub.io`, `ws.finnhub.io` | Real-time VXX / VIX quote data | Only if you provide a Finnhub API key |
 | Polygon.io | `api.polygon.io`, `socket.polygon.io` | Real-time quote data (alternative provider) | Only if you provide a Polygon API key |
-| Schwab | `api.schwabapi.com` | Real-time brokerage quote data | Only if you complete the Schwab OAuth flow |
+| Schwab | `api.schwabapi.com`, Schwab streamer endpoint | Real-time market-data quotes for accuracy-gated alerts | Only if you complete the Schwab OAuth flow |
 | Yahoo Finance (unofficial) | `query1.finance.yahoo.com` | Delayed quote fallback | Only if you select Yahoo as your provider |
 
 Each provider's privacy policy governs how *they* handle the requests they receive. We do not share your API keys with anyone, ever.
+
+Steel Trading Desk does not use broker APIs to place orders, read balances, manage positions, or automate trading. Any live-data provider is used only to evaluate the app's on-device entry gates and alert freshness. You place any trade manually in your own brokerage platform.
 
 ## 4. No telemetry, no third-party analytics
 

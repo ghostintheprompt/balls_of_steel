@@ -4,12 +4,12 @@
 
 ---
 
-## 1. Where we are now (2026-05-16)
+## 1. Where we are now (2026-05-25)
 
 - **Boiler-room redesign complete.** All 9 phases shipped. Both iOS + macOS Debug builds verified green via `xcodebuild` (last verified 2026-05-14). Signed Release installed on paired iPhone `ZZZ` 2026-05-13.
 - **Compliance + branding clean.** App named "Steel Trading Desk", subtitle "Native Volatility Analysis Tool". No "Pro/Premium/Coach/Unlock" surfaces anywhere. Disclaimer wired. Privacy policy refreshed (`docs/PRIVACY.md`). Privacy Manifest present. App Tracking Transparency not requested.
 - **Live tape pulled for v1.0.** The third-party provider path (Finnhub default, Polygon/Yahoo alternatives) was broken — Finnhub paywalled `/stock/candle` mid-2024 — and was pulled from the Settings UI in the 2026-05-16 session. Both Settings → Data Source and Broker cards now render placeholder copy ("MANUAL ENTRY — FALLBACK" / "LIVE FEED — RESTORING" / "SCHWAB — INTEGRATION PENDING") in the same design. `LiveTapeService` no longer auto-starts.
-- **Future provider = Schwab Trader API.** See `docs/SCHWAB_API_READINESS.md` for the full restoration plan. v1.0 ships manual-first with placeholder framing; Schwab integration is v1.1, gated on `developer.schwab.com` account recovery.
+- **Future provider = Schwab Trader API market-data streaming.** See `docs/SCHWAB_API_READINESS.md` for the full restoration plan. v1.0 ships manual-first with placeholder framing; Schwab integration is v1.1, gated on `developer.schwab.com` configuration. Schwab order/account APIs are out of scope.
 - **All targets building** — iOS, iPadOS, macOS. Three-column terminal layout on macOS, native Swift Charts on iPhone (tile + fullscreen sheet with VWAP / 20-50 SMA / window stripes / volume panel / ratio tier band / pattern markers / tap-to-OHLCV).
 
 ---
@@ -32,12 +32,13 @@ The release is no-paywall. Full VXX/VIX/VWAP discipline workflow, embedded chart
 | Area | Release Posture |
 | :--- | :--- |
 | Manual entry | Full tape entry for VXX, VIX, volume, VWAP, key level, pattern, window, news |
-| Desk sequence | Full four-gate sequence with divergence-aware ratio gate |
+| Desk sequence | Full five-condition setup check: volume, valid window, ratio, VWAP/key level, rejection pattern. Each condition is visible on phone, iPad, and desktop. |
+| Accuracy posture | Alerts must fail closed. Stale, delayed, simulated, partial, disconnected, or unverifiable data is labeled and cannot trigger a live alert. |
 | Embedded chart | TradingView widget on Mac/iPad, native Swift Charts on iPhone, 15-min delayed disclosure |
-| Live data | None in v1.0 — placeholder card explains restoration in progress. Schwab Trader API integration lands in v1.1. |
+| Live data | None in v1.0 — placeholder card explains restoration in progress. Schwab Trader API market-data streaming lands in v1.1. |
 | Prompt Desk | Available without purchase prompts |
 | Risk tools | Available without purchase prompts |
-| Brokerage | Manual execution only — desk fires the read, user fires the order on their broker |
+| Brokerage | Manual execution only — phone alert, quick human review, user fires any order in Thinkorswim/Schwab or another broker |
 
 Monetization is the separate **Steel SPY Desk** paid app planned alongside this free VXX app — never a feature gate on this build. See `STRATEGY_NOTES.md` "Paid product" section.
 
@@ -48,9 +49,11 @@ Monetization is the separate **Steel SPY Desk** paid app planned alongside this 
 | Risk | Impact | Mitigation |
 | :--- | :--- | :--- |
 | Financial-regulation framing | High | Public copy emphasizes "manual entry", "discipline", "educational utility". App never claims directional recommendations or win rates. |
-| `.env` accidentally archived with a real API key | High | Pre-archive sanitize step (§7); `EnvSeeder` is `#if DEBUG`-gated as defense-in-depth. |
+| Bad-data alert | High | Live alerts require verified source, freshness timestamp, complete VXX/VIX/VWAP inputs, and explicit non-delayed/non-simulated status. Otherwise the app fails closed and suppresses the alert. |
+| Value-prop drift | Medium | Position as a personal five-condition setup checker for multitasking and fast human review, not a generic trading dashboard or automated system. |
+| Schwab credentials accidentally bundled | High | `.env` is not in Copy Bundle Resources. Pre-archive check: no credential files in app bundle, no real credentials in scheme/archive settings. |
 | Scope creep | Medium | Hard rule: every feature must serve the one strategy (VXX/VIX divergence fade). |
-| Schwab dev-portal account recovery (v1.1 long-pole) | Medium | Not blocking v1.0. See `docs/SCHWAB_API_READINESS.md`. |
+| Schwab live-data wire-up | Medium | Portal access is restored; create the Market Data Production app with `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`, then implement OAuth, REST sanity checks, and streamer validation. |
 | Two-app shipping plan (free VXX + paid SPY) | Medium | Not a v1.0 risk. Re-check App Review guidelines around paid trading-adjacent apps before SPY submission, especially around anything that could read as a signals subscription. |
 
 ---
@@ -60,8 +63,8 @@ Monetization is the separate **Steel SPY Desk** paid app planned alongside this 
 Verify on real device (`ZZZ`) and a fresh simulator before "Submit":
 
 - [ ] **Disclaimer.** First-run `DisclaimerView` appears before any trading workflow.
-- [ ] **Tape logic.** Enter `volume 350%`, `VXX/VIX ratio 1.62`, VWAP/key-level confirmation, and a rejection pattern. Gate sequence clears in order; the NEXT MOVE verb cycles `WAIT` → `WAIT LEVEL` → `WAIT PATTERN` → `CLEARED`.
-- [ ] **Divergence gate.** Manual entry showing VIX outpacing VXX (negative divergence at a stretched ratio) fails gate 2 with explicit copy ("Ratio is compressing — do not fade").
+- [ ] **Tape logic.** Enter `volume 350%`, valid time window, `VXX/VIX ratio 1.62`, VWAP/key-level confirmation, and a rejection pattern. The five-condition check clears in order; the NEXT MOVE verb cycles `WAIT` → `WAIT LEVEL` → `WAIT PATTERN` → `CLEARED`.
+- [ ] **Divergence read.** Live data showing VIX outpacing VXX at a stretched ratio surfaces explicit caution copy ("VIX is leading VXX — wait for a cleaner read or size down").
 - [ ] **Hard-exit takeover.** Between 15:50 and 16:10 ET, the iPhone screen is fully replaced by the red countdown takeover. (For testing outside that window, temporarily adjust the time check in `TradingDashboard.currentDeskState`.)
 - [ ] **Settings → Data Source + Broker.** Both cards render the placeholder copy ("MANUAL ENTRY — FALLBACK" / "LIVE FEED — RESTORING" / "SCHWAB — INTEGRATION PENDING"). No broken API key field, no broken Connect button, no errors logged.
 - [ ] **Embedded chart.** TradingView widget loads on Mac/iPad. iPhone shows native Swift Charts (tile + fullscreen sheet, all 7 overlays present).
@@ -83,7 +86,7 @@ Canonical paste sheet for App Store Connect: `docs/APP_STORE_CONNECT_COPY.md`.
 
 ### Suggested screenshot order
 
-1. iPhone Desk default — ticker strip + NEXT MOVE verb + 4-gate stack with amber blocker highlight
+1. iPhone Desk default — ticker strip + NEXT MOVE verb + five-condition stack with amber blocker highlight
 2. iPhone gate-detail sheet — big number + tier table + house rule
 3. iPhone fullscreen chart sheet — native chart with VWAP / SMA / window stripes / volume panel / ratio tier band / pattern markers
 4. iPhone hard-exit takeover — red countdown + open positions + 3 exit rules
@@ -91,9 +94,11 @@ Canonical paste sheet for App Store Connect: `docs/APP_STORE_CONNECT_COPY.md`.
 
 ### Reviewer note (compliance guard)
 
-> Steel Trading Desk is a manual-entry educational utility for discretionary VXX/VIX volatility traders. It does not execute trades, manage funds, or provide regulated financial advice. All inputs are entered manually by the user; all execution happens on the user's own brokerage account, outside this app.
+> Steel Trading Desk is an accuracy-first setup-checking utility for discretionary VXX/VIX volatility traders. It does not execute trades, manage funds, or provide regulated financial advice. It implements a personal five-condition entry checklist so the user can multitask, receive a phone alert, quickly review the read, and manually execute on their own brokerage platform.
 >
-> v1.0 ships with no live-data integration and no API key configuration required. A future build will integrate the Schwab Trader API with per-user OAuth on the user's own Schwab account; until then, the Settings → Data Source and Broker cards display informational placeholder copy explaining the live feed and broker handoff are pending.
+> Manual tape entry works without credentials. Settings also includes Schwab Developer Access for users who have their own Schwab developer account; the user enters an app key/client ID and app secret, stored locally in Keychain. Steel ships with no shared Schwab secret. Schwab order placement, account balances, positions, and automated execution are out of scope.
+>
+> The core value of the app is accuracy-gated alerting. Future live-data builds must suppress alerts when data is stale, delayed, simulated, partial, disconnected, or unverifiable. The workflow is phone alert, quick human review to confirm the read is not bad, manual execution in Thinkorswim/Schwab or another broker.
 >
 > The reviewer can exercise the entire app on first-launch state with no external service configuration. The embedded TradingView chart loads with public delayed data and requires no account.
 
@@ -101,7 +106,7 @@ Canonical paste sheet for App Store Connect: `docs/APP_STORE_CONNECT_COPY.md`.
 
 ## 7. Build & upload procedure
 
-1. **Sanitize** `.env` at repo root before archiving — clear any keys. `EnvSeeder` is `#if DEBUG`-gated but the file IS bundled in the IPA. Defense in depth.
+1. **Credential check** before archiving — `.env` must not be in Copy Bundle Resources, no real Schwab credentials in archive scheme settings, no credential file in the app bundle.
 2. **Xcode** → open `Steel_Trading_Desk.xcodeproj`.
 3. **Target** → `Steel_Trading_Desk` > `Any iOS Device (arm64)` (then repeat for `Any Mac`).
 4. **Archive** → `Product > Archive`.
@@ -118,7 +123,7 @@ Full `xcodebuild` matrix for headless verification: `docs/HANDOFF.md` "Current S
 2. **Test target** — XCTest covering `TimeManager` window logic, `DeskState.current(...)` boundary times, ratio threshold tiers, `VXXStrategyState.firstFailingGateIndex`, candle aggregation rollup math, divergence-gate behavior.
 3. **App Store assets refresh** — screenshots reflect the new native chart tile; re-render icon (SteelDeskMark is amber-on-black).
 4. **Build verification on `ZZZ`** — install signed Release, walk the full §5 checklist on device during market hours.
-5. **Final `.env` sanitize** + `/tmp` build-artifact cleanup.
+5. **Final credential check** + `/tmp` build-artifact cleanup.
 6. **Archive + validate + upload** — per §7.
 7. **TestFlight external** review.
 8. **App Store submission** with `docs/APP_STORE_CONNECT_COPY.md` as paste source.
@@ -127,4 +132,4 @@ Day-to-day P0 work tracked in `docs/RELEASE_PUNCH_LIST.md`.
 
 ---
 
-**v1.1 roadmap** (post-launch, gated on Schwab developer-portal account recovery): `docs/SCHWAB_API_READINESS.md`.
+**v1.1 roadmap** (Schwab market-data streaming): `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md` first, then `docs/SCHWAB_API_READINESS.md`.

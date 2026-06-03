@@ -38,7 +38,7 @@ final class LiveTapeService: ObservableObject {
 
         /// VXX moving more than VIX = divergence. Positive = VXX outpacing
         /// (fade-worthy on stretched ratio). Negative = VIX outpacing
-        /// (regime move; ratio likely compressing).
+        /// (regime move; wait for a cleaner read).
         var divergencePoints: Double { vxxPctChange - vixPctChange }
 
         var isDiverging: Bool { abs(divergencePoints) >= 0.5 }

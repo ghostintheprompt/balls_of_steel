@@ -9,15 +9,17 @@ Native multiplatform discipline desk for discretionary VXX / SPY options traders
 ![License](https://img.shields.io/github/license/ghostintheprompt/balls_of_steel)
 ![Platform](https://img.shields.io/badge/platform-iOS%20|%20iPadOS%20|%20macOS-blue)
 
-Steel Trading Desk is a local-first, manual-first desk for the VXX/VIX/VWAP playbook. The whole app is one screen: a single command verb (NO TRADE / WAIT / CLEARED) on top of a four-gate sequence. No signals, no autopilot, no fantasy fills.
+Steel Trading Desk is a local-first, accuracy-first desk for a personal VXX/VIX/VWAP playbook. The whole app is one screen: a single command verb (NO TRADE / WAIT / CLEARED) on top of a five-condition setup check. Its value is attention management plus data honesty: let the app watch the setup while you multitask, then alert only when the feed is live, fresh, sourced, complete, and worth a human look. The intended workflow is phone alert plus Thinkorswim/Schwab chart templates side by side, then manual execution after a fast human check. No brokerage automation, no autopilot, no fantasy fills.
 
 ## Core Features
 
 | Feature | Description |
 | :--- | :--- |
-| **Four-gate sequence** | Volume + window → VXX/VIX ratio + divergence direction → VWAP / key level → rejection pattern. Current blocker always highlighted. |
+| **Five-condition setup check** | Volume → valid time window → VXX/VIX ratio + divergence direction → VWAP / key level → rejection pattern. Every condition is visible; nothing is hidden inside a summary row. |
+| **Accuracy-gated alerts** | Alerts fail closed. Stale, delayed, simulated, partial, disconnected, or unverifiable data must be labeled and blocked. |
 | **Tape entry** | Fast manual input from ThinkOrSwim, Schwab, or your primary charting platform. |
-| **Live data (optional)** | Bring your own Finnhub / Polygon / Schwab / Yahoo API key. Auto-populates price + volume gates every 30s. Keys live in the platform Keychain. Never proxied. |
+| **Schwab dev access** | Narrow-audience by design: enter your own Schwab developer app key and app secret, stored locally in Keychain. Schwab market-data streaming is the target feed. No shared secret ships with the app. |
+| **Feed suitability checks** | Live data has to prove it is suitable for this system: correct symbols, source timestamps, freshness, heartbeats, complete VXX/VIX/VWAP inputs, and fail-closed alert behavior. |
 | **Embedded chart** | TradingView Advanced Chart (VWAP + SMA + Volume) directly in the desk. 15-min delayed disclosure built in. |
 | **Hard-exit takeover** | Between 15:50 and 16:10 ET, the iPhone screen is replaced by a red countdown to 15:55, open positions, and three exit rules. |
 | **Second Read** | Copy a structured prompt for outside-model sanity checks. Never the green light. |
@@ -42,18 +44,18 @@ In Xcode, select the **Steel_Trading_Desk** scheme, target **Any iOS Device** or
 
 ## Usage
 
-1. **Tape:** Pull VXX, VIX, volume, VWAP, key level, pattern, and window from your charting platform — or configure live data in Settings → Data Source.
-2. **Sequence:** Watch the four-gate spine on the Desk. Don't act until the current blocker clears.
+1. **Tape:** Pull VXX, VIX, volume, VWAP, key level, pattern, and window from your charting platform — or use verified live market data when available.
+2. **Sequence:** Watch the setup check on the Desk. Don't act until every condition clears.
 3. **Chart:** Use the embedded TradingView chart for context.
 4. **Prompt:** Use the Second Read panel only when a structured outside read helps.
-5. **Execute:** Place trades manually on your broker.
+5. **Execute:** Take a quick look to reject nonsense, then place trades manually in Thinkorswim, Schwab, or your own broker. Steel never places orders.
 6. **Manage:** Track active risk and obey the 15:55 ET hard exit (the app takes over the screen for the last 20 minutes).
 
 ## Privacy
 
 **Local-only. No telemetry. No analytics. No tracking.**
 
-Steel Trading Desk does not collect, store, or transmit any of your personal information or trading data. All tape entries stay in local storage; API keys live in the platform Keychain; outbound calls go directly from your device to the third-party services *you explicitly configure* (Finnhub / Polygon / Schwab / Yahoo / TradingView). See `docs/PRIVACY.md` for the full disclosure.
+Steel Trading Desk does not collect, store, or transmit any of your personal information or trading data. All tape entries stay in local storage; user-supplied Schwab developer credentials and API keys live in the platform Keychain; outbound calls go directly from your device to the services *you explicitly configure*. See `docs/PRIVACY.md` for the full disclosure.
 
 ---
 

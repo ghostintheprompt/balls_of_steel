@@ -30,20 +30,24 @@ Five `.ttf` files live in `Steel_Trading_Desk/Resources/Fonts/` and are wired in
 
 Source: [github.com/IBM/plex/releases](https://github.com/IBM/plex/releases). Bundled under SIL Open Font License.
 
-### 2. Optional: `.env` for live-data API keys
+### 2. Optional: Debug credentials
 
-The app uses user-supplied API keys for live VXX/VIX data via Finnhub (default), Polygon, Schwab, or Yahoo. Production builds expect users to paste their key into Settings → Data Source. For dev, `EnvSeeder.swift` (`#if DEBUG` only) reads a bundled `.env` and seeds the platform Keychain on launch.
+The app's live-data roadmap is Schwab Trader API market-data streaming. Live credentials are only for market data and alert accuracy; the app must never place orders, read balances, manage positions, or automate brokerage activity.
+
+For dev, `EnvSeeder.swift` (`#if DEBUG` only) reads process environment variables and seeds platform Keychain values on launch. Add these values to the Xcode scheme's **Run -> Arguments -> Environment Variables** panel, or pass them through a local launch wrapper:
 
 ```bash
-cp .env.example .env
-# Then edit .env and fill in:
 #   FINNHUB_API_KEY=your_actual_key
 #   POLYGON_API_KEY=your_actual_key
+#   SCHWAB_APP_KEY=your_schwab_app_key
+#   SCHWAB_APP_SECRET=your_schwab_app_secret
 ```
 
-`.env` is gitignored. **Empty it before archiving for TestFlight / App Store** — the file IS bundled in any build, even though the loader is Debug-gated, so defense-in-depth.
+`.env` is gitignored and may be useful as a local note, but it is not copied into the app bundle and the app does not read it directly. Do not add `.env` back to the Xcode resource phase.
 
-Get a free Finnhub key at [finnhub.io/dashboard](https://finnhub.io/dashboard). Webhook field can be left blank — this app is pull-only (REST + WebSocket).
+Legacy Finnhub/Polygon scaffolding remains in the repo, but the product path is Schwab streaming with fail-closed alerting. Stale, delayed, simulated, partial, disconnected, or unverifiable data must not trigger a live alert.
+
+Schwab portal setup lives in `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`. Use that doc for the exact Market Data Production, callback URL, and order-limit choices.
 
 ## Run on simulator
 
@@ -87,11 +91,11 @@ xcrun devicectl device process launch \
   app.mdrn.steel
 ```
 
-Tradeoff: Release builds skip `EnvSeeder` (it's `#if DEBUG`-gated), so you'll need to paste the API key into Settings → Data Source once on the device. After that, it persists in the device Keychain.
+Tradeoff: Release builds skip `EnvSeeder` (it's `#if DEBUG`-gated), so Schwab developer credentials must be entered through Settings -> Schwab Developer Access. After that, they persist in the device Keychain.
 
 ## Release archive (App Store / TestFlight)
 
-1. **Sanitize `.env`** at repo root — clear all key values. Don't ship a real key in the IPA.
+1. **Verify `.env` is not in the Xcode resource phase.** It should not appear under Copy Bundle Resources. Do not ship a real key in the IPA.
 2. Open the project in Xcode.
 3. **Set version + build number** in the project's General tab.
 4. **Set destination** to `Any iOS Device (arm64)` for iOS, or `Any Mac` for macOS.
@@ -106,4 +110,4 @@ The full submission checklist lives in `docs/LAUNCH_GUIDE.md`. App Store metadat
 - **Code Signing.** If you hit signing errors, open Signing & Capabilities in Xcode and select your personal Developer team. The repo defaults to MDRN's team ID; override locally.
 - **Dependencies.** Zero external dependencies — no SPM packages, no CocoaPods. If a build fails, run `xcode-select --install` to refresh command-line tools.
 - **SourceKit phantom errors.** The Xcode SourceKit-LSP throws constant "Cannot find DesignSystem in scope" / "Cannot find SignalMonitor in scope" diagnostics that are stale. Trust `xcodebuild`, not the live LSP indicator.
-- **Stale build artifacts in `/tmp`.** The xcodebuild commands above use `/private/tmp/balls_of_steel_*` derived-data paths. Old runs accumulate. `rm -rf /private/tmp/balls_of_steel_*` cleans them all (also useful if a stale `.env` with a real key got bundled into a previous build artifact).
+- **Stale build artifacts in `/tmp`.** The xcodebuild commands above use `/private/tmp/balls_of_steel_*` derived-data paths. Old runs accumulate. `rm -rf /private/tmp/balls_of_steel_*` cleans them all.

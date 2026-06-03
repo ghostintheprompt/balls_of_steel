@@ -2,10 +2,52 @@ import Foundation
 import SwiftUI
 
 struct AppConfig {
-    // API Configuration
-    static let baseURL = "https://api.schwab.com/v1"
-    static let streamURL = "wss://api.schwab.com/v1/stream"
-    static let clientId = "" // Required for Schwab API connection
+    // MARK: - Schwab Trader API
+    //
+    // Steel uses Schwab for market data only. Order/account endpoints remain
+    // out of scope for the product, even if the portal displays order-throttle
+    // fields during app registration.
+    struct Schwab {
+        static let apiBaseURL = "https://api.schwabapi.com"
+        static let marketDataBaseURL = "\(apiBaseURL)/marketdata/v1"
+        static let traderBaseURL = "\(apiBaseURL)/trader/v1"
+        static let oauthAuthorizeURL = "\(apiBaseURL)/v1/oauth/authorize"
+        static let oauthTokenURL = "\(apiBaseURL)/v1/oauth/token"
+
+        // Schwab requires HTTPS callback URLs. Register exactly this value in
+        // the Schwab portal for local Mac/token-helper testing: no path, no
+        // trailing slash, and use 127.0.0.1 instead of localhost.
+        static let loopbackCallbackURL = "https://127.0.0.1:8182"
+
+        // Internal app return URL. Do not register this with Schwab; the portal
+        // rejects non-HTTPS callbacks.
+        static let nativeReturnURL = "steeltradingdesk://oauth/callback"
+
+        // The Streamer URL and customer/correlation credentials are returned
+        // by Schwab's userPreference endpoint for the authenticated user.
+        static let streamerInfoPath = "/userPreference"
+
+        static let appKeyKeychainKey = "app.mdrn.steel.schwabAppKey"
+        static let appSecretKeychainKey = "app.mdrn.steel.schwabAppSecret"
+        static let accessTokenKeychainKey = "app.mdrn.steel.schwabAccessToken"
+        static let refreshTokenKeychainKey = "app.mdrn.steel.schwabRefreshToken"
+
+        static var appKey: String {
+            get { KeychainService.load(key: appKeyKeychainKey) ?? "" }
+            set { AppConfig.storeKeychainValue(newValue, key: appKeyKeychainKey) }
+        }
+
+        static var appSecret: String {
+            get { KeychainService.load(key: appSecretKeychainKey) ?? "" }
+            set { AppConfig.storeKeychainValue(newValue, key: appSecretKeychainKey) }
+        }
+    }
+
+    // Legacy aliases kept until the Schwab service rewrite removes the old API
+    // key shape. New Schwab work should use AppConfig.Schwab.
+    static let baseURL = Schwab.apiBaseURL
+    static let streamURL = ""
+    static let clientId = ""
     
     // Strategy Parameters
     struct Thresholds {
@@ -203,11 +245,15 @@ struct AppConfig {
     static var apiKey: String {
         get { KeychainService.load(key: apiKeyKeychainKey) ?? "" }
         set {
-            if newValue.isEmpty {
-                KeychainService.delete(key: apiKeyKeychainKey)
-            } else {
-                KeychainService.save(key: apiKeyKeychainKey, value: newValue)
-            }
+            storeKeychainValue(newValue, key: apiKeyKeychainKey)
+        }
+    }
+
+    private static func storeKeychainValue(_ value: String, key: String) {
+        if value.isEmpty {
+            KeychainService.delete(key: key)
+        } else {
+            KeychainService.save(key: key, value: value)
         }
     }
 }

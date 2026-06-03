@@ -87,27 +87,34 @@ struct ManualDataEntryView: View {
 
             TapeOrderRow(
                 index: 1,
-                title: "Volume + window",
-                detail: viewModel.volumeWindowGateDetail,
-                state: viewModel.volumeWindowGateState
+                title: "Volume",
+                detail: viewModel.volumeGateDetail,
+                state: viewModel.volumeGateState
             )
 
             TapeOrderRow(
                 index: 2,
+                title: "Window",
+                detail: viewModel.windowGateDetail,
+                state: viewModel.windowGateState
+            )
+
+            TapeOrderRow(
+                index: 3,
                 title: "Ratio",
                 detail: viewModel.ratioGateDetail,
                 state: viewModel.ratioGateState
             )
 
             TapeOrderRow(
-                index: 3,
+                index: 4,
                 title: "VWAP / key level",
                 detail: viewModel.levelGateDetail,
                 state: viewModel.levelGateState
             )
 
             TapeOrderRow(
-                index: 4,
+                index: 5,
                 title: "Pattern now",
                 detail: viewModel.patternGateDetail,
                 state: viewModel.patternGateState
@@ -653,13 +660,17 @@ class ManualDataEntryViewModel: ObservableObject {
         return VXXVIXRatio(vxx: vxxValue, vix: vixValue)
     }
 
-    var volumeWindowGateState: TapeGateState {
+    var volumeGateState: TapeGateState {
         guard let volumeValue = Double(volumePercent), volumeValue > 0 else { return .fail }
-        return volumeValue >= 200 && timeWindow.isVXXEntryWindow ? .pass : .fail
+        return volumeValue >= timeWindow.requiredVolumePercent ? .pass : .fail
+    }
+
+    var windowGateState: TapeGateState {
+        timeWindow.isVXXEntryWindow ? .pass : .fail
     }
 
     var ratioGateState: TapeGateState {
-        guard volumeWindowGateState == .pass else { return .locked }
+        guard volumeGateState == .pass && windowGateState == .pass else { return .locked }
         guard instrument == .vxx, let ratio = calculatedRatio?.ratio else { return .fail }
         return ratio >= 1.45 ? .pass : .fail
     }
@@ -674,22 +685,26 @@ class ManualDataEntryViewModel: ObservableObject {
         return patternConfirmed ? .pass : .fail
     }
 
-    var volumeWindowGateDetail: String {
+    var volumeGateDetail: String {
         guard let volumeValue = Double(volumePercent), volumeValue > 0 else {
-            return "Start here. Need volume >200% and a valid VXX window."
+            return "Start here. Need real volume."
         }
-        if volumeValue < 200 {
-            return "Volume \(Int(volumeValue))%. Need >200% before anything else."
+        let req = Int(timeWindow.requiredVolumePercent)
+        if volumeValue < Double(req) {
+            return "Volume \(Int(volumeValue))%. Need >\(req)% before anything else."
         }
-        if !timeWindow.isVXXEntryWindow {
-            return "\(timeWindow.displayName) is not in the VXX playbook."
-        }
-        return "\(Int(volumeValue))% volume inside \(timeWindow.displayName)."
+        return "Volume \(Int(volumeValue))% clears the \(req)% requirement."
+    }
+
+    var windowGateDetail: String {
+        timeWindow.isVXXEntryWindow
+            ? "\(timeWindow.displayName) is a valid VXX entry window."
+            : "\(timeWindow.displayName) is outside this setup. No alert."
     }
 
     var ratioGateDetail: String {
-        guard volumeWindowGateState == .pass else {
-            return "Locked until volume and time pass."
+        guard volumeGateState == .pass && windowGateState == .pass else {
+            return "Locked until volume and window pass."
         }
         guard instrument == .vxx else {
             return "Switch instrument to VXX for this desk read."

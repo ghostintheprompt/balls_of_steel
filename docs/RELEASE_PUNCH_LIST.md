@@ -4,11 +4,13 @@ Last updated: May 14, 2026 (after the native iPhone chart redesign).
 
 ## Product Position
 
-Steel Trading Desk is a local-first, manual trading discipline utility for SPY and VXX options traders. The app is a hard discipline layer: enter the tape, watch the four gates clear in order, embed a chart for context, execute manually on a broker, and keep the exit honest.
+Steel Trading Desk is a local-first, accuracy-first entry discipline utility for SPY and VXX options traders. The app is a personal five-condition setup checker: enter the tape or use verified live market data, let the app watch the conditions while the trader multitasks, alert only when the read is worth checking, execute manually on a broker, and keep the exit honest.
 
 It is not financial advice, automated trading, managed execution, guaranteed signals, or a brokerage replacement.
 
-It is not a website, game, generic trading dashboard, or AI authority product. It exists for one workflow: VXX setup → VXX/VIX ratio → VWAP/level → volume confirmation → correct time window → optional second read → broker execution → risk management → hard exit.
+The value add is data honesty plus attention management. Alerts are allowed only when the app can verify source, freshness, and complete required inputs. Stale, delayed, simulated, partial, disconnected, or unverifiable data must be labeled and must not trigger a live alert. The alert means "look now and verify," not "the app traded for you."
+
+It is not a website, game, generic trading dashboard, or AI authority product. It exists for one workflow: verified volume → valid time window → verified VXX/VIX ratio → verified VWAP/level → rejection pattern → quick human review → manual broker execution → risk management → hard exit.
 
 Monetization posture: no paywall for the desk. Strategy and core tools are free. If a paid product exists later, it is a separate SPY-focused offer earned through usefulness.
 
@@ -19,7 +21,7 @@ Internal product note: VXX is the free desk and proof of craft. Keep paid-tier i
 - **Token swap.** New palette (CRT amber `#FFB000` on near-black). IBM Plex fonts now live and bundled: Sans Regular + SemiBold, Sans Condensed Bold, Mono Regular + SemiBold. ~1MB total in the app bundle. System fallback retained per-family but disabled by default.
 - **Decoration killed.** All `RoundedRectangle` corners → 2pt; every shadow/glow on cards removed; `.padding(20)` collapsed; every purple/orange/yellow/cyan/gray bare color replaced with a `DesignSystem` token.
 - **Mac single-window terminal.** Three-column layout (ticker strip / left rail gate spine / chart center / right rail NEXT MOVE+RAW READ+SECOND READ+ET clock / status footer). The Mac TabView is gone; the gate sequence IS the navigation. Manual entry + Prompt Coach come up as sheets from the right rail.
-- **iPhone gate-spine.** Phone home is now ticker strip → NEXT MOVE verb → 4-gate stack with amber blocker highlight → mini chart → ET clock + hard-stop countdown footer. Tapping a gate opens a drill-in sheet with big number + tier table + house rule.
+- **iPhone setup stack.** Phone home is now ticker strip → NEXT MOVE verb → five-condition stack with amber blocker highlight → mini chart → ET clock + hard-stop countdown footer. Tapping a condition opens a drill-in sheet with big number + tier table + house rule.
 - **Hard-exit takeover.** Between 15:50 and 16:10 ET the iPhone screen is replaced by a giant red countdown to 15:55, open positions list with live P/L, and the three exit rules. Triggered automatically by `DeskState.isTakeover`.
 - **TradingView chart embed.** New `Views/Components/ChartWebView.swift` wraps the TradingView Advanced Chart widget in `WKWebView` (cross-platform). VWAP + SMA + Volume overlays. 15-minute delayed disclosure in the chart footer.
 - **MarketDataProvider scaffolding.** New protocol + 4 provider files (`Finnhub`, `Polygon`, `Schwab`, `Yahoo`). Settings has a segmented picker + per-provider setup note + API key field. **Real network calls are stubbed for now** — the gates still consume the manual tape entry. Real implementation lands when the user has API keys provisioned.

@@ -60,7 +60,9 @@ struct TradingDashboard: View {
         // Force stack navigation on iPad. Without this, NavigationView defaults
         // to split-view: the desk gets squeezed into a sidebar pane and the
         // right ~72% of the iPad screen is empty. Fix 2026-05-14.
+        #if os(iOS)
         .navigationViewStyle(.stack)
+        #endif
     }
 
     @State private var selectedPhoneGate: PhoneGate?
@@ -383,41 +385,63 @@ private struct PhoneStrategyRail: View {
             }
 
             VStack(spacing: 8) {
-                tapeGateButton
+                gateButton(.volume) {
+                    StrategyGateRow(
+                        index: 1,
+                        title: "Volume",
+                        detail: state.volumeDetail,
+                        status: state.volumeStatus,
+                        systemImage: "chart.bar.xaxis",
+                        accent: DesignSystem.amber,
+                        isBlocker: blockerIndex == 1
+                    )
+                }
 
-                gateButton(.ratio) {
+                gateButton(.window) {
                     StrategyGateRow(
                         index: 2,
-                        title: "Ratio",
-                        detail: state.ratioDetail,
-                        status: state.ratioStatus,
-                        systemImage: "divide.circle",
+                        title: "Window",
+                        detail: state.windowDetail,
+                        status: state.windowStatus,
+                        systemImage: "clock",
                         accent: DesignSystem.amber,
                         isBlocker: blockerIndex == 2
                     )
                 }
 
-                gateButton(.level) {
+                gateButton(.ratio) {
                     StrategyGateRow(
                         index: 3,
+                        title: "Ratio",
+                        detail: state.ratioDetail,
+                        status: state.ratioStatus,
+                        systemImage: "divide.circle",
+                        accent: DesignSystem.amber,
+                        isBlocker: blockerIndex == 3
+                    )
+                }
+
+                gateButton(.level) {
+                    StrategyGateRow(
+                        index: 4,
                         title: "VWAP / key level",
                         detail: state.levelDetail,
                         status: state.levelStatus,
                         systemImage: "scope",
                         accent: DesignSystem.steel,
-                        isBlocker: blockerIndex == 3
+                        isBlocker: blockerIndex == 4
                     )
                 }
 
                 gateButton(.pattern) {
                     StrategyGateRow(
-                        index: 4,
+                        index: 5,
                         title: "Pattern now",
                         detail: state.patternDetail,
                         status: state.patternStatus,
                         systemImage: "candlestickchart",
                         accent: DesignSystem.long,
-                        isBlocker: blockerIndex == 4
+                        isBlocker: blockerIndex == 5
                     )
                 }
             }
@@ -431,32 +455,6 @@ private struct PhoneStrategyRail: View {
                 .buttonStyle(.plain)
         } else {
             content()
-        }
-    }
-
-    @ViewBuilder
-    private var tapeGateButton: some View {
-        let row = StrategyGateRow(
-            index: 1,
-            title: "Volume + window",
-            detail: state.volumeWindowDetail,
-            status: state.volumeWindowStatus,
-            systemImage: "slider.horizontal.3",
-            accent: DesignSystem.amber,
-            isBlocker: blockerIndex == 1
-        )
-
-        if let openTape {
-            Button(action: openTape) {
-                row
-            }
-            .buttonStyle(.plain)
-        } else {
-            NavigationLink {
-                ManualDataEntryView()
-            } label: {
-                row
-            }
         }
     }
 
@@ -633,15 +631,16 @@ private struct VXXStrategyState {
         return entry.timeWindow.isVXXEntryWindow
     }
 
-    var volumeWindowPass: Bool {
+    var baseConditionsPass: Bool {
         volumePass && windowPass
     }
 
-    /// True when VIX is meaningfully outpacing VXX (ratio is compressing).
-    /// That's the *wrong* direction to fade the ratio, so it blocks gate 2.
+    /// True when VIX is meaningfully outpacing VXX.
+    /// That's the wrong direction for this setup, so it needs plain warning
+    /// copy before any sizing decision.
     /// Only evaluated when live data is available; manual mode has no
     /// pct-change input and can't enforce this constraint.
-    var ratioConverging: Bool {
+    var vixLeadingVxx: Bool {
         guard let snap = liveSnapshot else { return false }
         return snap.isDiverging && snap.divergencePoints < 0
     }
@@ -667,71 +666,79 @@ private struct VXXStrategyState {
     }
 
     var ready: Bool {
-        volumeWindowPass && ratioPass && levelPass && patternPass
+        baseConditionsPass && ratioPass && levelPass && patternPass
     }
 
-    /// 1...4 if there is a blocker (first failing gate), nil if all pass or no entry.
+    /// 1...5 if there is a blocker (first failing condition), nil if all pass or no entry.
     var firstFailingGateIndex: Int? {
         guard entry != nil else { return 1 }
-        if !volumeWindowPass { return 1 }
-        if !ratioPass { return 2 }
-        if !levelPass { return 3 }
-        if !patternPass { return 4 }
+        if !volumePass { return 1 }
+        if !windowPass { return 2 }
+        if !ratioPass { return 3 }
+        if !levelPass { return 4 }
+        if !patternPass { return 5 }
         return nil
     }
 
-    var volumeWindowStatus: GateStatus {
+    var volumeStatus: GateStatus {
         guard entry != nil else { return .fail }
-        return volumeWindowPass ? .pass : .fail
+        return volumePass ? .pass : .fail
+    }
+
+    var windowStatus: GateStatus {
+        guard entry != nil else { return .fail }
+        return windowPass ? .pass : .fail
     }
 
     var ratioStatus: GateStatus {
-        guard volumeWindowPass else { return .locked }
+        guard baseConditionsPass else { return .locked }
         return ratioPass ? .pass : .fail
     }
 
     var levelStatus: GateStatus {
-        guard volumeWindowPass && ratioPass else { return .locked }
+        guard baseConditionsPass && ratioPass else { return .locked }
         return levelPass ? .pass : .fail
     }
 
     var patternStatus: GateStatus {
-        guard volumeWindowPass && ratioPass && levelPass else { return .locked }
+        guard baseConditionsPass && ratioPass && levelPass else { return .locked }
         return patternPass ? .pass : .fail
     }
 
-    var volumeWindowDetail: String {
+    var volumeDetail: String {
         guard let entry else { return "Start here. Enter current VXX tape." }
         let req = Int(entry.timeWindow.requiredVolumePercent)
-        if !volumePass && !windowPass {
-            return "Need volume >\(req)% and valid VXX window. Now: \(Int(entry.volumePercent))%, \(entry.timeWindow.displayName)."
-        }
         if !volumePass {
-            return "Volume is \(Int(entry.volumePercent))%. Need >\(req)% in this window before anything else."
+            return "Volume \(Int(entry.volumePercent))%. Need >\(req)% before this setup is live."
         }
+        return "Volume \(Int(entry.volumePercent))% clears the \(req)% requirement."
+    }
+
+    var windowDetail: String {
+        guard let entry else { return "Need a valid VXX entry window." }
         if !windowPass {
-            return "\(entry.timeWindow.displayName) is not a VXX window. Wait."
+            return "\(entry.timeWindow.displayName) is outside this setup. No alert."
         }
-        return "Volume \(Int(entry.volumePercent))% inside \(entry.timeWindow.displayName)."
+        return "\(entry.timeWindow.displayName) is a valid VXX entry window."
     }
 
     var ratioDetail: String {
         guard let entry else { return "Locked until tape is entered." }
-        if !volumeWindowPass { return "Locked until volume and time pass." }
+        if !baseConditionsPass { return "Locked until volume and window pass." }
         if entry.instrument != .vxx { return "This desk is for VXX. Switch the tape to VXX." }
         if entry.ratio < StrategySpec.minimumRatioForEntry {
             return "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >\(String(format: "%.2f", StrategySpec.minimumRatioForEntry))."
         }
-        if ratioConverging, let snap = liveSnapshot {
-            // Soft warning — gate still passes per doc, but the convergence
-            // direction is worth knowing before sizing up.
-            return "Ratio \(String(format: "%.2f", entry.ratio)) passes (\(entry.ratioTier)). HEADS UP: VIX outpacing VXX (\(String(format: "%+.2f", snap.divergencePoints))pp). Ratio is compressing — size smaller or wait for a cleaner read."
+        if vixLeadingVxx, let snap = liveSnapshot {
+            // Soft warning — gate still passes per doc, but the direction
+            // is worth knowing before sizing up.
+            return "Ratio \(String(format: "%.2f", entry.ratio)) passes (\(entry.ratioTier)). HEADS UP: VIX is leading VXX (\(String(format: "%+.2f", snap.divergencePoints))pp). Wait for a cleaner read or size down."
         }
         return "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
     }
 
     var levelDetail: String {
-        guard volumeWindowPass && ratioPass else { return "Locked until ratio passes." }
+        guard baseConditionsPass && ratioPass else { return "Locked until ratio passes." }
         guard let entry else { return "Locked until tape is entered." }
         return levelPass
             ? "Key level confirmed. VWAP read: \(entry.vwapPosition.displayName)."
@@ -739,7 +746,7 @@ private struct VXXStrategyState {
     }
 
     var patternDetail: String {
-        guard volumeWindowPass && ratioPass && levelPass else { return "Locked until level passes." }
+        guard baseConditionsPass && ratioPass && levelPass else { return "Locked until level passes." }
         guard let entry else { return "Locked until tape is entered." }
         if patternPass {
             return entry.arrowSignal == .none ? "Rejection pattern confirmed." : "Pattern confirmed with \(entry.arrowSignal.displayName)."
@@ -750,7 +757,7 @@ private struct VXXStrategyState {
     var decisionDetail: String {
         guard let entry else { return "No tape entered. Start with Tape." }
         if ready {
-            return "All five are live. Size by ratio: \(entry.ratioTier). Execute on broker. Time stop still rules."
+            return "All five conditions are live. Size by ratio: \(entry.ratioTier). Review, then execute manually on broker. Time stop still rules."
         }
         return "One failed gate means skip or wait. Do not average your way into a trade."
     }
@@ -759,7 +766,8 @@ private struct VXXStrategyState {
         guard let entry else { return "ENTER TAPE" }
         if entry.instrument != .vxx { return "SWITCH TO VXX" }
         if ready { return "CLEARED" }
-        if !volumeWindowPass { return "NO TRADE" }
+        if !volumePass { return "NO TRADE" }
+        if !windowPass { return "NO TRADE" }
         if !ratioPass { return "NO TRADE" }
         if !levelPass { return "WAIT LEVEL" }
         if !patternPass { return "WAIT PATTERN" }
@@ -773,8 +781,11 @@ private struct VXXStrategyState {
         if ready {
             return decisionDetail
         }
-        if !volumeWindowPass {
-            return volumeWindowDetail
+        if !volumePass {
+            return volumeDetail
+        }
+        if !windowPass {
+            return windowDetail
         }
         if !ratioPass {
             return ratioDetail
@@ -791,14 +802,14 @@ private struct VXXStrategyState {
     var commandColor: Color {
         if ready { return DesignSystem.bullishColor }
         guard entry != nil else { return DesignSystem.primaryColor }
-        if !volumeWindowPass || !ratioPass { return DesignSystem.dangerColor }
+        if !volumePass || !windowPass || !ratioPass { return DesignSystem.dangerColor }
         return DesignSystem.warningColor
     }
 
     var commandIcon: String {
         if ready { return "checkmark.seal.fill" }
         guard entry != nil else { return "slider.horizontal.3" }
-        if !volumeWindowPass || !ratioPass { return "xmark.octagon.fill" }
+        if !volumePass || !windowPass || !ratioPass { return "xmark.octagon.fill" }
         return "clock.badge.exclamationmark"
     }
 
@@ -1849,10 +1860,11 @@ private struct LeftRailView: View {
 
             railSection("ORDER OF ATTACK")
             VStack(spacing: 1) {
-                gateRow(1, "VOL + WINDOW", state.volumeWindowDetail, status: state.volumeWindowStatus)
-                gateRow(2, "RATIO", state.ratioDetail, status: state.ratioStatus)
-                gateRow(3, "VWAP / LEVEL", state.levelDetail, status: state.levelStatus)
-                gateRow(4, "PATTERN", state.patternDetail, status: state.patternStatus)
+                gateRow(1, "VOLUME", state.volumeDetail, status: state.volumeStatus)
+                gateRow(2, "WINDOW", state.windowDetail, status: state.windowStatus)
+                gateRow(3, "RATIO", state.ratioDetail, status: state.ratioStatus)
+                gateRow(4, "VWAP / LEVEL", state.levelDetail, status: state.levelStatus)
+                gateRow(5, "PATTERN", state.patternDetail, status: state.patternStatus)
             }
             .padding(.bottom, 14)
 
@@ -2423,16 +2435,18 @@ private struct StatusFooterView: View {
 // MARK: - Phone Gate Spine (Phase 4)
 
 enum PhoneGate: Int, Identifiable, CaseIterable {
-    case volumeWindow = 1
-    case ratio = 2
-    case level = 3
-    case pattern = 4
+    case volume = 1
+    case window = 2
+    case ratio = 3
+    case level = 4
+    case pattern = 5
 
     var id: Int { rawValue }
 
     var title: String {
         switch self {
-        case .volumeWindow: return "VOLUME + WINDOW"
+        case .volume:       return "VOLUME"
+        case .window:       return "WINDOW"
         case .ratio:        return "RATIO"
         case .level:        return "VWAP / LEVEL"
         case .pattern:      return "PATTERN"
@@ -2441,7 +2455,8 @@ enum PhoneGate: Int, Identifiable, CaseIterable {
 
     var houseRule: String {
         switch self {
-        case .volumeWindow: return "Wait until vol actually gets loud."
+        case .volume:       return "No loud tape, no setup."
+        case .window:       return "Wrong window, wrong trade."
         case .ratio:        return "Manufactured entries are how people donate."
         case .level:        return "No level, no edge. The tape has to earn it."
         case .pattern:      return "Rejection candle, or no candle. No early entry."
@@ -3830,8 +3845,10 @@ private struct PhoneGateDetailSheet: View {
     private var numberText: String {
         guard let entry else { return "—" }
         switch gate {
-        case .volumeWindow:
+        case .volume:
             return "\(Int(entry.volumePercent))%"
+        case .window:
+            return entry.timeWindow.shortName
         case .ratio:
             return entry.instrument == .vxx ? String(format: "%.3f", entry.ratio) : "N/A"
         case .level:
@@ -3843,8 +3860,10 @@ private struct PhoneGateDetailSheet: View {
 
     private var numberColor: Color {
         switch gate {
-        case .volumeWindow:
-            return state.volumeWindowStatus == .pass ? DesignSystem.long : DesignSystem.short
+        case .volume:
+            return state.volumeStatus == .pass ? DesignSystem.long : DesignSystem.short
+        case .window:
+            return state.windowStatus == .pass ? DesignSystem.long : DesignSystem.short
         case .ratio:
             return state.ratioStatus == .pass ? DesignSystem.long : DesignSystem.short
         case .level:
@@ -3856,7 +3875,8 @@ private struct PhoneGateDetailSheet: View {
 
     private var detail: String {
         switch gate {
-        case .volumeWindow: return state.volumeWindowDetail
+        case .volume:       return state.volumeDetail
+        case .window:       return state.windowDetail
         case .ratio:        return state.ratioDetail
         case .level:        return state.levelDetail
         case .pattern:      return state.patternDetail
@@ -3872,12 +3892,20 @@ private struct PhoneGateDetailSheet: View {
 
     private var tiers: [Tier] {
         switch gate {
-        case .volumeWindow:
+        case .volume:
             let pct = entry?.volumePercent ?? 0
             return [
                 Tier(label: "INSTITUTIONAL", range: "300%+",   color: DesignSystem.long,  active: pct >= 300),
                 Tier(label: "STANDARD",      range: "200-299%",color: DesignSystem.amber, active: pct >= 200 && pct < 300),
                 Tier(label: "BELOW",         range: "<200%",   color: DesignSystem.short, active: pct < 200)
+            ]
+        case .window:
+            let window = entry?.timeWindow
+            return [
+                Tier(label: "MORNING",       range: "9:50-10:15", color: DesignSystem.long,  active: window == .morning),
+                Tier(label: "POWER",         range: "3:10-3:25",  color: DesignSystem.long,  active: window == .powerHour),
+                Tier(label: "INSTITUTIONAL", range: "3:45-4:10",  color: DesignSystem.long,  active: window == .institutional),
+                Tier(label: "OUTSIDE",       range: "no alert",   color: DesignSystem.short, active: window != nil && !(window?.isVXXEntryWindow ?? false))
             ]
         case .ratio:
             let r = entry?.ratio ?? 0

@@ -9,6 +9,9 @@ struct SettingsView: View {
     @AppStorage(AppConfig.CloseManagement.institutionalHardExitKey) private var institutionalHardExitTime = AppConfig.CloseManagement.defaultInstitutionalHardExit
     @StateObject private var notifications = SignalNotification.shared
     @State private var isAuditSheetOpen: Bool = false
+    @State private var schwabAppKeyInput: String = ""
+    @State private var schwabAppSecretInput: String = ""
+    @State private var schwabCredentialStatus: String = ""
 
     var body: some View {
         ZStack {
@@ -20,6 +23,7 @@ struct SettingsView: View {
                     accessCard
                     playtestCard
                     dataSourceCard
+                    schwabDeveloperCredentialsCard
                     strategyAuditCard
                     brokerCard
                     monitoringCard
@@ -33,9 +37,96 @@ struct SettingsView: View {
         .task {
             await notifications.refreshAuthorizationStatus()
         }
+        .onAppear {
+            refreshSchwabCredentialStatus()
+        }
         .sheet(isPresented: $isAuditSheetOpen) {
             StrategyAuditView()
         }
+    }
+
+    private var schwabDeveloperCredentialsCard: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("SCHWAB DEVELOPER ACCESS")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.4)
+                    .foregroundColor(DesignSystem.warningColor)
+
+                Text("For traders with their own Schwab developer account. Enter two values: app key and app secret. Steel stores them in this device's Keychain, ships with no shared Schwab secret, and never places orders.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                SecureField("Schwab app key / client ID", text: $schwabAppKeyInput)
+                    .textFieldStyle(.roundedBorder)
+
+                SecureField("Schwab app secret", text: $schwabAppSecretInput)
+                    .textFieldStyle(.roundedBorder)
+
+                if !schwabCredentialStatus.isEmpty {
+                    Text(schwabCredentialStatus)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                }
+
+                HStack(spacing: 10) {
+                    Button("Save To Keychain") {
+                        saveSchwabDeveloperCredentials()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(schwabAppKeyInput.isEmpty && schwabAppSecretInput.isEmpty)
+
+                    Button("Clear") {
+                        clearSchwabDeveloperCredentials()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+    }
+
+    private func refreshSchwabCredentialStatus() {
+        let hasKey = !AppConfig.Schwab.appKey.isEmpty
+        let hasSecret = !AppConfig.Schwab.appSecret.isEmpty
+
+        switch (hasKey, hasSecret) {
+        case (true, true):
+            schwabCredentialStatus = "Stored in Keychain: app key + app secret."
+        case (true, false):
+            schwabCredentialStatus = "Stored in Keychain: app key only."
+        case (false, true):
+            schwabCredentialStatus = "Stored in Keychain: app secret only."
+        case (false, false):
+            schwabCredentialStatus = "No Schwab developer credentials stored on this device."
+        }
+    }
+
+    private func saveSchwabDeveloperCredentials() {
+        let appKey = schwabAppKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let appSecret = schwabAppSecretInput.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !appKey.isEmpty {
+            AppConfig.Schwab.appKey = appKey
+        }
+
+        if !appSecret.isEmpty {
+            AppConfig.Schwab.appSecret = appSecret
+        }
+
+        schwabAppKeyInput = ""
+        schwabAppSecretInput = ""
+        refreshSchwabCredentialStatus()
+    }
+
+    private func clearSchwabDeveloperCredentials() {
+        AppConfig.Schwab.appKey = ""
+        AppConfig.Schwab.appSecret = ""
+        KeychainService.delete(key: AppConfig.Schwab.accessTokenKeychainKey)
+        KeychainService.delete(key: AppConfig.Schwab.refreshTokenKeychainKey)
+        schwabAppKeyInput = ""
+        schwabAppSecretInput = ""
+        refreshSchwabCredentialStatus()
     }
 
     private var strategyAuditCard: some View {
