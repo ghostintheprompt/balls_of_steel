@@ -30,19 +30,24 @@ enum EnvSeeder {
                 }
             case "SCHWAB_APP_KEY":
                 if !valueLooksReal(value) { continue }
-                if AppConfig.Schwab.appKey.isEmpty {
-                    AppConfig.Schwab.appKey = value
-                    print("[EnvSeeder] seeded Schwab app key from process environment")
-                }
+                if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored { continue }
+                AppConfig.Schwab.appKey = value
+                print("[EnvSeeder] seeded Schwab app key from process environment")
             case "SCHWAB_APP_SECRET":
                 if !valueLooksReal(value) { continue }
-                if AppConfig.Schwab.appSecret.isEmpty {
-                    AppConfig.Schwab.appSecret = value
-                    print("[EnvSeeder] seeded Schwab app secret from process environment")
-                }
+                if AppConfig.Schwab.appSecretStored || AppConfig.Schwab.developerCredentialsStored { continue }
+                AppConfig.Schwab.appSecret = value
+                print("[EnvSeeder] seeded Schwab app secret from process environment")
             default:
                 continue
             }
+        }
+        let hasSchwabKey = valueLooksReal(environment["SCHWAB_APP_KEY"] ?? "")
+        let hasSchwabSecret = valueLooksReal(environment["SCHWAB_APP_SECRET"] ?? "")
+        if hasSchwabKey && hasSchwabSecret {
+            AppConfig.Schwab.developerCredentialsStored = true
+            AppConfig.Schwab.appKeyStored = true
+            AppConfig.Schwab.appSecretStored = true
         }
         #endif
     }

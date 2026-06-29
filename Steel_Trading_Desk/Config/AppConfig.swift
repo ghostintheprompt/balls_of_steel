@@ -31,15 +31,85 @@ struct AppConfig {
         static let appSecretKeychainKey = "app.mdrn.steel.schwabAppSecret"
         static let accessTokenKeychainKey = "app.mdrn.steel.schwabAccessToken"
         static let refreshTokenKeychainKey = "app.mdrn.steel.schwabRefreshToken"
+        static let appKeyStoredKey = "schwabAppKeyStored"
+        static let appSecretStoredKey = "schwabAppSecretStored"
+        static let accessTokenStoredKey = "schwabAccessTokenStored"
+        static let refreshTokenStoredKey = "schwabRefreshTokenStored"
+        static let developerCredentialsStoredKey = "schwabDeveloperCredentialsStored"
+        static let oauthTokensStoredKey = "schwabOAuthTokensStored"
 
         static var appKey: String {
             get { KeychainService.load(key: appKeyKeychainKey) ?? "" }
-            set { AppConfig.storeKeychainValue(newValue, key: appKeyKeychainKey) }
+            set {
+                AppConfig.storeKeychainValue(newValue, key: appKeyKeychainKey)
+                appKeyStored = !newValue.isEmpty
+                developerCredentialsStored = appKeyStored && appSecretStored
+            }
         }
 
         static var appSecret: String {
             get { KeychainService.load(key: appSecretKeychainKey) ?? "" }
-            set { AppConfig.storeKeychainValue(newValue, key: appSecretKeychainKey) }
+            set {
+                AppConfig.storeKeychainValue(newValue, key: appSecretKeychainKey)
+                appSecretStored = !newValue.isEmpty
+                developerCredentialsStored = appKeyStored && appSecretStored
+            }
+        }
+
+        static var hasDeveloperCredentials: Bool {
+            developerCredentialsStored || (appKeyStored && appSecretStored)
+        }
+
+        static var hasOAuthTokens: Bool {
+            oauthTokensStored || (accessTokenStored && refreshTokenStored)
+        }
+
+        static var appKeyStored: Bool {
+            get { UserDefaults.standard.bool(forKey: appKeyStoredKey) }
+            set { UserDefaults.standard.set(newValue, forKey: appKeyStoredKey) }
+        }
+
+        static var appSecretStored: Bool {
+            get { UserDefaults.standard.bool(forKey: appSecretStoredKey) }
+            set { UserDefaults.standard.set(newValue, forKey: appSecretStoredKey) }
+        }
+
+        static var accessToken: String {
+            get { KeychainService.load(key: accessTokenKeychainKey) ?? "" }
+            set {
+                AppConfig.storeKeychainValue(newValue, key: accessTokenKeychainKey)
+                accessTokenStored = !newValue.isEmpty
+                oauthTokensStored = accessTokenStored && refreshTokenStored
+            }
+        }
+
+        static var refreshToken: String {
+            get { KeychainService.load(key: refreshTokenKeychainKey) ?? "" }
+            set {
+                AppConfig.storeKeychainValue(newValue, key: refreshTokenKeychainKey)
+                refreshTokenStored = !newValue.isEmpty
+                oauthTokensStored = accessTokenStored && refreshTokenStored
+            }
+        }
+
+        static var accessTokenStored: Bool {
+            get { UserDefaults.standard.bool(forKey: accessTokenStoredKey) }
+            set { UserDefaults.standard.set(newValue, forKey: accessTokenStoredKey) }
+        }
+
+        static var refreshTokenStored: Bool {
+            get { UserDefaults.standard.bool(forKey: refreshTokenStoredKey) }
+            set { UserDefaults.standard.set(newValue, forKey: refreshTokenStoredKey) }
+        }
+
+        static var developerCredentialsStored: Bool {
+            get { UserDefaults.standard.bool(forKey: developerCredentialsStoredKey) }
+            set { UserDefaults.standard.set(newValue, forKey: developerCredentialsStoredKey) }
+        }
+
+        static var oauthTokensStored: Bool {
+            get { UserDefaults.standard.bool(forKey: oauthTokensStoredKey) }
+            set { UserDefaults.standard.set(newValue, forKey: oauthTokensStoredKey) }
         }
     }
 

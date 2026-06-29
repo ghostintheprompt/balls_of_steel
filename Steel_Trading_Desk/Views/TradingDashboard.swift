@@ -1,6 +1,9 @@
 import SwiftUI
 import Combine
 import Charts
+#if os(macOS)
+import AppKit
+#endif
 
 struct TradingDashboard: View {
     @ObservedObject var signalMonitor: SignalMonitor
@@ -20,6 +23,8 @@ struct TradingDashboard: View {
     private var phoneStrategyState: VXXStrategyState {
         VXXStrategyState(entry: lastMarketDataEntry)
     }
+
+    @State private var isSettingsSheetOpen = false
     
     var body: some View {
         NavigationView {
@@ -48,13 +53,21 @@ struct TradingDashboard: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    NavigationLink {
-                        SettingsView()
+                    Button {
+                        isSettingsSheetOpen = true
                     } label: {
                         Image(systemName: "gearshape")
                             .foregroundColor(DesignSystem.amber)
                     }
+                    .buttonStyle(.plain)
+                    .help("Settings")
                 }
+            }
+            .sheet(isPresented: $isSettingsSheetOpen) {
+                SettingsView()
+                    #if os(macOS)
+                    .frame(width: 860, height: 640)
+                    #endif
             }
         }
         // Force stack navigation on iPad. Without this, NavigationView defaults
@@ -1697,56 +1710,162 @@ private struct SPYSetupMetricCard: View {
 // Three-column boiler-room layout: ticker strip / left rail / chart / right rail / status.
 // The chart center is a placeholder until Phase 5 wires the TradingView WKWebView.
 
+private enum MacTerminalSheet: Identifiable {
+    case tape
+    case prompt
+
+    var id: String {
+        switch self {
+        case .tape: return "tape"
+        case .prompt: return "prompt"
+        }
+    }
+}
+
 private struct MacTerminalView: View {
     @ObservedObject var signalMonitor: SignalMonitor
     @ObservedObject var marketPulse: MarketPulse
     let entry: MarketDataEntry?
     let state: VXXStrategyState
 
-    @State private var showingTapeSheet = false
-    @State private var showingPromptSheet = false
+    @State private var activeSheet: MacTerminalSheet?
+
+    #if os(macOS)
+    private var tapeSheetSize: CGSize {
+        let visibleFrame = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1100, height: 840)
+        return CGSize(
+            width: min(980, max(760, visibleFrame.width - 160)),
+            height: min(780, max(640, visibleFrame.height - 120))
+        )
+    }
+    #endif
 
     var body: some View {
+        GeometryReader { geometry in
+            terminalBody(for: geometry.size.width)
+        }
+        .background(DesignSystem.bg)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .tape:
+                ZStack {
+                    DesignSystem.bg.ignoresSafeArea()
+                    ManualDataEntryView()
+                }
+                    #if os(macOS)
+                    .frame(width: tapeSheetSize.width, height: tapeSheetSize.height)
+                    #endif
+            case .prompt:
+                ZStack {
+                    DesignSystem.bg.ignoresSafeArea()
+                    PromptCoachView()
+                }
+                    #if os(macOS)
+                    .frame(minWidth: 640, minHeight: 720)
+                    #endif
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func terminalBody(for width: CGFloat) -> some View {
+        let metrics = MacDeskMetrics(width: width)
+
         VStack(spacing: 0) {
             TickerStripView(entry: entry, marketPulse: marketPulse)
 
-            HStack(spacing: 0) {
-                LeftRailView(state: state, marketPulse: marketPulse)
-                    .frame(width: 240)
+            if metrics.isStacked {
+                stackedTerminalBody
+            } else {
+                HStack(spacing: 0) {
+                    if metrics.showsLeftRail {
+                        LeftRailView(state: state, marketPulse: marketPulse)
+                            .frame(width: metrics.leftRailWidth)
+                            .frame(maxHeight: .infinity, alignment: .top)
+
+                        Rectangle()
+                            .fill(DesignSystem.hairline)
+                            .frame(width: 1)
+                    }
+
+                    VStack(spacing: 0) {
+                        if !metrics.showsLeftRail {
+                            CompactGateStripView(state: state)
+                        }
+
+                        ChartCenterView(symbol: entry?.instrument ?? .vxx)
+                    }
+                    .frame(minWidth: metrics.minimumChartWidth, maxWidth: .infinity, maxHeight: .infinity)
+
+                    Rectangle()
+                        .fill(DesignSystem.hairline)
+                        .frame(width: 1)
+
+                    RightRailView(
+                        state: state,
+                        entry: entry,
+                        signalMonitor: signalMonitor,
+                        onEditTape: { activeSheet = .tape },
+                        onSecondRead: { activeSheet = .prompt }
+                    )
+                    .frame(width: metrics.rightRailWidth)
                     .frame(maxHeight: .infinity, alignment: .top)
-
-                Rectangle()
-                    .fill(DesignSystem.hairline)
-                    .frame(width: 1)
-
-                ChartCenterView(symbol: entry?.instrument ?? .vxx)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                Rectangle()
-                    .fill(DesignSystem.hairline)
-                    .frame(width: 1)
-
-                RightRailView(
-                    state: state,
-                    entry: entry,
-                    signalMonitor: signalMonitor,
-                    onEditTape: { showingTapeSheet = true },
-                    onSecondRead: { showingPromptSheet = true }
-                )
-                .frame(width: 320)
-                .frame(maxHeight: .infinity, alignment: .top)
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
 
             StatusFooterView(marketPulse: marketPulse, entry: entry)
         }
-        .background(DesignSystem.bg)
-        .sheet(isPresented: $showingTapeSheet) {
-            ManualDataEntryView()
+    }
+
+    private var stackedTerminalBody: some View {
+        VStack(spacing: 0) {
+            CompactGateStripView(state: state)
+
+            ChartCenterView(symbol: entry?.instrument ?? .vxx)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Rectangle()
+                .fill(DesignSystem.hairline)
+                .frame(height: 1)
+
+            RightRailView(
+                state: state,
+                entry: entry,
+                signalMonitor: signalMonitor,
+                onEditTape: { activeSheet = .tape },
+                onSecondRead: { activeSheet = .prompt }
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 250)
         }
-        .sheet(isPresented: $showingPromptSheet) {
-            PromptCoachView()
-        }
+        .frame(maxHeight: .infinity)
+    }
+}
+
+private struct MacDeskMetrics {
+    let width: CGFloat
+
+    var isStacked: Bool {
+        width < 900
+    }
+
+    var showsLeftRail: Bool {
+        width >= 1120
+    }
+
+    var leftRailWidth: CGFloat {
+        width >= 1320 ? 240 : 218
+    }
+
+    var rightRailWidth: CGFloat {
+        if width >= 1320 { return 320 }
+        if width >= 1120 { return 300 }
+        return min(300, max(270, width * 0.32))
+    }
+
+    var minimumChartWidth: CGFloat {
+        showsLeftRail ? 520 : 560
     }
 }
 
@@ -1793,9 +1912,13 @@ private struct TickerStripView: View {
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.4)
                 .foregroundColor(DesignSystem.muted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             Text(value)
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
         .padding(.horizontal, 12)
     }
@@ -1841,6 +1964,55 @@ private struct TickerStripView: View {
 }
 
 // MARK: - Left Rail
+
+private struct CompactGateStripView: View {
+    let state: VXXStrategyState
+
+    var body: some View {
+        HStack(spacing: 0) {
+            gateCell("01", "VOL", state.volumeStatus)
+            divider
+            gateCell("02", "WIN", state.windowStatus)
+            divider
+            gateCell("03", "RATIO", state.ratioStatus)
+            divider
+            gateCell("04", "LEVEL", state.levelStatus)
+            divider
+            gateCell("05", "PATTERN", state.patternStatus)
+        }
+        .frame(height: 44)
+        .background(DesignSystem.bg1)
+        .overlay(
+            Rectangle().fill(DesignSystem.hairline).frame(height: 1),
+            alignment: .bottom
+        )
+    }
+
+    private var divider: some View {
+        Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 22)
+    }
+
+    private func gateCell(_ index: String, _ label: String, _ status: GateStatus) -> some View {
+        HStack(spacing: 7) {
+            Text(index)
+                .font(DesignSystem.Typography.labelFont)
+                .foregroundColor(DesignSystem.muted)
+
+            Image(systemName: status.icon)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(status.color)
+
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.1)
+                .foregroundColor(status.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity)
+    }
+}
 
 private struct LeftRailView: View {
     let state: VXXStrategyState
@@ -2020,34 +2192,49 @@ private struct ChartCenterView: View {
     }
 
     private var chartToolbar: some View {
-        HStack(spacing: 12) {
-            ForEach(["1m", "5m", "15m", "1H", "1D"], id: \.self) { tf in
-                Text(tf)
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.2)
-                    .foregroundColor(tf == "5m" ? DesignSystem.amber : DesignSystem.muted)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(tf == "5m" ? DesignSystem.amber.opacity(0.10) : Color.clear)
+        GeometryReader { geometry in
+            let isCompact = geometry.size.width < 560
+            let overlays = isCompact ? ["VWAP", "20", "50", "VOL"] : ["VWAP", "SMA20", "SMA50", "VOL"]
+
+            HStack(spacing: isCompact ? 6 : 10) {
+                ForEach(isCompact ? ["1m", "5m", "15m", "1H"] : ["1m", "5m", "15m", "1H", "1D"], id: \.self) { tf in
+                    Text(tf)
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.0)
+                        .foregroundColor(tf == "5m" ? DesignSystem.amber : DesignSystem.muted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .allowsTightening(true)
+                        .padding(.horizontal, isCompact ? 5 : 7)
+                        .padding(.vertical, 4)
+                        .background(tf == "5m" ? DesignSystem.amber.opacity(0.10) : Color.clear)
+                }
+
+                Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 14)
+
+                ForEach(overlays, id: \.self) { overlay in
+                    Text(overlay)
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.0)
+                        .foregroundColor(DesignSystem.text2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .allowsTightening(true)
+                }
+
+                Spacer(minLength: 6)
+
+                Text(symbol.displayName)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.amber)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
-
-            Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 14)
-
-            ForEach(["VWAP", "SMA20", "SMA50", "VOL"], id: \.self) { overlay in
-                Text(overlay)
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.2)
-                    .foregroundColor(DesignSystem.text2)
-            }
-
-            Spacer()
-
-            Text(symbol.displayName)
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(DesignSystem.amber)
+            .padding(.horizontal, isCompact ? 10 : 16)
+            .frame(width: geometry.size.width, height: 30, alignment: .leading)
         }
-        .padding(.horizontal, 16)
         .frame(height: 30)
+        .clipped()
         .background(DesignSystem.bg1)
         .overlay(
             Rectangle().fill(DesignSystem.hairline).frame(height: 1),
@@ -2059,6 +2246,7 @@ private struct ChartCenterView: View {
         ChartWebView(symbol: ChartWebView.tradingViewSymbol(for: symbol))
             .background(DesignSystem.bg)
     }
+
 
     private var chartFooter: some View {
         HStack {
@@ -2370,6 +2558,7 @@ private struct StatusFooterView: View {
     @ObservedObject var marketPulse: MarketPulse
     let entry: MarketDataEntry?
     @ObservedObject private var liveTape = LiveTapeService.shared
+    @State private var schwabCredentialRevision = 0
 
     var body: some View {
         HStack(spacing: 0) {
@@ -2389,9 +2578,13 @@ private struct StatusFooterView: View {
             Rectangle().fill(DesignSystem.hairline).frame(height: 1),
             alignment: .top
         )
+        .onReceive(NotificationCenter.default.publisher(for: .schwabCredentialsChanged)) { _ in
+            schwabCredentialRevision += 1
+        }
     }
 
     private var quotesText: String {
+        _ = schwabCredentialRevision
         if liveTape.isLive {
             if let last = liveTape.lastTickAt {
                 let delta = Int(Date().timeIntervalSince(last))
@@ -2402,12 +2595,21 @@ private struct StatusFooterView: View {
         if liveTape.isEnabled, let err = liveTape.lastError {
             return "LIVE · ERR · \(err.prefix(40))".uppercased()
         }
+        if AppConfig.Schwab.oauthTokensStored {
+            return "SCHWAB TOKEN · FEED OFF"
+        }
+        if AppConfig.Schwab.developerCredentialsStored {
+            return "SCHWAB KEYS · OAUTH PENDING"
+        }
         return entry == nil ? "NO TAPE" : "MANUAL TAPE"
     }
 
     private var quotesAccent: Color {
+        _ = schwabCredentialRevision
         if liveTape.isLive { return DesignSystem.long }
         if liveTape.isEnabled && liveTape.lastError != nil { return DesignSystem.short }
+        if AppConfig.Schwab.oauthTokensStored { return DesignSystem.bullishColor }
+        if AppConfig.Schwab.developerCredentialsStored { return DesignSystem.warningColor }
         return entry == nil ? DesignSystem.short : DesignSystem.amber
     }
 
@@ -2421,11 +2623,15 @@ private struct StatusFooterView: View {
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.4)
                 .foregroundColor(DesignSystem.muted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             if !value.isEmpty {
                 Text(value)
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.2)
                     .foregroundColor(accent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
         }
         .padding(.horizontal, 12)

@@ -4,37 +4,255 @@ import SwiftUI
 // Educational tool - Enter market data manually from your trading platform
 
 struct ManualDataEntryView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ManualDataEntryViewModel()
     @State private var showingSaved = false
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                TradingBackdrop()
-
-                ScrollView {
-                    VStack(spacing: 24) {
-                        educationalHeader
-                        tapeOrderCard
-                        dataEntryForm
-                        quickFillSection
-                        actionButtons
-
-                        if let lastEntry = viewModel.lastEntry {
-                            lastEntryCard(lastEntry)
-                        }
-                    }
-                    .padding(DesignSystem.spacing)
-                }
+        Group {
+            #if os(macOS)
+            desktopManualFeedContent
+            #else
+            NavigationView {
+                verticalManualFeedContent
+                    .navigationTitle("Manual Feed")
             }
-            .navigationTitle("Manual Feed")
-            .alert("Data Saved", isPresented: $showingSaved) {
-                Button("OK") { }
-            } message: {
-                Text("The desk has the read. Check SPY or VXX for the signal state.")
+            #endif
+        }
+        .alert("Data Saved", isPresented: $showingSaved) {
+            Button("OK") { }
+        } message: {
+            Text("The desk has the read. Check SPY or VXX for the signal state.")
+        }
+    }
+
+    private var verticalManualFeedContent: some View {
+        ZStack {
+            TradingBackdrop()
+
+            ScrollView {
+                verticalFeedStack()
+                .padding(DesignSystem.spacing)
             }
         }
     }
+
+    #if os(macOS)
+    private var desktopManualFeedContent: some View {
+        GeometryReader { geometry in
+            let isCompact = geometry.size.width < 760
+
+            ZStack {
+                TradingBackdrop()
+
+                VStack(spacing: 0) {
+                    desktopSheetHeader
+
+                    Rectangle()
+                        .fill(DesignSystem.hairline)
+                        .frame(height: 1)
+
+                    if isCompact {
+                        ScrollView {
+                            verticalFeedStack(includesActions: false)
+                                .padding(DesignSystem.spacing)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        HStack(alignment: .top, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 16) {
+                                educationalHeader
+                                tapeOrderCard
+                                Spacer(minLength: 0)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .padding(.vertical, 18)
+                            .padding(.leading, 18)
+                            .frame(width: desktopRailWidth(for: geometry.size.width))
+                            .frame(maxHeight: .infinity)
+
+                            Rectangle()
+                                .fill(DesignSystem.hairline)
+                                .frame(width: 1)
+                                .padding(.vertical, 18)
+
+                            ScrollView {
+                                VStack(spacing: 18) {
+                                    dataEntryForm
+                                    quickFillSection
+
+                                    if let lastEntry = viewModel.lastEntry {
+                                        lastEntryCard(lastEntry)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .top)
+                                .padding(.vertical, 18)
+                                .padding(.trailing, 18)
+                            }
+                            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    }
+
+                    desktopActionFooter(isCompact: geometry.size.width < 680)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    private func desktopRailWidth(for totalWidth: CGFloat) -> CGFloat {
+        min(390, max(330, totalWidth * 0.38))
+    }
+    #endif
+
+    @ViewBuilder
+    private func verticalFeedStack(includesActions: Bool = true) -> some View {
+        VStack(spacing: 24) {
+            educationalHeader
+            tapeOrderCard
+            dataEntryForm
+            quickFillSection
+            if includesActions {
+                actionButtons
+            }
+
+            if let lastEntry = viewModel.lastEntry {
+                lastEntryCard(lastEntry)
+            }
+        }
+    }
+
+    #if os(macOS)
+    private var desktopSheetHeader: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(DesignSystem.amber)
+                .frame(width: 28, height: 28)
+                .background(DesignSystem.amber.opacity(0.10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                        .stroke(DesignSystem.amber.opacity(0.30), lineWidth: 1)
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("MANUAL FEED")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.mutedText)
+                Text("Enter the read")
+                    .font(DesignSystem.Typography.headlineFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .black))
+                    .foregroundColor(DesignSystem.primaryText)
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(DesignSystem.bg1)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                    .stroke(DesignSystem.hairline, lineWidth: 1)
+            )
+            .keyboardShortcut(.cancelAction)
+            .help("Close manual feed")
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(DesignSystem.bg)
+    }
+
+    @ViewBuilder
+    private func desktopActionFooter(isCompact: Bool) -> some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(DesignSystem.hairline)
+                .frame(height: 1)
+
+            if isCompact {
+                VStack(alignment: .leading, spacing: 10) {
+                    footerStatusText
+
+                    HStack(spacing: 10) {
+                        clearFooterButton
+                        postFooterButton
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+            } else {
+                HStack(spacing: 14) {
+                    footerStatusText
+
+                    Spacer(minLength: 16)
+
+                    clearFooterButton
+                    postFooterButton
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+            }
+        }
+        .background(DesignSystem.bg1)
+    }
+
+    private var footerStatusText: some View {
+        Text(viewModel.isValidEntry ? "Ready to post this read to the desk." : "Fill the required fields with real numbers before posting.")
+            .font(DesignSystem.Typography.captionFont)
+            .foregroundColor(viewModel.isValidEntry ? DesignSystem.bullishColor : DesignSystem.warningColor)
+            .lineLimit(2)
+            .minimumScaleFactor(0.82)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var clearFooterButton: some View {
+        Button(action: { viewModel.clearForm() }) {
+            Label("Clear", systemImage: "trash")
+                .font(DesignSystem.Typography.captionFont)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+                .frame(minWidth: 104, minHeight: 36)
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(DesignSystem.dangerColor)
+        .background(DesignSystem.bg)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                .stroke(DesignSystem.dangerColor.opacity(0.45), lineWidth: 1)
+        )
+    }
+
+    private var postFooterButton: some View {
+        Button(action: postEntry) {
+            Label("Post To Desk", systemImage: "checkmark.circle.fill")
+                .font(DesignSystem.Typography.captionFont)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+                .frame(minWidth: 148, minHeight: 36)
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(viewModel.isValidEntry ? .black : DesignSystem.muted)
+        .background(viewModel.isValidEntry ? DesignSystem.amber : DesignSystem.faint)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                .stroke(viewModel.isValidEntry ? DesignSystem.amber : DesignSystem.hairline, lineWidth: 1)
+        )
+        .disabled(!viewModel.isValidEntry)
+        .keyboardShortcut(.defaultAction)
+    }
+    #endif
 
     private var educationalHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -124,7 +342,7 @@ struct ManualDataEntryView: View {
     }
 
     private var dataEntryForm: some View {
-        VStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("DESK INPUT")
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.2)
@@ -135,12 +353,15 @@ struct ManualDataEntryView: View {
                 Label("Instrument", systemImage: "chart.line.uptrend.xyaxis")
                     .font(DesignSystem.Typography.headlineFont)
                     .foregroundColor(DesignSystem.primaryText)
-                Picker("Instrument", selection: $viewModel.instrument) {
-                    Text("VXX").tag(TradingInstrument.vxx)
-                    Text("SPY").tag(TradingInstrument.spy)
-                }
-                .pickerStyle(.segmented)
+                DeskSegmentedPicker(
+                    selection: $viewModel.instrument,
+                    options: [
+                        DeskPickerOption(value: .vxx, title: "VXX"),
+                        DeskPickerOption(value: .spy, title: "SPY")
+                    ]
+                )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 8) {
                 Label("\(viewModel.instrument.displayName) Price", systemImage: "dollarsign.circle.fill")
@@ -154,6 +375,7 @@ struct ManualDataEntryView: View {
                         .foregroundColor(DesignSystem.bearishColor)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if viewModel.instrument == .vxx {
                 VStack(alignment: .leading, spacing: 8) {
@@ -168,6 +390,7 @@ struct ManualDataEntryView: View {
                             .foregroundColor(DesignSystem.bearishColor)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -189,6 +412,7 @@ struct ManualDataEntryView: View {
                     volumeIndicator(volumePct)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 8) {
                 Label("Trading Window", systemImage: "clock.fill")
@@ -207,6 +431,7 @@ struct ManualDataEntryView: View {
                 }
                 .pickerStyle(.menu)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Divider()
 
@@ -225,60 +450,60 @@ struct ManualDataEntryView: View {
                 Label("Price vs VWAP", systemImage: "arrow.up.arrow.down")
                     .font(DesignSystem.Typography.headlineFont)
                     .foregroundColor(DesignSystem.primaryText)
-                Picker("VWAP Position", selection: $viewModel.vwapPosition) {
-                    Text("Above VWAP").tag(VWAPPosition.above)
-                    Text("Below VWAP").tag(VWAPPosition.below)
-                    Text("At VWAP").tag(VWAPPosition.at)
-                }
-                .pickerStyle(.segmented)
+                DeskSegmentedPicker(
+                    selection: $viewModel.vwapPosition,
+                    options: [
+                        DeskPickerOption(value: .above, title: "Above VWAP"),
+                        DeskPickerOption(value: .below, title: "Below VWAP"),
+                        DeskPickerOption(value: .at, title: "At VWAP")
+                    ]
+                )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Toggle(isOn: $viewModel.keyLevelConfirmed) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Key level confirmed")
-                        .font(DesignSystem.Typography.headlineFont)
-                        .foregroundColor(DesignSystem.primaryText)
-                    Text("VWAP, 50 SMA, round number, prior high, or support break.")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                }
-            }
+            DeskCheckRow(
+                isOn: $viewModel.keyLevelConfirmed,
+                title: "Key level confirmed",
+                detail: "VWAP, 50 SMA, round number, prior high, or support break."
+            )
 
             VStack(alignment: .leading, spacing: 8) {
                 Label("Arrow Signal", systemImage: "arrow.up.arrow.down.circle.fill")
                     .font(DesignSystem.Typography.headlineFont)
                     .foregroundColor(DesignSystem.primaryText)
-                Picker("Arrow Signal", selection: $viewModel.arrowSignal) {
-                    Text("No Arrow").tag(ArrowSignalInput.none)
-                    Text("Bullish (Up)").tag(ArrowSignalInput.bullish)
-                    Text("Bearish (Down)").tag(ArrowSignalInput.bearish)
-                }
-                .pickerStyle(.segmented)
+                DeskSegmentedPicker(
+                    selection: $viewModel.arrowSignal,
+                    options: [
+                        DeskPickerOption(value: .none, title: "No Arrow"),
+                        DeskPickerOption(value: .bullish, title: "Bullish Up"),
+                        DeskPickerOption(value: .bearish, title: "Bearish Down")
+                    ]
+                )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Toggle(isOn: $viewModel.patternConfirmed) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Rejection pattern visible")
-                        .font(DesignSystem.Typography.headlineFont)
-                        .foregroundColor(DesignSystem.primaryText)
-                    Text("Shooting star, doji, engulfing, or clear rejection candle.")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                }
-            }
+            DeskCheckRow(
+                isOn: $viewModel.patternConfirmed,
+                title: "Rejection pattern visible",
+                detail: "Shooting star, doji, engulfing, or clear rejection candle."
+            )
 
             VStack(alignment: .leading, spacing: 8) {
                 Label("News Risk", systemImage: "newspaper.fill")
                     .font(DesignSystem.Typography.headlineFont)
                     .foregroundColor(DesignSystem.primaryText)
-                Picker("News Risk", selection: $viewModel.newsRisk) {
-                    Text("None").tag(NewsRiskInput.none)
-                    Text("Moderate").tag(NewsRiskInput.moderate)
-                    Text("High").tag(NewsRiskInput.high)
-                }
-                .pickerStyle(.segmented)
+                DeskSegmentedPicker(
+                    selection: $viewModel.newsRisk,
+                    options: [
+                        DeskPickerOption(value: .none, title: "None"),
+                        DeskPickerOption(value: .moderate, title: "Moderate"),
+                        DeskPickerOption(value: .high, title: "High")
+                    ]
+                )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .deskPanel(glow: DesignSystem.primaryColor.opacity(0.10))
     }
 
@@ -489,11 +714,7 @@ struct ManualDataEntryView: View {
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
-            Button(action: {
-                if viewModel.saveEntry() {
-                    showingSaved = true
-                }
-            }) {
+            Button(action: postEntry) {
                 Label("Post To Desk", systemImage: "checkmark.circle.fill")
                     .font(DesignSystem.Typography.headlineFont)
                     .frame(maxWidth: .infinity)
@@ -509,6 +730,12 @@ struct ManualDataEntryView: View {
                     .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(DesignSystem.warningColor)
             }
+        }
+    }
+
+    private func postEntry() {
+        if viewModel.saveEntry() {
+            showingSaved = true
         }
     }
 
@@ -562,6 +789,91 @@ struct ManualDataEntryView: View {
             }
         }
         .deskPanel(glow: DesignSystem.primaryColor.opacity(0.08))
+    }
+}
+
+private struct DeskPickerOption<Value: Hashable>: Identifiable {
+    let value: Value
+    let title: String
+
+    var id: Value { value }
+}
+
+private struct DeskSegmentedPicker<Value: Hashable>: View {
+    @Binding var selection: Value
+    let options: [DeskPickerOption<Value>]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options) { option in
+                Button {
+                    selection = option.value
+                } label: {
+                    Text(option.title)
+                        .font(DesignSystem.Typography.captionFont)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .allowsTightening(true)
+                        .frame(maxWidth: .infinity, minHeight: 34)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(selection == option.value ? .black : DesignSystem.primaryText)
+                .background(selection == option.value ? DesignSystem.amber : DesignSystem.bg1)
+                .overlay(
+                    Rectangle()
+                        .stroke(DesignSystem.hairline, lineWidth: 1)
+                )
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 36)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                .stroke(DesignSystem.hairline, lineWidth: 1)
+        )
+    }
+}
+
+private struct DeskCheckRow: View {
+    @Binding var isOn: Bool
+    let title: String
+    let detail: String
+
+    var body: some View {
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: isOn ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(isOn ? DesignSystem.amber : DesignSystem.mutedText)
+                    .frame(width: 22, height: 22)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(DesignSystem.Typography.headlineFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                    Text(detail)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DesignSystem.bg1)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                    .stroke(isOn ? DesignSystem.amber.opacity(0.5) : DesignSystem.hairline, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

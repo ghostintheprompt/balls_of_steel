@@ -19,6 +19,18 @@ struct MainApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if os(macOS)
+            MainView()
+                .frame(minWidth: 1180, minHeight: 720)
+                .onOpenURL { url in
+                    SchwabOAuthCallbackHandler.handle(url)
+                }
+                .task {
+                    // 3s delay before silent check on launch
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    await updateChecker.checkForUpdates(silent: true)
+                }
+            #else
             MainView()
                 .onOpenURL { url in
                     SchwabOAuthCallbackHandler.handle(url)
@@ -28,8 +40,11 @@ struct MainApp: App {
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                     await updateChecker.checkForUpdates(silent: true)
                 }
+            #endif
         }
         #if os(macOS)
+        .defaultSize(width: 1440, height: 860)
+        .windowResizability(.contentMinSize)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact)
         .commands {

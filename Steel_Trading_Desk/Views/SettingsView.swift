@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @AppStorage("alertVolume") private var alertVolume: Double = 0.7 // Default 70%
     @AppStorage(AppConfig.CloseManagement.generalWarningKey) private var generalWarningTime = AppConfig.CloseManagement.defaultGeneralWarning
@@ -11,25 +12,66 @@ struct SettingsView: View {
     @State private var isAuditSheetOpen: Bool = false
     @State private var schwabAppKeyInput: String = ""
     @State private var schwabAppSecretInput: String = ""
-    @State private var schwabCredentialStatus: String = ""
 
     var body: some View {
+        #if os(macOS)
+        desktopSystemsPanel
+        #else
+        mobileSystemsPanel
+        #endif
+    }
+
+    #if os(macOS)
+    private var desktopSystemsPanel: some View {
+        ZStack {
+            TradingBackdrop()
+
+            VStack(spacing: 0) {
+                systemsHeader
+
+                Rectangle()
+                    .fill(DesignSystem.hairline)
+                    .frame(height: 1)
+
+                HStack(alignment: .top, spacing: 14) {
+                    VStack(spacing: 14) {
+                        systemDataCard
+                        compactSchwabCredentialsCard
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                    VStack(spacing: 14) {
+                        compactAlertsCard
+                        compactCloseCard
+                        compactAuditCard
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .padding(14)
+            }
+        }
+        .frame(minWidth: 820, idealWidth: 860, minHeight: 620, idealHeight: 640)
+        .task {
+            await notifications.refreshAuthorizationStatus()
+        }
+        .sheet(isPresented: $isAuditSheetOpen) {
+            StrategyAuditView()
+        }
+    }
+    #endif
+
+    private var mobileSystemsPanel: some View {
         ZStack {
             TradingBackdrop()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    settingsHeader
-                    accessCard
-                    playtestCard
-                    dataSourceCard
-                    schwabDeveloperCredentialsCard
-                    strategyAuditCard
-                    brokerCard
-                    monitoringCard
-                    notificationsCard
-                    closeManagementCard
-                    hoursCard
+                VStack(alignment: .leading, spacing: 14) {
+                    systemsHeader
+                    systemDataCard
+                    compactSchwabCredentialsCard
+                    compactAlertsCard
+                    compactCloseCard
+                    compactAuditCard
                 }
                 .padding(DesignSystem.spacing)
             }
@@ -37,69 +79,210 @@ struct SettingsView: View {
         .task {
             await notifications.refreshAuthorizationStatus()
         }
-        .onAppear {
-            refreshSchwabCredentialStatus()
-        }
         .sheet(isPresented: $isAuditSheetOpen) {
             StrategyAuditView()
         }
     }
 
-    private var schwabDeveloperCredentialsCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("SCHWAB DEVELOPER ACCESS")
+    private var systemsHeader: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("SYSTEMS")
                     .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.4)
-                    .foregroundColor(DesignSystem.warningColor)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.amber)
+                Text("Trade Controls")
+                    .font(DesignSystem.Typography.titleFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
 
-                Text("For traders with their own Schwab developer account. Enter two values: app key and app secret. Steel stores them in this device's Keychain, ships with no shared Schwab secret, and never places orders.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.text2)
-                    .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 12)
 
-                SecureField("Schwab app key / client ID", text: $schwabAppKeyInput)
+            SystemsStatusPill(
+                title: "DATA",
+                value: AppConfig.Schwab.hasOAuthTokens ? "SCHWAB" : "MANUAL",
+                accent: AppConfig.Schwab.hasOAuthTokens ? DesignSystem.long : DesignSystem.amber
+            )
+
+            SystemsStatusPill(
+                title: "ALERTS",
+                value: notifications.isPermissionGranted ? "ON" : "OFF",
+                accent: notifications.isPermissionGranted ? DesignSystem.long : DesignSystem.short
+            )
+
+            #if os(macOS)
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .black))
+                    .foregroundColor(DesignSystem.primaryText)
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(DesignSystem.bg1)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                    .stroke(DesignSystem.hairline, lineWidth: 1)
+            )
+            .keyboardShortcut(.cancelAction)
+            .help("Close systems")
+            #endif
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(DesignSystem.bg)
+    }
+
+    private var systemDataCard: some View {
+        SystemsPanel(title: "DATA") {
+            VStack(spacing: 9) {
+                SystemsReadoutRow(label: "Mode", value: "Manual tape", accent: DesignSystem.amber)
+                SystemsReadoutRow(label: "Schwab keys", value: AppConfig.Schwab.hasDeveloperCredentials ? "Stored" : "Missing", accent: AppConfig.Schwab.hasDeveloperCredentials ? DesignSystem.long : DesignSystem.short)
+                SystemsReadoutRow(label: "Live feed", value: AppConfig.Schwab.hasOAuthTokens ? "Token stored" : "Off", accent: AppConfig.Schwab.hasOAuthTokens ? DesignSystem.long : DesignSystem.mutedText)
+                SystemsReadoutRow(label: "Execution", value: "Thinkorswim manual", accent: DesignSystem.mutedText)
+            }
+        }
+    }
+
+    private var compactSchwabCredentialsCard: some View {
+        SystemsPanel(title: "SCHWAB") {
+            VStack(alignment: .leading, spacing: 10) {
+                SecureField("App key / client ID", text: $schwabAppKeyInput)
                     .textFieldStyle(.roundedBorder)
 
-                SecureField("Schwab app secret", text: $schwabAppSecretInput)
+                SecureField("App secret", text: $schwabAppSecretInput)
                     .textFieldStyle(.roundedBorder)
 
-                if !schwabCredentialStatus.isEmpty {
-                    Text(schwabCredentialStatus)
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                }
+                SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
 
                 HStack(spacing: 10) {
-                    Button("Save To Keychain") {
+                    Button {
                         saveSchwabDeveloperCredentials()
+                    } label: {
+                        Label("Save", systemImage: "key.fill")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(schwabAppKeyInput.isEmpty && schwabAppSecretInput.isEmpty)
 
-                    Button("Clear") {
+                    Button {
                         clearSchwabDeveloperCredentials()
+                    } label: {
+                        Label("Clear", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .tint(DesignSystem.short)
                 }
             }
         }
     }
 
-    private func refreshSchwabCredentialStatus() {
-        let hasKey = !AppConfig.Schwab.appKey.isEmpty
-        let hasSecret = !AppConfig.Schwab.appSecret.isEmpty
+    private var compactAlertsCard: some View {
+        SystemsPanel(title: "ALERTS") {
+            VStack(alignment: .leading, spacing: 10) {
+                SystemsReadoutRow(
+                    label: "Permission",
+                    value: notifications.permissionStatusText.uppercased(),
+                    accent: notifications.isPermissionGranted ? DesignSystem.long : DesignSystem.short
+                )
 
-        switch (hasKey, hasSecret) {
-        case (true, true):
-            schwabCredentialStatus = "Stored in Keychain: app key + app secret."
-        case (true, false):
-            schwabCredentialStatus = "Stored in Keychain: app key only."
-        case (false, true):
-            schwabCredentialStatus = "Stored in Keychain: app secret only."
-        case (false, false):
-            schwabCredentialStatus = "No Schwab developer credentials stored on this device."
+                HStack(spacing: 10) {
+                    Button(notifications.isPermissionGranted ? "Refresh" : "Enable") {
+                        Task {
+                            if notifications.isPermissionGranted {
+                                await notifications.refreshAuthorizationStatus()
+                            } else {
+                                await notifications.requestPermissions()
+                            }
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button {
+                        SignalNotification.shared.playTestSound()
+                    } label: {
+                        Label("Test", systemImage: "speaker.wave.2.fill")
+                    }
+                    .buttonStyle(.bordered)
+
+                    Spacer(minLength: 0)
+                }
+
+                HStack(spacing: 10) {
+                    Text("Volume")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .frame(width: 58, alignment: .leading)
+                    Slider(value: $alertVolume)
+                    Text("\(Int(alertVolume * 100))%")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.primaryText)
+                        .frame(width: 42, alignment: .trailing)
+                }
+            }
         }
+    }
+
+    private var compactCloseCard: some View {
+        SystemsPanel(title: "CLOSE") {
+            VStack(spacing: 8) {
+                compactTimeRow("General warn", binding: timeBinding(for: $generalWarningTime, defaultValue: AppConfig.CloseManagement.defaultGeneralWarning))
+                compactTimeRow("General exit", binding: timeBinding(for: $generalHardExitTime, defaultValue: AppConfig.CloseManagement.defaultGeneralHardExit))
+                compactTimeRow("Inst. warn", binding: timeBinding(for: $institutionalWarningTime, defaultValue: AppConfig.CloseManagement.defaultInstitutionalWarning))
+                compactTimeRow("Inst. exit", binding: timeBinding(for: $institutionalHardExitTime, defaultValue: AppConfig.CloseManagement.defaultInstitutionalHardExit))
+
+                Divider().background(DesignSystem.hairline)
+
+                Toggle("Background monitoring", isOn: $isBackgroundMonitoringEnabled)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.primaryText)
+            }
+        }
+    }
+
+    private func compactTimeRow(_ label: String, binding: Binding<Date>) -> some View {
+        HStack(spacing: 10) {
+            Text(label)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
+                .frame(width: 100, alignment: .leading)
+
+            DatePicker("", selection: binding, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+    }
+
+    private var compactAuditCard: some View {
+        SystemsPanel(title: "AUDIT") {
+            HStack(spacing: 10) {
+                SystemsReadoutRow(label: "Strategy", value: "Ready", accent: DesignSystem.long)
+
+                Button {
+                    isAuditSheetOpen = true
+                } label: {
+                    Label("Run", systemImage: "checkmark.shield")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    private var compactSchwabStatus: String {
+        if AppConfig.Schwab.hasOAuthTokens { return "OAuth token stored" }
+        if AppConfig.Schwab.hasDeveloperCredentials { return "Keys stored" }
+        return "Not stored"
+    }
+
+    private var schwabStatusAccent: Color {
+        if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
+        if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
+        return DesignSystem.short
     }
 
     private func saveSchwabDeveloperCredentials() {
@@ -114,275 +297,27 @@ struct SettingsView: View {
             AppConfig.Schwab.appSecret = appSecret
         }
 
+        AppConfig.Schwab.developerCredentialsStored = AppConfig.Schwab.appKeyStored && AppConfig.Schwab.appSecretStored
+
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
-        refreshSchwabCredentialStatus()
+        NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
     }
 
     private func clearSchwabDeveloperCredentials() {
         AppConfig.Schwab.appKey = ""
         AppConfig.Schwab.appSecret = ""
-        KeychainService.delete(key: AppConfig.Schwab.accessTokenKeychainKey)
-        KeychainService.delete(key: AppConfig.Schwab.refreshTokenKeychainKey)
+        AppConfig.Schwab.accessToken = ""
+        AppConfig.Schwab.refreshToken = ""
+        AppConfig.Schwab.appKeyStored = false
+        AppConfig.Schwab.appSecretStored = false
+        AppConfig.Schwab.accessTokenStored = false
+        AppConfig.Schwab.refreshTokenStored = false
+        AppConfig.Schwab.developerCredentialsStored = false
+        AppConfig.Schwab.oauthTokensStored = false
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
-        refreshSchwabCredentialStatus()
-    }
-
-    private var strategyAuditCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("STRATEGY AUDIT")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.4)
-                    .foregroundColor(DesignSystem.amber)
-
-                Text("Verifies code thresholds, time windows, exits, pattern criteria, and sizing against the strategy doc. Run it after any code change that touches the system.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.text2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button {
-                    isAuditSheetOpen = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.shield")
-                        Text("RUN AUDIT")
-                            .font(DesignSystem.Typography.labelFont)
-                            .tracking(1.6)
-                    }
-                    .foregroundColor(DesignSystem.bg)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(DesignSystem.amber)
-                    .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var dataSourceCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("DATA SOURCE")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.4)
-                    .foregroundColor(DesignSystem.amber)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("MANUAL ENTRY — FALLBACK")
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.2)
-                        .foregroundColor(DesignSystem.text)
-                    Text("The desk runs on what you enter right now. Same gates, same alerts, same discipline. This is the bridge — not the destination.")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.text2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Divider().background(DesignSystem.hairline)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        DeskPulseDot(accent: DesignSystem.amber, size: 6)
-                        Text("LIVE FEED — RESTORING")
-                            .font(DesignSystem.Typography.labelFont)
-                            .tracking(1.4)
-                            .foregroundColor(DesignSystem.amber)
-                    }
-                    Text("Real-time VXX + VIX through your own Schwab account. No third-party middlemen, no paywalled endpoints, no faked feeds. Coming back online when the integration lands.")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.text2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    private var settingsHeader: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("SETTINGS")
-                .font(DesignSystem.Typography.labelFont)
-                .tracking(1.2)
-                .foregroundColor(DesignSystem.mutedText)
-            Text("Keep the launch clean.")
-                .font(DesignSystem.Typography.titleFont)
-                .foregroundColor(DesignSystem.primaryText)
-            Text("This is the quiet side of the desk: alert readiness, monitoring, close timing, and the broker placeholder.")
-                .font(DesignSystem.Typography.bodyFont)
-                .foregroundColor(DesignSystem.mutedText)
-        }
-        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.10))
-    }
-
-    private var playtestCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("PLAYTEST READINESS")
-                            .font(DesignSystem.Typography.labelFont)
-                            .tracking(1)
-                            .foregroundColor(DesignSystem.mutedText)
-                        Text(AppConfig.Testing.nextTradingTestDate)
-                            .font(DesignSystem.Typography.headlineFont)
-                            .foregroundColor(DesignSystem.primaryText)
-                    }
-                    Spacer()
-                    DeskCountBadge(
-                        value: notifications.isPermissionGranted ? "ALERTS READY" : notifications.permissionStatusText.uppercased(),
-                        accent: notifications.isPermissionGranted ? DesignSystem.bullishColor : DesignSystem.warningColor
-                    )
-                }
-
-                Button(notifications.isPermissionGranted ? "Refresh Alert Status" : "Enable Alerts") {
-                    Task {
-                        if notifications.isPermissionGranted {
-                            await notifications.refreshAuthorizationStatus()
-                        } else {
-                            await notifications.requestPermissions()
-                        }
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-    }
-
-    private var brokerCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("BROKER")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1)
-                    .foregroundColor(DesignSystem.mutedText)
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(DesignSystem.amber)
-                        .frame(width: 8, height: 8)
-                    Text("SCHWAB — INTEGRATION PENDING")
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.2)
-                        .foregroundColor(DesignSystem.amber)
-                }
-
-                Text("Trade execution stays on your platform — ThinkOrSwim, Schwab, whatever you already use. The desk fires the read; you fire the order. Live quote feed and one-click broker handoff land alongside the Schwab Trader API wire-up.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private var monitoringCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("MONITORING")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1)
-                    .foregroundColor(DesignSystem.mutedText)
-
-                Toggle("Background Monitoring", isOn: $isBackgroundMonitoringEnabled)
-
-                Text("Leave this on if you want the desk to keep watching while you are doing other things.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-        }
-    }
-
-    private var notificationsCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("ALERTS")
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1)
-                        .foregroundColor(DesignSystem.mutedText)
-                    Spacer()
-                    Text(notifications.permissionStatusText)
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(notifications.isPermissionGranted ? DesignSystem.bullishColor : DesignSystem.warningColor)
-                }
-
-                HStack {
-                    Image(systemName: "speaker.wave.2.fill")
-                        .foregroundColor(DesignSystem.primaryColor)
-                    Text("Alert Volume")
-                        .font(DesignSystem.Typography.headlineFont)
-                        .foregroundColor(DesignSystem.primaryText)
-                }
-
-                HStack {
-                    Slider(value: $alertVolume)
-                    Button("Test") {
-                        SignalNotification.shared.playTestSound()
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
-        }
-    }
-
-    private var closeManagementCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("CLOSE MANAGEMENT")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1)
-                    .foregroundColor(DesignSystem.mutedText)
-
-                DatePicker("General First Warning", selection: timeBinding(for: $generalWarningTime, defaultValue: AppConfig.CloseManagement.defaultGeneralWarning), displayedComponents: .hourAndMinute)
-                DatePicker("General Hard Exit", selection: timeBinding(for: $generalHardExitTime, defaultValue: AppConfig.CloseManagement.defaultGeneralHardExit), displayedComponents: .hourAndMinute)
-                DatePicker("Institutional Warning", selection: timeBinding(for: $institutionalWarningTime, defaultValue: AppConfig.CloseManagement.defaultInstitutionalWarning), displayedComponents: .hourAndMinute)
-                DatePicker("Institutional Hard Exit", selection: timeBinding(for: $institutionalHardExitTime, defaultValue: AppConfig.CloseManagement.defaultInstitutionalHardExit), displayedComponents: .hourAndMinute)
-
-                Text("SPY and most VXX setups use the general timing. VXX institutional flow keeps its own extended warning and hard-exit window.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-        }
-    }
-
-    private var hoursCard: some View {
-        InfoCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("HOURS")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1)
-                    .foregroundColor(DesignSystem.mutedText)
-                VStack(alignment: .leading) {
-                    Text("Market Open: 9:30 AM ET")
-                    Text("Market Close: 4:00 PM ET")
-                    Text("Extended monitoring can continue beyond the cash close based on your exit settings above.")
-                }
-                .font(DesignSystem.Typography.bodyFont)
-                .foregroundColor(DesignSystem.mutedText)
-            }
-        }
-    }
-
-    private var accessCard: some View {
-        InfoCard(glow: .clear) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ACCESS")
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.2)
-                        .foregroundColor(DesignSystem.mutedText)
-                    Text("FREE. FULL DESK.")
-                        .font(DesignSystem.Typography.titleFont)
-                        .fontWeight(.black)
-                        .foregroundColor(DesignSystem.primaryText)
-                    Text("No paywall. No system pitch. One job: keep the VXX/VIX/VWAP decision honest.")
-                        .font(DesignSystem.Typography.bodyFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
+        NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
     }
 
     private func timeBinding(for timeString: Binding<String>, defaultValue: String) -> Binding<Date> {
@@ -395,6 +330,90 @@ struct SettingsView: View {
             set: { newValue in
                 timeString.wrappedValue = AppConfig.CloseManagement.storageTime(from: newValue)
             }
+        )
+    }
+}
+
+private struct SystemsPanel<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.6)
+                .foregroundColor(DesignSystem.amber)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            content
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(DesignSystem.panel)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                .stroke(DesignSystem.hairline, lineWidth: 1)
+        )
+    }
+}
+
+private struct SystemsReadoutRow: View {
+    let label: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(label.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.mutedText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .frame(width: 108, alignment: .leading)
+
+            Text(value)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: 22)
+    }
+}
+
+private struct SystemsStatusPill: View {
+    let title: String
+    let value: String
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.mutedText)
+
+            Text(value)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .background(accent.opacity(0.10))
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
+                .stroke(accent.opacity(0.35), lineWidth: 1)
         )
     }
 }
