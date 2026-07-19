@@ -51,3 +51,4 @@ Secrets.xcconfig
 ## Internal-only strategy / business notes (do NOT commit; not for public repo)
 STRATEGY_NOTES.md
 INTERNAL_*.md
+Trading Record to Optimize Method.pdf
