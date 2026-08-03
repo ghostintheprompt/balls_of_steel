@@ -9,10 +9,10 @@ class SignalMonitor: ObservableObject {
     @Published var activeTrades: [Trade] = []
     @Published var highlightedSignalID: UUID?
     private var cancellables = Set<AnyCancellable>()
+    private var backgroundMonitoringCancellable: AnyCancellable?
     
     private let scanner = SignalScanner()
     private let exitService = ExitSignalService()
-    private let notificationService = NotificationService()
 
     init() {
         setupSignalStream()
@@ -53,12 +53,13 @@ class SignalMonitor: ObservableObject {
     }
     
     func startBackgroundMonitoring() {
+        backgroundMonitoringCancellable?.cancel()
+
         // Use macOS background task alternative
         let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-        timer.sink { [weak self] _ in
+        backgroundMonitoringCancellable = timer.sink { [weak self] _ in
             self?.refreshSignals()
         }
-        .store(in: &cancellables)
     }
     
     private func refreshSignals() {
@@ -105,7 +106,8 @@ class SignalMonitor: ObservableObject {
     }
 
     func stopBackgroundMonitoring() {
-        cancellables.removeAll()
+        backgroundMonitoringCancellable?.cancel()
+        backgroundMonitoringCancellable = nil
     }
 
     func startTrade(_ signal: Signal) {

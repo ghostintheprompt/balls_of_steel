@@ -77,7 +77,6 @@ xcodebuild -quiet -project Steel_Trading_Desk.xcodeproj \
   -derivedDataPath /private/tmp/balls_of_steel_device \
   DEVELOPMENT_TEAM=9TB25L4266 \
   CODE_SIGN_STYLE=Automatic \
-  CODE_SIGN_IDENTITY='Apple Development' \
   build
 
 # Install
@@ -92,6 +91,8 @@ xcrun devicectl device process launch \
 ```
 
 Tradeoff: Release builds skip `EnvSeeder` (it's `#if DEBUG`-gated), so Schwab developer credentials must be entered through Settings -> Schwab Developer Access. After that, they persist in the device Keychain.
+
+Signing note: do not force `CODE_SIGN_IDENTITY` for real-device Release builds. Let Xcode pair the installed signing identity with the MDRN wildcard development profile automatically; forcing `Apple Development` can select the wrong identity/profile path and make signing flaky.
 
 ## Release archive (App Store / TestFlight)
 

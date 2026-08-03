@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,6 +17,8 @@ struct SettingsView: View {
     @State private var isAuditSheetOpen: Bool = false
     @State private var schwabAppKeyInput: String = ""
     @State private var schwabAppSecretInput: String = ""
+    @State private var isEditingSchwabCredentials: Bool = false
+    @State private var schwabCredentialMessage: String?
 
     var body: some View {
         #if os(macOS)
@@ -27,7 +34,7 @@ struct SettingsView: View {
             TradingBackdrop()
 
             VStack(spacing: 0) {
-                systemsHeader
+                desktopSystemsHeader
 
                 Rectangle()
                     .fill(DesignSystem.hairline)
@@ -66,7 +73,7 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    systemsHeader
+                    mobileSystemsHeader
                     systemDataCard
                     compactSchwabCredentialsCard
                     compactAlertsCard
@@ -84,7 +91,7 @@ struct SettingsView: View {
         }
     }
 
-    private var systemsHeader: some View {
+    private var desktopSystemsHeader: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("SYSTEMS")
@@ -137,6 +144,42 @@ struct SettingsView: View {
         .background(DesignSystem.bg)
     }
 
+    private var mobileSystemsHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("SYSTEMS")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.amber)
+                Text("Trade Controls")
+                    .font(DesignSystem.Typography.titleFont)
+                    .foregroundColor(DesignSystem.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            HStack(spacing: 8) {
+                SystemsStatusPill(
+                    title: "DATA",
+                    value: AppConfig.Schwab.hasOAuthTokens ? "SCHWAB" : "MANUAL",
+                    accent: AppConfig.Schwab.hasOAuthTokens ? DesignSystem.long : DesignSystem.amber
+                )
+
+                SystemsStatusPill(
+                    title: "ALERTS",
+                    value: notifications.isPermissionGranted ? "ON" : "OFF",
+                    accent: notifications.isPermissionGranted ? DesignSystem.long : DesignSystem.short
+                )
+
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(DesignSystem.bg)
+    }
+
     private var systemDataCard: some View {
         SystemsPanel(title: "DATA") {
             VStack(spacing: 9) {
@@ -151,33 +194,129 @@ struct SettingsView: View {
     private var compactSchwabCredentialsCard: some View {
         SystemsPanel(title: "SCHWAB") {
             VStack(alignment: .leading, spacing: 10) {
-                SecureField("App key / client ID", text: $schwabAppKeyInput)
-                    .textFieldStyle(.roundedBorder)
+                if AppConfig.Schwab.hasDeveloperCredentials && !isEditingSchwabCredentials {
+                    SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
+                    Text("Stored in Keychain on this phone.")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                SecureField("App secret", text: $schwabAppSecretInput)
-                    .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 10) {
+                        Button {
+                            schwabCredentialMessage = nil
+                            isEditingSchwabCredentials = true
+                        } label: {
+                            Label("Replace", systemImage: "square.and.pencil")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
 
-                SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
-
-                HStack(spacing: 10) {
-                    Button {
-                        saveSchwabDeveloperCredentials()
-                    } label: {
-                        Label("Save", systemImage: "key.fill")
-                            .frame(maxWidth: .infinity)
+                        Button {
+                            clearSchwabDeveloperCredentials()
+                        } label: {
+                            Label("Clear", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(DesignSystem.short)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(schwabAppKeyInput.isEmpty && schwabAppSecretInput.isEmpty)
+                } else {
+                    credentialInputRow(
+                        label: "App key",
+                        placeholder: "App key / client ID",
+                        text: $schwabAppKeyInput,
+                        field: .appKey
+                    )
 
-                    Button {
-                        clearSchwabDeveloperCredentials()
-                    } label: {
-                        Label("Clear", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
+                    credentialInputRow(
+                        label: "App secret",
+                        placeholder: "App secret",
+                        text: $schwabAppSecretInput,
+                        field: .appSecret
+                    )
+
+                    SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
+
+                    HStack(spacing: 10) {
+                        Button {
+                            pasteSchwabCredentialBlock()
+                        } label: {
+                            Label("Paste Block", systemImage: "doc.on.clipboard")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            saveSchwabDeveloperCredentials()
+                        } label: {
+                            Label("Save", systemImage: "key.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(schwabAppKeyInput.isEmpty && schwabAppSecretInput.isEmpty)
                     }
-                    .buttonStyle(.bordered)
-                    .tint(DesignSystem.short)
+
+                    if AppConfig.Schwab.hasDeveloperCredentials {
+                        Button {
+                            schwabAppKeyInput = ""
+                            schwabAppSecretInput = ""
+                            schwabCredentialMessage = nil
+                            isEditingSchwabCredentials = false
+                        } label: {
+                            Label("Cancel", systemImage: "xmark")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button {
+                            clearSchwabDeveloperCredentials()
+                        } label: {
+                            Label("Clear", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(DesignSystem.short)
+                    }
                 }
+
+                if let schwabCredentialMessage {
+                    Text(schwabCredentialMessage)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func credentialInputRow(
+        label: String,
+        placeholder: String,
+        text: Binding<String>,
+        field: SchwabCredentialField
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label.uppercased())
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.mutedText)
+
+            HStack(spacing: 8) {
+                SecureField(placeholder, text: text)
+                    .textFieldStyle(.roundedBorder)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    #endif
+
+                Button {
+                    pasteSchwabCredentialField(field)
+                } label: {
+                    Image(systemName: "doc.on.clipboard")
+                        .frame(width: 34, height: 34)
+                }
+                .buttonStyle(.bordered)
+                .help("Paste \(label)")
             }
         }
     }
@@ -204,7 +343,7 @@ struct SettingsView: View {
                     .buttonStyle(.borderedProminent)
 
                     Button {
-                        SignalNotification.shared.playTestSound()
+                        SignalNotification.shared.sendTestNotification()
                     } label: {
                         Label("Test", systemImage: "speaker.wave.2.fill")
                     }
@@ -274,7 +413,7 @@ struct SettingsView: View {
     }
 
     private var compactSchwabStatus: String {
-        if AppConfig.Schwab.hasOAuthTokens { return "OAuth token stored" }
+        if AppConfig.Schwab.hasOAuthTokens { return "OAuth stored" }
         if AppConfig.Schwab.hasDeveloperCredentials { return "Keys stored" }
         return "Not stored"
     }
@@ -301,6 +440,10 @@ struct SettingsView: View {
 
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
+        isEditingSchwabCredentials = !AppConfig.Schwab.hasDeveloperCredentials
+        schwabCredentialMessage = AppConfig.Schwab.hasDeveloperCredentials
+            ? "Saved. You should not need to type this again on this phone."
+            : "Saved the field provided. Add the missing credential to finish."
         NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
     }
 
@@ -317,7 +460,130 @@ struct SettingsView: View {
         AppConfig.Schwab.oauthTokensStored = false
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
+        isEditingSchwabCredentials = false
+        schwabCredentialMessage = "Cleared Schwab credentials from this phone."
         NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
+    }
+
+    private func pasteSchwabCredentialField(_ field: SchwabCredentialField) {
+        guard let pasted = clipboardText?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !pasted.isEmpty else {
+            schwabCredentialMessage = "Clipboard is empty."
+            return
+        }
+
+        let parsed = parseSchwabCredentials(from: pasted)
+        let value: String?
+        switch field {
+        case .appKey:
+            value = parsed.appKey ?? normalizedCredentialValue(pasted)
+            if let value { schwabAppKeyInput = value }
+        case .appSecret:
+            value = parsed.appSecret ?? normalizedCredentialValue(pasted)
+            if let value { schwabAppSecretInput = value }
+        }
+
+        schwabCredentialMessage = value == nil ? "No credential text found on clipboard." : "Pasted \(field.displayName)."
+    }
+
+    private func pasteSchwabCredentialBlock() {
+        guard let pasted = clipboardText?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !pasted.isEmpty else {
+            schwabCredentialMessage = "Clipboard is empty."
+            return
+        }
+
+        let parsed = parseSchwabCredentials(from: pasted)
+        if let appKey = parsed.appKey {
+            schwabAppKeyInput = appKey
+        }
+        if let appSecret = parsed.appSecret {
+            schwabAppSecretInput = appSecret
+        }
+
+        switch (parsed.appKey, parsed.appSecret) {
+        case (.some, .some):
+            schwabCredentialMessage = "Pasted app key and app secret."
+        case (.some, .none):
+            schwabCredentialMessage = "Pasted app key. App secret still needed."
+        case (.none, .some):
+            schwabCredentialMessage = "Pasted app secret. App key still needed."
+        case (.none, .none):
+            schwabCredentialMessage = "Paste block did not contain SCHWAB_APP_KEY or SCHWAB_APP_SECRET."
+        }
+    }
+
+    private var clipboardText: String? {
+        #if os(iOS)
+        UIPasteboard.general.string
+        #elseif os(macOS)
+        NSPasteboard.general.string(forType: .string)
+        #else
+        nil
+        #endif
+    }
+
+    private func parseSchwabCredentials(from text: String) -> (appKey: String?, appSecret: String?) {
+        if let data = text.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            let appKey = value(in: json, matching: SchwabCredentialField.appKey.acceptedKeys)
+            let appSecret = value(in: json, matching: SchwabCredentialField.appSecret.acceptedKeys)
+            if appKey != nil || appSecret != nil {
+                return (appKey, appSecret)
+            }
+        }
+
+        var values: [String: String] = [:]
+        for line in text.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { continue }
+
+            let pieces = trimmed.split(separator: "=", maxSplits: 1).map(String.init)
+            guard pieces.count == 2 else { continue }
+
+            let key = normalizedCredentialKey(pieces[0])
+            let value = normalizedCredentialValue(pieces[1])
+            guard !key.isEmpty, !value.isEmpty else { continue }
+            values[key] = value
+        }
+
+        return (
+            appKey: value(in: values, matching: SchwabCredentialField.appKey.acceptedKeys),
+            appSecret: value(in: values, matching: SchwabCredentialField.appSecret.acceptedKeys)
+        )
+    }
+
+    private func value(in json: [String: Any], matching keys: Set<String>) -> String? {
+        for (key, rawValue) in json {
+            guard keys.contains(normalizedCredentialKey(key)) else { continue }
+            if let value = rawValue as? String {
+                return normalizedCredentialValue(value)
+            }
+        }
+        return nil
+    }
+
+    private func value(in values: [String: String], matching keys: Set<String>) -> String? {
+        for key in keys {
+            if let value = values[key] {
+                return value
+            }
+        }
+        return nil
+    }
+
+    private func normalizedCredentialKey(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+            .replacingOccurrences(of: "-", with: "_")
+            .replacingOccurrences(of: " ", with: "_")
+    }
+
+    private func normalizedCredentialValue(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
     }
 
     private func timeBinding(for timeString: Binding<String>, defaultValue: String) -> Binding<Date> {
@@ -331,6 +597,40 @@ struct SettingsView: View {
                 timeString.wrappedValue = AppConfig.CloseManagement.storageTime(from: newValue)
             }
         )
+    }
+}
+
+private enum SchwabCredentialField {
+    case appKey
+    case appSecret
+
+    var displayName: String {
+        switch self {
+        case .appKey: return "app key"
+        case .appSecret: return "app secret"
+        }
+    }
+
+    var acceptedKeys: Set<String> {
+        switch self {
+        case .appKey:
+            return [
+                "SCHWAB_APP_KEY",
+                "SCHWAB_CLIENT_ID",
+                "APP_KEY",
+                "CLIENT_ID",
+                "API_KEY"
+            ]
+        case .appSecret:
+            return [
+                "SCHWAB_APP_SECRET",
+                "SCHWAB_CLIENT_SECRET",
+                "APP_SECRET",
+                "CLIENT_SECRET",
+                "API_SECRET",
+                "SECRET"
+            ]
+        }
     }
 }
 
@@ -364,28 +664,34 @@ private struct SystemsPanel<Content: View>: View {
 }
 
 private struct SystemsReadoutRow: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     let label: String
     let value: String
     let accent: Color
 
+    private var labelWidth: CGFloat {
+        horizontalSizeClass == .compact ? 94 : 108
+    }
+
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(label.uppercased())
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.0)
                 .foregroundColor(DesignSystem.mutedText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-                .frame(width: 108, alignment: .leading)
+                .lineLimit(2)
+                .minimumScaleFactor(0.74)
+                .frame(width: labelWidth, alignment: .leading)
 
             Text(value)
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(accent)
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(minHeight: 22)
+        .frame(minHeight: 22, alignment: .topLeading)
     }
 }
 

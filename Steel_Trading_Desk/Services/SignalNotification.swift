@@ -9,7 +9,7 @@ enum NotificationError: Error {
 }
 
 @MainActor
-class SignalNotification: ObservableObject {
+final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     static let shared = SignalNotification()
     @Published private(set) var isPermissionGranted = false
     @Published private(set) var permissionStatusText = "Not Enabled"
@@ -20,9 +20,14 @@ class SignalNotification: ObservableObject {
     private static let categoryIdentifier = "STEEL_DESK"
     private static let openDeskActionIdentifier = "OPEN_DESK"
 
+    private override init() {
+        super.init()
+    }
+
     func requestPermissions() async {
         do {
             let center = UNUserNotificationCenter.current()
+            center.delegate = self
             _ = try await center.requestAuthorization(options: [.alert, .sound])
             registerCategories()
             await refreshAuthorizationStatus()
@@ -35,6 +40,7 @@ class SignalNotification: ObservableObject {
     }
 
     func prepareForLaunch() async {
+        UNUserNotificationCenter.current().delegate = self
         await refreshAuthorizationStatus()
         registerCategories()
 
@@ -115,6 +121,20 @@ class SignalNotification: ObservableObject {
         return content
     }
 
+    func sendTestNotification() {
+        guard isPermissionGranted else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "STEEL DESK · TEST ALERT"
+        content.subtitle = "ALERT PATH READY"
+        content.body = "If you see this, phone alerts are live."
+        content.sound = .default
+        content.categoryIdentifier = Self.categoryIdentifier
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        scheduleNotification(content, trigger: trigger)
+    }
+
     private func directiveTitle(for signal: Signal) -> String {
         switch signal.kind {
         case .entry: return "GO CHECK THE TAPE"
@@ -149,11 +169,11 @@ class SignalNotification: ObservableObject {
         }
     }
     
-    private func scheduleNotification(_ content: UNMutableNotificationContent) {
+    private func scheduleNotification(_ content: UNMutableNotificationContent, trigger: UNNotificationTrigger? = nil) {
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
-            trigger: nil
+            trigger: trigger
         )
         
         UNUserNotificationCenter.current().add(request) { error in
@@ -166,6 +186,14 @@ class SignalNotification: ObservableObject {
         
         // Update widget
         // Widgets removed for v3.0
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
     }
     
     func playTestSound() {

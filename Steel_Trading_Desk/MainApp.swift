@@ -36,6 +36,8 @@ struct MainApp: App {
                     SchwabOAuthCallbackHandler.handle(url)
                 }
                 .task {
+                    await SignalNotification.shared.prepareForLaunch()
+
                     // 3s delay before silent check on launch
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                     await updateChecker.checkForUpdates(silent: true)
