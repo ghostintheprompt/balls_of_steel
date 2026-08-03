@@ -94,7 +94,98 @@ struct AppConfig {
         static func sanitizedCredential(_ value: String) -> String {
             let surroundingJunk = CharacterSet.whitespacesAndNewlines
                 .union(CharacterSet(charactersIn: "|\"'`"))
-            return value.trimmingCharacters(in: surroundingJunk)
+            return asciiFoldedCredential(value.trimmingCharacters(in: surroundingJunk))
+        }
+
+        static func credentialHasNonASCII(_ value: String) -> Bool {
+            value.unicodeScalars.contains { $0.value > 0x7F }
+        }
+
+        static var appKeyNeedsNormalization: Bool {
+            let raw = KeychainService.load(key: appKeyKeychainKey) ?? ""
+            return !raw.isEmpty && sanitizedAppKey(raw) != raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        static var appSecretNeedsNormalization: Bool {
+            let raw = KeychainService.load(key: appSecretKeychainKey) ?? ""
+            return !raw.isEmpty && sanitizedCredential(raw) != raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        @discardableResult
+        static func normalizeStoredDeveloperCredentials() -> Bool {
+            let appKeyChanged = appKeyNeedsNormalization
+            let appSecretChanged = appSecretNeedsNormalization
+
+            if appKeyChanged {
+                appKey = appKey
+            }
+            if appSecretChanged {
+                appSecret = appSecret
+            }
+
+            return appKeyChanged || appSecretChanged
+        }
+
+        private static func asciiFoldedCredential(_ value: String) -> String {
+            value.unicodeScalars.map { scalar in
+                if let replacement = asciiCredentialReplacement(for: scalar) {
+                    return replacement
+                }
+                return String(scalar)
+            }
+            .joined()
+        }
+
+        private static func asciiCredentialReplacement(for scalar: Unicode.Scalar) -> String? {
+            switch scalar.value {
+            // Zero-width paste artifacts.
+            case 0x200B, 0x200C, 0x200D, 0xFEFF:
+                return ""
+
+            // Cyrillic characters that are commonly produced by OCR or rich-text
+            // copy/paste but look identical to Latin API-key characters.
+            case 0x0410: return "A" // А
+            case 0x0412: return "B" // В
+            case 0x0421: return "C" // С
+            case 0x0415: return "E" // Е
+            case 0x041D: return "H" // Н
+            case 0x041A: return "K" // К
+            case 0x041C: return "M" // М
+            case 0x041E: return "O" // О
+            case 0x0420: return "P" // Р
+            case 0x0422: return "T" // Т
+            case 0x0425: return "X" // Х
+            case 0x0423: return "Y" // У
+            case 0x0430: return "a" // а
+            case 0x0441: return "c" // с
+            case 0x0435: return "e" // е
+            case 0x043E: return "o" // о
+            case 0x0440: return "p" // р
+            case 0x0445: return "x" // х
+            case 0x0443: return "y" // у
+
+            // Greek lookalikes seen in pasted credentials.
+            case 0x0391: return "A" // Α
+            case 0x0392: return "B" // Β
+            case 0x0395: return "E" // Ε
+            case 0x0397: return "H" // Η
+            case 0x0399: return "I" // Ι
+            case 0x039A: return "K" // Κ
+            case 0x039C: return "M" // Μ
+            case 0x039D: return "N" // Ν
+            case 0x039F: return "O" // Ο
+            case 0x03A1: return "P" // Ρ
+            case 0x03A4: return "T" // Τ
+            case 0x03A5: return "Y" // Υ
+            case 0x03A7: return "X" // Χ
+            case 0x03B1: return "a" // α
+            case 0x03BF: return "o" // ο
+            case 0x03C1: return "p" // ρ
+            case 0x03C7: return "x" // χ
+
+            default:
+                return nil
+            }
         }
 
         static func sanitizedCallbackURL(_ value: String) -> String {

@@ -31,6 +31,7 @@ struct SettingsView: View {
     @State private var schwabCredentialMessage: String?
     @State private var isConnectingSchwab: Bool = false
     @State private var isTestingSchwabFeed: Bool = false
+    @State private var isConfirmingSchwabCredentialClear: Bool = false
     #if os(iOS)
     @StateObject private var schwabWebAuth = SchwabWebAuthCoordinator()
     #endif
@@ -50,6 +51,18 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: .schwabConnectionFailed)) { notification in
             let message = notification.userInfo?["message"] as? String ?? "Schwab OAuth failed."
             schwabCredentialMessage = message
+        }
+        .confirmationDialog(
+            "Clear Schwab credentials?",
+            isPresented: $isConfirmingSchwabCredentialClear,
+            titleVisibility: .visible
+        ) {
+            Button("Clear Schwab credentials", role: .destructive) {
+                clearSchwabDeveloperCredentials()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the app key, app secret, OAuth tokens, and live tape state from this device.")
         }
     }
 
@@ -265,7 +278,7 @@ struct SettingsView: View {
                         .buttonStyle(.borderedProminent)
 
                         Button {
-                            clearSchwabDeveloperCredentials()
+                            isConfirmingSchwabCredentialClear = true
                         } label: {
                             Label("Clear", systemImage: "trash")
                                 .frame(maxWidth: .infinity)
@@ -324,7 +337,7 @@ struct SettingsView: View {
                         .tint(DesignSystem.amber)
                     } else {
                         Button {
-                            clearSchwabDeveloperCredentials()
+                            isConfirmingSchwabCredentialClear = true
                         } label: {
                             Label("Clear", systemImage: "trash")
                                 .frame(maxWidth: .infinity)
@@ -698,11 +711,13 @@ struct SettingsView: View {
     private var schwabAppKeyDiagnosticValue: String {
         let appKey = AppConfig.Schwab.appKey
         guard !appKey.isEmpty else { return "Missing" }
-        return "\(maskedCredential(appKey)) / \(appKey.count) chars"
+        let suffix = AppConfig.Schwab.appKeyNeedsNormalization ? " / normalize" : ""
+        return "\(maskedCredential(appKey)) / \(appKey.count) chars\(suffix)"
     }
 
     private var schwabAppKeyDiagnosticAccent: Color {
-        AppConfig.Schwab.appKey.isEmpty ? DesignSystem.short : DesignSystem.long
+        if AppConfig.Schwab.appKey.isEmpty { return DesignSystem.short }
+        return AppConfig.Schwab.appKeyNeedsNormalization ? DesignSystem.amber : DesignSystem.long
     }
 
     private var schwabCallbackDiagnosticValue: String {
@@ -812,6 +827,7 @@ struct SettingsView: View {
         }
 
         do {
+            let normalizedCredentials = AppConfig.Schwab.normalizeStoredDeveloperCredentials()
             let url = try SchwabService.shared.authorizationURL()
             if authURLHasBadClientID(url) {
                 schwabCredentialMessage = "App Key still has a bad client_id. Replace it with the exact Schwab App Key."
@@ -819,7 +835,9 @@ struct SettingsView: View {
                 return
             }
             debugSchwabAuthorization(url, action: "open")
-            schwabCredentialMessage = "Opening Schwab secure login."
+            schwabCredentialMessage = normalizedCredentials
+                ? "Cleaned pasted Schwab credentials, then opened secure login."
+                : "Opening Schwab secure login."
             #if os(iOS)
             let callbackURL = AppConfig.Schwab.oauthCallbackURL
             if SchwabWebAuthCoordinator.canUseInAppCallback(callbackURL) {
@@ -849,12 +867,15 @@ struct SettingsView: View {
 
     private func copySchwabAuthorizationURL() {
         do {
+            let normalizedCredentials = AppConfig.Schwab.normalizeStoredDeveloperCredentials()
             let url = try SchwabService.shared.authorizationURL()
             debugSchwabAuthorization(url, action: "copy")
             setClipboardText(url.absoluteString)
             schwabCredentialMessage = authURLHasBadClientID(url)
                 ? "Copied OAuth URL, but client_id still has a pipe. Replace the App Key."
-                : "Copied clean OAuth URL using \(AppConfig.Schwab.oauthCallbackURL). The Schwab portal callback must match exactly."
+                : normalizedCredentials
+                    ? "Cleaned pasted credentials and copied OAuth URL using \(AppConfig.Schwab.oauthCallbackURL)."
+                    : "Copied clean OAuth URL using \(AppConfig.Schwab.oauthCallbackURL). The Schwab portal callback must match exactly."
         } catch {
             schwabCredentialMessage = error.localizedDescription
         }
@@ -948,7 +969,9 @@ struct SettingsView: View {
               let clientID = components.queryItems?.first(where: { $0.name == "client_id" })?.value else {
             return true
         }
-        return clientID.contains("|") || clientID.range(of: "%7C", options: .caseInsensitive) != nil
+        return clientID.contains("|") ||
+            clientID.range(of: "%7C", options: .caseInsensitive) != nil ||
+            AppConfig.Schwab.credentialHasNonASCII(clientID)
     }
 
     private func debugSchwabAuthorization(_ url: URL, action: String) {
@@ -957,7 +980,8 @@ struct SettingsView: View {
         let clientID = components?.queryItems?.first(where: { $0.name == "client_id" })?.value ?? ""
         let callback = components?.queryItems?.first(where: { $0.name == "redirect_uri" })?.value ?? ""
         let cleanClient = !authURLHasBadClientID(url)
-        let summary = "action=\(action) client=\(maskedCredential(clientID)) clientLen=\(clientID.count) callback=\(callback) host=\(url.host ?? "missing") cleanClient=\(cleanClient)"
+        let asciiClient = !AppConfig.Schwab.credentialHasNonASCII(clientID)
+        let summary = "action=\(action) client=\(maskedCredential(clientID)) clientLen=\(clientID.count) callback=\(callback) host=\(url.host ?? "missing") asciiClient=\(asciiClient) cleanClient=\(cleanClient)"
         schwabOAuthLogger.notice("\(summary, privacy: .public)")
         print("SCHWAB_OAUTH_DEBUG \(summary)")
         #endif
