@@ -17,8 +17,8 @@ struct TradingPrompt {
         case lunchWindow            // 12:15 PM
         case powerHourAnalysis      // 3:05 PM
         case institutionalFlowAlert // 3:40 PM (New)
-        case exitReminder           // 3:50 PM (5 min warning)
-        case postTradeAnalysis      // 3:55 PM
+        case exitReminder           // 4:10 PM (5 min warning)
+        case postTradeAnalysis      // 4:15 PM
         case weeklyReview           // Friday evening
         case monthlyReview          // Last trading day
         case crisisMode             // VIX >30
@@ -364,7 +364,7 @@ class PromptLibrary {
             2. RATIO VALUE CHECK: Is VXX expensive enough to fade (>1.45)? What position size?
             3. MARKET CONTEXT CHECK: SPY stability? VIX behavior supporting thesis? Late-day news?
             4. RISK/REWARD ANALYSIS: Entry levels? Profit targets and stops?
-            5. EXECUTION DECISION: Clear GO/NO-GO with specific entry price, volume threshold, targets, stops, exit deadline (3:55 PM max)
+            5. EXECUTION DECISION: Clear GO/NO-GO with specific entry price, volume threshold, targets, stops, session-close plan (4:15 PM ET)
 
             MY ENTRY CHECKLIST (confirm all are met):
             - [ ] Correct time window (3:10-3:25 PM)
@@ -417,13 +417,13 @@ class PromptLibrary {
             - Ratio <1.45 = SKIP (institutions may be covering)
 
             IF ALREADY IN POWER HOUR POSITION:
-            - Ratio >1.55 + Volume >300% at 3:45 = HOLD to 4:05 PM
+            - Ratio >1.55 + Volume >300% at 3:45 = HOLD through the late-flow window, with 4:15 PM ET as the session boundary
             - Ratio <1.50 or volume fading = EXIT NOW
             - Hit profit target = TAKE IT
 
             EXIT DISCIPLINE:
-            - If entering 3:45-4:00 PM: Exit by 4:05 PM MAX
-            - If holding from earlier: Exit by 3:55 PM (use exit reminder)
+            - If entering late flow: 4:15 PM ET is the extended session close
+            - If holding from earlier: use the 4:10 PM reminder and final 4:15 PM close
             - NO OVERNIGHT HOLDS (non-negotiable)
 
             ACTION PLAN:
@@ -431,7 +431,7 @@ class PromptLibrary {
             2. Check ratio tier and volume threshold
             3. Watch for institutional volume surge at 3:45 PM
             4. Execute ONLY if ALL criteria met
-            5. Set 4:05 PM hard exit if entering
+            5. Set a 4:15 PM ET session-close reminder if entering
 
             This window = Join institutional money. Don't fade it. Flow with it.
 
@@ -440,30 +440,28 @@ class PromptLibrary {
             dataFields: [.vxxPrice, .vixLevel, .volumeVsAverage]
         ),
 
-        // Exit Reminder (3:50 PM)
+        // Session Close Reminder (4:10 PM)
         TradingPrompt(
             type: .exitReminder,
-            scheduledTime: .time(hour: 15, minute: 50),
+            scheduledTime: .time(hour: 16, minute: 10),
             template: """
-            --- EXIT TIME REMINDER ---
+            --- SESSION CLOSE REMINDER ---
 
-            5 MINUTES TO HARD EXIT (3:55 PM)
+            5 MINUTES TO 4:15 PM ET EXTENDED SESSION CLOSE
 
             Current positions: [DESCRIBE OR "NONE"]
 
             DISCIPLINE CHECKPOINT:
-            [ ] 3:55 PM = EXIT ALL POSITIONS (unless institutional flow window)
-            [ ] No "just 5 more minutes"
-            [ ] No "I'll see what happens at close"
+            [ ] 4:15 PM ET = quote/alert session closed
+            [ ] No fresh manual entries after 4:10 PM ET
+            [ ] No "I'll see what happens after close"
             [ ] No overnight holds under ANY circumstances
 
-            EXCEPTION:
-            If you entered during 3:45-4:00 PM institutional flow window:
-            - You have until 4:05 PM MAX
-            - Set alarm for 4:00 PM (5-minute warning)
-            - Exit by 4:05 PM sharp
+            INSTITUTIONAL FLOW:
+            3:45-4:15 PM ET is the extended close window. Treat the 4:15 close
+            as the session boundary for alerts and final review.
 
-            WHY 3:55 PM EXIT MATTERS:
+            WHY 4:15 PM CLOSE MATTERS:
             1. Prevents emotional attachment
             2. Prevents "hope trading"
             3. Preserves capital for tomorrow
@@ -483,15 +481,15 @@ class PromptLibrary {
 
             Set your exit order NOW if you haven't already.
 
-            3:55 PM = Hard exit. No exceptions.
+            4:15 PM ET = Extended session close.
             """,
             dataFields: []
         ),
 
-        // Post-Trade Analysis (3:55 PM)
+        // Post-Session Analysis (4:15 PM)
         TradingPrompt(
             type: .postTradeAnalysis,
-            scheduledTime: .time(hour: 15, minute: 55),
+            scheduledTime: .time(hour: 16, minute: 15),
             template: """
             Daily trading wrap-up and analysis for [DATE]:
 

@@ -14,10 +14,11 @@ struct AppConfig {
         static let oauthAuthorizeURL = "\(apiBaseURL)/v1/oauth/authorize"
         static let oauthTokenURL = "\(apiBaseURL)/v1/oauth/token"
 
-        // Schwab requires HTTPS callback URLs. Register exactly this value in
-        // the Schwab portal for local Mac/token-helper testing: no path, no
-        // trailing slash, and use 127.0.0.1 instead of localhost.
-        static let loopbackCallbackURL = "https://127.0.0.1:8182"
+        // Schwab requires HTTPS callback URLs. The value used in the auth URL
+        // must exactly match the Schwab portal's Callback URL.
+        static let plainLoopbackCallbackURL = "https://127.0.0.1"
+        static let portedLoopbackCallbackURL = "https://127.0.0.1:8182"
+        static let loopbackCallbackURL = plainLoopbackCallbackURL
 
         // Internal app return URL. Do not register this with Schwab; the portal
         // rejects non-HTTPS callbacks.
@@ -38,23 +39,66 @@ struct AppConfig {
         static let developerCredentialsStoredKey = "schwabDeveloperCredentialsStored"
         static let oauthTokensStoredKey = "schwabOAuthTokensStored"
         static let accessTokenExpiresAtKey = "schwabAccessTokenExpiresAt"
+        static let oauthCallbackURLKey = "schwabOAuthCallbackURL"
 
         static var appKey: String {
-            get { KeychainService.load(key: appKeyKeychainKey) ?? "" }
+            get { sanitizedAppKey(KeychainService.load(key: appKeyKeychainKey) ?? "") }
             set {
-                AppConfig.storeKeychainValue(newValue, key: appKeyKeychainKey)
-                appKeyStored = !newValue.isEmpty
+                let cleaned = sanitizedAppKey(newValue)
+                AppConfig.storeKeychainValue(cleaned, key: appKeyKeychainKey)
+                appKeyStored = !cleaned.isEmpty
                 developerCredentialsStored = appKeyStored && appSecretStored
             }
         }
 
         static var appSecret: String {
-            get { KeychainService.load(key: appSecretKeychainKey) ?? "" }
+            get { sanitizedCredential(KeychainService.load(key: appSecretKeychainKey) ?? "") }
             set {
-                AppConfig.storeKeychainValue(newValue, key: appSecretKeychainKey)
-                appSecretStored = !newValue.isEmpty
+                let cleaned = sanitizedCredential(newValue)
+                AppConfig.storeKeychainValue(cleaned, key: appSecretKeychainKey)
+                appSecretStored = !cleaned.isEmpty
                 developerCredentialsStored = appKeyStored && appSecretStored
             }
+        }
+
+        static func sanitizedAppKey(_ value: String) -> String {
+            var cleaned = sanitizedCredential(value)
+
+            if let url = URL(string: cleaned),
+               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let clientID = components.queryItems?.first(where: { $0.name == "client_id" })?.value {
+                cleaned = sanitizedCredential(clientID)
+            } else if let rawClientRange = cleaned.range(of: "client_id=", options: .caseInsensitive) {
+                let tail = cleaned[rawClientRange.upperBound...]
+                let rawClientID = tail.split(separator: "&", maxSplits: 1).first.map(String.init) ?? String(tail)
+                cleaned = sanitizedCredential(rawClientID.removingPercentEncoding ?? rawClientID)
+            }
+
+            if let decoded = cleaned.removingPercentEncoding {
+                cleaned = decoded
+            }
+
+            if let markerRange = cleaned.range(of: "%7C", options: .caseInsensitive) {
+                cleaned = String(cleaned[..<markerRange.lowerBound])
+            }
+            if let pipe = cleaned.firstIndex(of: "|") {
+                cleaned = String(cleaned[..<pipe])
+            }
+            if let ampersand = cleaned.firstIndex(of: "&") {
+                cleaned = String(cleaned[..<ampersand])
+            }
+
+            return sanitizedCredential(cleaned)
+        }
+
+        static func sanitizedCredential(_ value: String) -> String {
+            let surroundingJunk = CharacterSet.whitespacesAndNewlines
+                .union(CharacterSet(charactersIn: "|\"'`"))
+            return value.trimmingCharacters(in: surroundingJunk)
+        }
+
+        static func sanitizedCallbackURL(_ value: String) -> String {
+            sanitizedCredential(value)
         }
 
         static var hasDeveloperCredentials: Bool {
@@ -124,6 +168,23 @@ struct AppConfig {
                     UserDefaults.standard.set(newValue.timeIntervalSince1970, forKey: accessTokenExpiresAtKey)
                 } else {
                     UserDefaults.standard.removeObject(forKey: accessTokenExpiresAtKey)
+                }
+            }
+        }
+
+        static var oauthCallbackURL: String {
+            get {
+                let stored = UserDefaults.standard.string(forKey: oauthCallbackURLKey)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let cleaned = sanitizedCallbackURL(stored)
+                return cleaned.isEmpty ? loopbackCallbackURL : cleaned
+            }
+            set {
+                let trimmed = sanitizedCallbackURL(newValue)
+                if trimmed.isEmpty || trimmed == loopbackCallbackURL {
+                    UserDefaults.standard.removeObject(forKey: oauthCallbackURLKey)
+                } else {
+                    UserDefaults.standard.set(trimmed, forKey: oauthCallbackURLKey)
                 }
             }
         }
@@ -249,9 +310,9 @@ struct AppConfig {
         static let institutionalWarningKey = "closeManagement.institutionalWarning"
         static let institutionalHardExitKey = "closeManagement.institutionalHardExit"
 
-        static let defaultGeneralWarning = "15:55"
-        static let defaultGeneralHardExit = "16:10"
-        static let defaultInstitutionalWarning = "16:05"
+        static let defaultGeneralWarning = "16:10"
+        static let defaultGeneralHardExit = "16:15"
+        static let defaultInstitutionalWarning = "16:10"
         static let defaultInstitutionalHardExit = "16:15"
 
         private static let easternTimeZone = TimeZone(identifier: "America/New_York")!

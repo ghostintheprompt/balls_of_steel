@@ -25,11 +25,6 @@ struct MainApp: App {
                 .onOpenURL { url in
                     SchwabOAuthCallbackHandler.handle(url)
                 }
-                .task {
-                    // 3s delay before silent check on launch
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    await updateChecker.checkForUpdates(silent: true)
-                }
             #else
             MainView()
                 .onOpenURL { url in
@@ -37,10 +32,6 @@ struct MainApp: App {
                 }
                 .task {
                     await SignalNotification.shared.prepareForLaunch()
-
-                    // 3s delay before silent check on launch
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    await updateChecker.checkForUpdates(silent: true)
                 }
             #endif
         }

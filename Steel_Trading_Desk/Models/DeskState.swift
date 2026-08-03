@@ -4,7 +4,7 @@ import Foundation
 //
 // Single piece of state that drives what the desk screen actually shows.
 // Every visual transition in the app keys off this — pre-market quiet,
-// active window, open position, close warning, hard exit, after-hours.
+// active window, open position, session-close warning, close, after-hours.
 //
 // Derived from TimeManager + SignalMonitor; never set directly by views.
 
@@ -13,11 +13,11 @@ enum DeskState: Equatable {
     case betweenWindows     // market open, no active trading window
     case windowOpen(VXXTradingWindow)
     case openPosition(activeCount: Int)
-    case closeWarning       // 15:50–15:55 ET
-    case hardExit           // 15:55–16:10 ET — UI takes over
-    case afterHours         // ≥ 16:10 ET
+    case closeWarning       // 16:10–16:15 ET
+    case hardExit           // ≥ 16:15 ET — session close UI takes over
+    case afterHours         // ≥ 16:15 ET
 
-    /// True when the screen should be replaced by the hard-exit takeover.
+    /// True when the screen should be replaced by the session-close takeover.
     var isTakeover: Bool {
         switch self {
         case .closeWarning, .hardExit: return true
@@ -33,7 +33,7 @@ enum DeskState: Equatable {
         case .windowOpen:     return "WINDOW OPEN"
         case .openPosition:   return "POSITION OPEN"
         case .closeWarning:   return "CLOSE WARNING"
-        case .hardExit:       return "HARD EXIT"
+        case .hardExit:       return "SESSION CLOSE"
         case .afterHours:     return "AFTER HOURS"
         }
     }
@@ -43,15 +43,12 @@ enum DeskState: Equatable {
 
 extension DeskState {
     /// Compute the current desk state from clock + open positions.
-    /// Hard-exit / close-warning take precedence over open position so the
+    /// Session-close / close-warning states take precedence over open position so the
     /// takeover always fires in the correct window.
     ///
-    /// `openPositionTimestamps` lets the cutoff shift: if any position was
-    /// opened in the Institutional window (≥ 15:45 ET) the doc allows holding
-    /// to 16:05; the takeover defers to that. Otherwise the default 15:55
-    /// cutoff applies. This is a doc-faithful drift fix from 2026-05-14 —
-    /// previously the takeover forced everyone out at 15:55, which clipped
-    /// the Institutional swing (3:40-4:15 is the user's primary opportunity).
+    /// `openPositionTimestamps` is retained for older call sites, but the
+    /// active quote/alert session now consistently runs through the 16:15 ET
+    /// extended close.
     @MainActor
     static func current(
         timeManager: TimeManager,

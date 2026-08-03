@@ -1,6 +1,11 @@
 import Foundation
 import UserNotifications
 import AVFoundation
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 enum NotificationError: Error {
     case soundFileNotFound
@@ -12,6 +17,7 @@ enum NotificationError: Error {
 final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     static let shared = SignalNotification()
     @Published private(set) var isPermissionGranted = false
+    @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
     @Published private(set) var permissionStatusText = "Not Enabled"
     @Published private(set) var lastError: NotificationError?
     
@@ -22,6 +28,16 @@ final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCe
 
     private override init() {
         super.init()
+    }
+
+    var isPermissionDenied: Bool {
+        authorizationStatus == .denied
+    }
+
+    var permissionActionTitle: String {
+        if isPermissionGranted { return "Refresh" }
+        if isPermissionDenied { return "Settings" }
+        return "Enable"
     }
 
     func requestPermissions() async {
@@ -39,15 +55,25 @@ final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCe
         }
     }
 
+    func handlePermissionAction() async {
+        await refreshAuthorizationStatus()
+
+        if isPermissionGranted {
+            return
+        }
+
+        if isPermissionDenied {
+            openSystemNotificationSettings()
+            return
+        }
+
+        await requestPermissions()
+    }
+
     func prepareForLaunch() async {
         UNUserNotificationCenter.current().delegate = self
         await refreshAuthorizationStatus()
         registerCategories()
-
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        if settings.authorizationStatus == .notDetermined {
-            await requestPermissions()
-        }
     }
 
     private func registerCategories() {
@@ -206,7 +232,27 @@ final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCe
         }
     }
 
+    func openSystemNotificationSettings() {
+        #if os(iOS)
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+        #elseif os(macOS)
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""
+        let settingsURLs = [
+            URL(string: "x-apple.systempreferences:com.apple.preference.notifications?id=\(bundleIdentifier)"),
+            URL(string: "x-apple.systempreferences:com.apple.preference.notifications"),
+            URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")
+        ].compactMap { $0 }
+
+        for url in settingsURLs where NSWorkspace.shared.open(url) {
+            return
+        }
+        #endif
+    }
+
     private func updateAuthorizationState(_ status: UNAuthorizationStatus) {
+        authorizationStatus = status
+
         switch status {
         case .authorized, .provisional, .ephemeral:
             isPermissionGranted = true

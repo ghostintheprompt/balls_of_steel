@@ -6,8 +6,8 @@ extension Date {
     }
     
     func isWithinTradingHours() -> Bool {
-        // Check if time is within 9:30 AM - 4:00 PM ET
-        return isInWindow("09:30", "16:00")
+        // Check if time is within 9:30 AM - 4:15 PM ET.
+        return isInWindow("09:30", "16:15")
     }
     
     // Helper for checking specific trading windows
@@ -93,7 +93,7 @@ extension Date {
     }
 
     var isSPYCloseWindow: Bool {
-        isInWindow("15:30", "15:55")
+        isInWindow("15:30", "16:15")
     }
 
     // Check if any VXX trading window is active

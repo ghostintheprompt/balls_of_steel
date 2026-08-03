@@ -79,8 +79,8 @@ enum StrategySpec {
     //   Morning Fade        9:50-10:15 AM
     //   Power Hour          3:10-3:25 PM
     //   Institutional Flow  3:45-4:10 PM
-    // The Institutional window is the high-conviction swing — entries are
-    // allowed up to 4:00 PM, with positions held to 4:05 PM maximum.
+    // The Institutional window is the high-conviction late-flow swing. The
+    // quote/alert session remains active until the 4:15 PM ET extended close.
     struct TradingWindow {
         let id: String
         let label: String
@@ -91,8 +91,8 @@ enum StrategySpec {
         let publishedReliabilityPercent: Int?   // nil = doc doesn't quantify
         let isEntryWindow: Bool
 
-        /// Latest minute (since midnight ET) by which a position opened in this
-        /// window must be closed. Nil = no special hold extension.
+        /// Latest minute (since midnight ET) for the quote/alert session close
+        /// tied to this window. Nil = no special session extension.
         let hardExitMinutes: Int?
     }
 
@@ -105,7 +105,7 @@ enum StrategySpec {
         volumeThresholdPercent: 200,
         publishedReliabilityPercent: 85,
         isEntryWindow: true,
-        hardExitMinutes: 15 * 60 + 55  // 3:55 PM PM-position cutoff (same-day exit)
+        hardExitMinutes: 16 * 60 + 15  // 4:15 PM ET extended-session close
     )
 
     static let powerHourWindow = TradingWindow(
@@ -117,7 +117,7 @@ enum StrategySpec {
         volumeThresholdPercent: 200,
         publishedReliabilityPercent: 80,
         isEntryWindow: true,
-        hardExitMinutes: 15 * 60 + 55  // 3:55 PM
+        hardExitMinutes: 16 * 60 + 15  // 4:15 PM ET extended-session close
     )
 
     static let institutionalWindow = TradingWindow(
@@ -129,7 +129,7 @@ enum StrategySpec {
         volumeThresholdPercent: 300,   // doc: ≥300% for Institutional
         publishedReliabilityPercent: 90,
         isEntryWindow: true,
-        hardExitMinutes: 16 * 60 + 5   // 4:05 PM — doc's "absolute deadline"
+        hardExitMinutes: 16 * 60 + 15  // 4:15 PM ET extended-session close
     )
 
     static let allEntryWindows: [TradingWindow] = [
@@ -146,14 +146,17 @@ enum StrategySpec {
             ?? morningWindow.volumeThresholdPercent
     }
 
-    // MARK: - Hard exit times
+    // MARK: - Session close times
     //
-    // Default 3:55 PM. Institutional positions get the 4:05 PM extension per
-    // doc. Takeover UI warning fires 5 minutes before each cutoff.
+    // Quotes/alerts remain active through the extended 4:15 PM ET close.
+    // Legacy cutoff names remain internal for older call sites, but the
+    // user-facing language should describe session close, not a strategy stop.
 
-    static let defaultHardExitMinutes: Int = 15 * 60 + 55   // 3:55 PM
-    static let institutionalHardExitMinutes: Int = 16 * 60 + 5   // 4:05 PM
-    static let afterHoursMinutes: Int = 16 * 60 + 10        // 4:10 PM
+    static let extendedSessionCloseMinutes: Int = 16 * 60 + 15 // 4:15 PM
+    static let sessionCloseWarningMinutes: Int = extendedSessionCloseMinutes - 5
+    static let defaultHardExitMinutes: Int = extendedSessionCloseMinutes
+    static let institutionalHardExitMinutes: Int = extendedSessionCloseMinutes
+    static let afterHoursMinutes: Int = extendedSessionCloseMinutes
     static let preMarketCutoffMinutes: Int = 9 * 60 + 30    // 9:30 AM
 
     /// Was a trade opened in (or after the start of) the Institutional window?
@@ -165,9 +168,9 @@ enum StrategySpec {
         return (h * 60 + m) >= institutionalWindow.startMinutes
     }
 
-    /// Effective hard exit (in ET minutes) given a set of currently open
-    /// positions. If any position came from the Institutional window, the
-    /// extension applies; otherwise the default 3:55 PM cutoff stands.
+    /// Effective session close (in ET minutes) given tracked timestamps.
+    /// Older call sites still use the legacy cutoff method name, but all paths now
+    /// resolve to the 4:15 PM ET extended close.
     static func hardExitMinutes(forOpenedAt timestamps: [Date]) -> Int {
         timestamps.contains(where: wasOpenedInInstitutionalWindow)
             ? institutionalHardExitMinutes

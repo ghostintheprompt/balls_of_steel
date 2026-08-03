@@ -53,14 +53,35 @@ enum SchwabOAuthCallbackHandler {
             return true
         }
 
+        if matchesStoredCallback(url) {
+            return true
+        }
+
         if url.scheme == "https",
            url.host == "127.0.0.1",
-           url.port == 8182,
+           [nil, 8182, 8443].contains(url.port),
            ["", "/", "/schwab/oauth/callback"].contains(url.path) {
             return true
         }
 
         return false
+    }
+
+    private static func matchesStoredCallback(_ url: URL) -> Bool {
+        guard let registered = URL(string: AppConfig.Schwab.oauthCallbackURL) else {
+            return false
+        }
+        guard url.scheme == registered.scheme,
+              url.host == registered.host else {
+            return false
+        }
+        if registered.port != nil, url.port != registered.port {
+            return false
+        }
+
+        let registeredPath = registered.path.isEmpty ? "/" : registered.path
+        let callbackPath = url.path.isEmpty ? "/" : url.path
+        return registeredPath == callbackPath
     }
 }
 
@@ -68,6 +89,7 @@ enum SchwabOAuthCallbackHandler {
 class AppDelegate: NSObject, NSApplicationDelegate {
     private let minimumDeskSize = NSSize(width: 1180, height: 720)
     private let idealDeskSize = NSSize(width: 1440, height: 860)
+    private var didApplyInitialDeskFrame = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task {
@@ -78,6 +100,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DailyRiskManager.shared.resetIfNewDay()
         }
         normalizeDeskWindowAfterLaunch()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if !didApplyInitialDeskFrame {
+            normalizeDeskWindowAfterLaunch()
+        }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -94,9 +122,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func normalizeDeskWindows() {
-        NSApp.windows
-            .filter(isDeskWindow)
-            .forEach(normalizeDeskWindow)
+        let deskWindows = NSApp.windows.filter(isDeskWindow)
+        guard !deskWindows.isEmpty else { return }
+
+        deskWindows.forEach(normalizeDeskWindow)
+        didApplyInitialDeskFrame = true
     }
 
     private func isDeskWindow(_ window: NSWindow) -> Bool {
@@ -124,8 +154,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let targetSize = deskSize(for: visibleFrame)
         let frame = window.frame
+        let isLaunchUndersized = !didApplyInitialDeskFrame &&
+            (frame.width < targetSize.width - 24 || frame.height < targetSize.height - 24)
         let needsRepair = frame.width < minimumDeskSize.width ||
             frame.height < minimumDeskSize.height ||
+            isLaunchUndersized ||
             frame.width < targetSize.width * 0.85 ||
             frame.height < targetSize.height * 0.85 ||
             !visibleFrame.intersects(frame)
@@ -142,8 +175,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func deskSize(for visibleFrame: NSRect) -> NSSize {
         let horizontalMargin: CGFloat = 80
         let verticalMargin: CGFloat = 80
-        let width = min(idealDeskSize.width, max(minimumDeskSize.width, visibleFrame.width - horizontalMargin))
-        let height = min(idealDeskSize.height, max(minimumDeskSize.height, visibleFrame.height - verticalMargin))
+        let availableWidth = max(320, visibleFrame.width)
+        let availableHeight = max(360, visibleFrame.height)
+        let width = min(availableWidth, min(idealDeskSize.width, max(minimumDeskSize.width, availableWidth - horizontalMargin)))
+        let height = min(availableHeight, min(idealDeskSize.height, max(minimumDeskSize.height, availableHeight - verticalMargin)))
 
         return NSSize(width: width, height: height)
     }

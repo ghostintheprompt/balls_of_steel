@@ -1,8 +1,14 @@
 import SwiftUI
+import OSLog
 #if os(iOS)
 import UIKit
+import AuthenticationServices
 #elseif os(macOS)
 import AppKit
+#endif
+
+#if DEBUG
+private let schwabOAuthLogger = Logger(subsystem: "app.mdrn.steel", category: "SchwabOAuth")
 #endif
 
 struct SettingsView: View {
@@ -20,10 +26,14 @@ struct SettingsView: View {
     @State private var schwabAppKeyInput: String = ""
     @State private var schwabAppSecretInput: String = ""
     @State private var schwabCallbackInput: String = ""
+    @State private var schwabCallbackURLInput: String = AppConfig.Schwab.oauthCallbackURL
     @State private var isEditingSchwabCredentials: Bool = false
     @State private var schwabCredentialMessage: String?
     @State private var isConnectingSchwab: Bool = false
     @State private var isTestingSchwabFeed: Bool = false
+    #if os(iOS)
+    @StateObject private var schwabWebAuth = SchwabWebAuthCoordinator()
+    #endif
 
     var body: some View {
         Group {
@@ -55,30 +65,56 @@ struct SettingsView: View {
                     .fill(DesignSystem.hairline)
                     .frame(height: 1)
 
-                HStack(alignment: .top, spacing: 14) {
-                    VStack(spacing: 14) {
-                        systemDataCard
-                        compactSchwabCredentialsCard
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                    VStack(spacing: 14) {
-                        compactAlertsCard
-                        compactCloseCard
-                        compactAuditCard
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                ScrollView {
+                    desktopSystemsContent
+                        .padding(18)
                 }
-                .padding(14)
             }
         }
-        .frame(minWidth: 820, idealWidth: 860, minHeight: 620, idealHeight: 640)
+        .frame(minWidth: 980, idealWidth: 1180, minHeight: 700, idealHeight: 780)
         .task {
             await notifications.refreshAuthorizationStatus()
         }
         .sheet(isPresented: $isAuditSheetOpen) {
             StrategyAuditView()
         }
+    }
+    #endif
+
+    #if os(macOS)
+    private var desktopSystemsContent: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 18) {
+                desktopDataColumn
+                desktopControlsColumn
+            }
+
+            VStack(spacing: 16) {
+                systemDataCard
+                compactSchwabCredentialsCard
+                compactAlertsCard
+                compactCloseCard
+                compactAuditCard
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+    }
+
+    private var desktopDataColumn: some View {
+        VStack(spacing: 16) {
+            systemDataCard
+            compactSchwabCredentialsCard
+        }
+        .frame(minWidth: 520, maxWidth: .infinity, alignment: .top)
+    }
+
+    private var desktopControlsColumn: some View {
+        VStack(spacing: 16) {
+            compactAlertsCard
+            compactCloseCard
+            compactAuditCard
+        }
+        .frame(minWidth: 500, maxWidth: .infinity, alignment: .top)
     }
     #endif
 
@@ -113,7 +149,7 @@ struct SettingsView: View {
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
-                Text("Trade Controls")
+                Text("Quote Feed")
                     .font(DesignSystem.Typography.titleFont)
                     .foregroundColor(DesignSystem.primaryText)
                     .lineLimit(1)
@@ -166,7 +202,7 @@ struct SettingsView: View {
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
-                Text("Trade Controls")
+                Text("Quote Feed")
                     .font(DesignSystem.Typography.titleFont)
                     .foregroundColor(DesignSystem.primaryText)
                     .lineLimit(1)
@@ -201,7 +237,7 @@ struct SettingsView: View {
                 SystemsReadoutRow(label: "Mode", value: dataModeValue, accent: dataModeAccent)
                 SystemsReadoutRow(label: "Schwab keys", value: AppConfig.Schwab.hasDeveloperCredentials ? "Stored" : "Missing", accent: AppConfig.Schwab.hasDeveloperCredentials ? DesignSystem.long : DesignSystem.short)
                 SystemsReadoutRow(label: "Live feed", value: liveFeedValue, accent: liveFeedAccent)
-                SystemsReadoutRow(label: "Execution", value: "Thinkorswim manual", accent: DesignSystem.mutedText)
+                SystemsReadoutRow(label: "Orders", value: "Manual only", accent: DesignSystem.mutedText)
             }
         }
     }
@@ -218,7 +254,7 @@ struct SettingsView: View {
 
                     schwabOAuthControls
 
-                    HStack(spacing: 10) {
+                    AdaptiveControlRow {
                         Button {
                             schwabCredentialMessage = nil
                             isEditingSchwabCredentials = true
@@ -254,7 +290,7 @@ struct SettingsView: View {
 
                     SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
 
-                    HStack(spacing: 10) {
+                    AdaptiveControlRow {
                         Button {
                             pasteSchwabCredentialBlock()
                         } label: {
@@ -262,6 +298,7 @@ struct SettingsView: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
+                        .tint(DesignSystem.amber)
 
                         Button {
                             saveSchwabDeveloperCredentials()
@@ -284,6 +321,7 @@ struct SettingsView: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
+                        .tint(DesignSystem.amber)
                     } else {
                         Button {
                             clearSchwabDeveloperCredentials()
@@ -333,6 +371,7 @@ struct SettingsView: View {
                         .frame(width: 34, height: 34)
                 }
                 .buttonStyle(.bordered)
+                .tint(DesignSystem.amber)
                 .help("Paste \(label)")
             }
         }
@@ -343,7 +382,7 @@ struct SettingsView: View {
             if AppConfig.Schwab.hasOAuthTokens {
                 SystemsReadoutRow(label: "Token", value: schwabTokenExpiryText, accent: DesignSystem.long)
 
-                HStack(spacing: 10) {
+                AdaptiveControlRow {
                     Button {
                         Task { await toggleSchwabLiveTape() }
                     } label: {
@@ -360,16 +399,71 @@ struct SettingsView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .tint(DesignSystem.amber)
                     .disabled(isTestingSchwabFeed)
                 }
             } else {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("CALLBACK URL")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.0)
+                        .foregroundColor(DesignSystem.mutedText)
+
+                    TextField(AppConfig.Schwab.loopbackCallbackURL, text: $schwabCallbackURLInput)
+                        .textFieldStyle(.roundedBorder)
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        #endif
+                        .onChange(of: schwabCallbackURLInput) { _, newValue in
+                            AppConfig.Schwab.oauthCallbackURL = newValue
+                        }
+                }
+
+                AdaptiveControlRow {
+                    Button {
+                        setSchwabCallbackPreset(AppConfig.Schwab.plainLoopbackCallbackURL)
+                    } label: {
+                        Label("Use 127.0.0.1", systemImage: "link")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(DesignSystem.amber)
+
+                    Button {
+                        setSchwabCallbackPreset(AppConfig.Schwab.portedLoopbackCallbackURL)
+                    } label: {
+                        Label("Use :8182", systemImage: "link.badge.plus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(DesignSystem.amber)
+                }
+
+                Text(schwabPortalCallbackCopy)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 Button {
                     openSchwabAuthorization()
                 } label: {
-                    Label("Open OAuth", systemImage: "safari")
+                    Label("Open OAuth", systemImage: "lock.shield")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(isConnectingSchwab)
+
+                schwabOAuthDiagnostics
+
+                Button {
+                    copySchwabAuthorizationURL()
+                } label: {
+                    Label("Copy OAuth URL", systemImage: "doc.on.doc")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(DesignSystem.amber)
                 .disabled(isConnectingSchwab)
 
                 TextField("Paste callback URL or code", text: $schwabCallbackInput)
@@ -379,7 +473,7 @@ struct SettingsView: View {
                     .autocorrectionDisabled(true)
                     #endif
 
-                HStack(spacing: 10) {
+                AdaptiveControlRow {
                     Button {
                         pasteSchwabCallback()
                     } label: {
@@ -387,6 +481,7 @@ struct SettingsView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .tint(DesignSystem.amber)
 
                     Button {
                         Task { await connectSchwabFromCallback() }
@@ -401,6 +496,14 @@ struct SettingsView: View {
         }
     }
 
+    private var schwabOAuthDiagnostics: some View {
+        VStack(spacing: 4) {
+            SystemsReadoutRow(label: "App key", value: schwabAppKeyDiagnosticValue, accent: schwabAppKeyDiagnosticAccent)
+            SystemsReadoutRow(label: "Callback", value: schwabCallbackDiagnosticValue, accent: schwabCallbackDiagnosticAccent)
+            SystemsReadoutRow(label: "Auth URL", value: schwabAuthURLDiagnosticValue, accent: schwabAuthURLDiagnosticAccent)
+        }
+    }
+
     private var compactAlertsCard: some View {
         SystemsPanel(title: "ALERTS") {
             VStack(alignment: .leading, spacing: 10) {
@@ -410,13 +513,13 @@ struct SettingsView: View {
                     accent: notifications.isPermissionGranted ? DesignSystem.long : DesignSystem.short
                 )
 
-                HStack(spacing: 10) {
-                    Button(notifications.isPermissionGranted ? "Refresh" : "Enable") {
+                AdaptiveControlRow {
+                    Button(notifications.permissionActionTitle) {
                         Task {
                             if notifications.isPermissionGranted {
                                 await notifications.refreshAuthorizationStatus()
                             } else {
-                                await notifications.requestPermissions()
+                                await notifications.handlePermissionAction()
                             }
                         }
                     }
@@ -428,8 +531,15 @@ struct SettingsView: View {
                         Label("Test", systemImage: "speaker.wave.2.fill")
                     }
                     .buttonStyle(.bordered)
+                    .tint(DesignSystem.amber)
+                    .disabled(!notifications.isPermissionGranted)
+                }
 
-                    Spacer(minLength: 0)
+                if !notifications.isPermissionGranted {
+                    Text(alertPermissionCopy)
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(notifications.isPermissionDenied ? DesignSystem.short : DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: 10) {
@@ -447,6 +557,13 @@ struct SettingsView: View {
         }
     }
 
+    private var alertPermissionCopy: String {
+        if notifications.isPermissionDenied {
+            return "Notifications are denied in system settings."
+        }
+        return "Notifications are off."
+    }
+
     private var compactCloseCard: some View {
         SystemsPanel(title: "CLOSE") {
             VStack(spacing: 8) {
@@ -460,6 +577,7 @@ struct SettingsView: View {
                 Toggle("Background monitoring", isOn: $isBackgroundMonitoringEnabled)
                     .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(DesignSystem.primaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -573,16 +691,74 @@ struct SettingsView: View {
         return "\(minutes)m"
     }
 
+    private var schwabPortalCallbackCopy: String {
+        "Schwab portal callback must match this field exactly. Try no port first unless the portal app explicitly lists :8182."
+    }
+
+    private var schwabAppKeyDiagnosticValue: String {
+        let appKey = AppConfig.Schwab.appKey
+        guard !appKey.isEmpty else { return "Missing" }
+        return "\(maskedCredential(appKey)) / \(appKey.count) chars"
+    }
+
+    private var schwabAppKeyDiagnosticAccent: Color {
+        AppConfig.Schwab.appKey.isEmpty ? DesignSystem.short : DesignSystem.long
+    }
+
+    private var schwabCallbackDiagnosticValue: String {
+        let callback = AppConfig.Schwab.oauthCallbackURL
+        guard let url = URL(string: callback), url.scheme == "https", url.host != nil else {
+            return "HTTPS URL needed"
+        }
+        if callback == AppConfig.Schwab.plainLoopbackCallbackURL ||
+            callback == AppConfig.Schwab.portedLoopbackCallbackURL {
+            return callback
+        }
+        return "\(callback) / custom"
+    }
+
+    private var schwabCallbackDiagnosticAccent: Color {
+        let callback = AppConfig.Schwab.oauthCallbackURL
+        guard let url = URL(string: callback), url.scheme == "https", url.host != nil else {
+            return DesignSystem.short
+        }
+        return callback == AppConfig.Schwab.plainLoopbackCallbackURL ||
+            callback == AppConfig.Schwab.portedLoopbackCallbackURL ? DesignSystem.long : DesignSystem.amber
+    }
+
+    private var schwabAuthURLDiagnosticValue: String {
+        do {
+            let url = try SchwabService.shared.authorizationURL()
+            return authURLHasBadClientID(url) ? "Bad client_id" : "Clean client_id"
+        } catch {
+            return "Not ready"
+        }
+    }
+
+    private var schwabAuthURLDiagnosticAccent: Color {
+        do {
+            let url = try SchwabService.shared.authorizationURL()
+            return authURLHasBadClientID(url) ? DesignSystem.short : DesignSystem.long
+        } catch {
+            return DesignSystem.short
+        }
+    }
+
     private func saveSchwabDeveloperCredentials() {
-        let appKey = schwabAppKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        let appSecret = schwabAppSecretInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawAppKey = schwabAppKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawAppSecret = schwabAppSecretInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let appKey = AppConfig.Schwab.sanitizedAppKey(rawAppKey)
+        let appSecret = AppConfig.Schwab.sanitizedCredential(rawAppSecret)
+        var cleanedPaste = false
 
         if !appKey.isEmpty {
             AppConfig.Schwab.appKey = appKey
+            cleanedPaste = appKey != rawAppKey
         }
 
         if !appSecret.isEmpty {
             AppConfig.Schwab.appSecret = appSecret
+            cleanedPaste = cleanedPaste || appSecret != rawAppSecret
         }
 
         AppConfig.Schwab.developerCredentialsStored = AppConfig.Schwab.appKeyStored && AppConfig.Schwab.appSecretStored
@@ -590,9 +766,13 @@ struct SettingsView: View {
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
         isEditingSchwabCredentials = !AppConfig.Schwab.hasDeveloperCredentials
-        schwabCredentialMessage = AppConfig.Schwab.hasDeveloperCredentials
-            ? "Saved. You should not need to type this again on this phone."
-            : "Saved the field provided. Add the missing credential to finish."
+        if AppConfig.Schwab.hasDeveloperCredentials {
+            schwabCredentialMessage = cleanedPaste
+                ? "Saved and cleaned paste artifacts from the Schwab credentials."
+                : "Saved. You should not need to type this again on this phone."
+        } else {
+            schwabCredentialMessage = "Saved the field provided. Add the missing credential to finish."
+        }
         NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
     }
 
@@ -612,9 +792,17 @@ struct SettingsView: View {
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
         schwabCallbackInput = ""
+        schwabCallbackURLInput = AppConfig.Schwab.loopbackCallbackURL
+        AppConfig.Schwab.oauthCallbackURL = schwabCallbackURLInput
         isEditingSchwabCredentials = false
         schwabCredentialMessage = "Cleared Schwab credentials from this phone."
         NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
+    }
+
+    private func setSchwabCallbackPreset(_ callback: String) {
+        schwabCallbackURLInput = callback
+        AppConfig.Schwab.oauthCallbackURL = callback
+        schwabCredentialMessage = "Callback set to \(callback). It must exactly match the Schwab Developer Portal."
     }
 
     private func openSchwabAuthorization() {
@@ -625,8 +813,48 @@ struct SettingsView: View {
 
         do {
             let url = try SchwabService.shared.authorizationURL()
-            schwabCredentialMessage = "Opened Schwab. After the redirect, paste the final URL or code here."
+            if authURLHasBadClientID(url) {
+                schwabCredentialMessage = "App Key still has a bad client_id. Replace it with the exact Schwab App Key."
+                debugSchwabAuthorization(url, action: "blocked_bad_client")
+                return
+            }
+            debugSchwabAuthorization(url, action: "open")
+            schwabCredentialMessage = "Opening Schwab secure login."
+            #if os(iOS)
+            let callbackURL = AppConfig.Schwab.oauthCallbackURL
+            if SchwabWebAuthCoordinator.canUseInAppCallback(callbackURL) {
+                schwabWebAuth.start(authURL: url, callbackURL: callbackURL) { result in
+                    Task { @MainActor in
+                        switch result {
+                        case .success(let callbackURL):
+                            schwabCallbackInput = callbackURL.absoluteString
+                            await connectSchwabFromCallback()
+                        case .failure(let error):
+                            schwabCredentialMessage = error.localizedDescription
+                        }
+                    }
+                }
+            } else {
+                schwabCredentialMessage = "Opened Schwab. iOS cannot capture a localhost HTTPS callback, so paste the final URL or code here."
+                openURL(url)
+            }
+            #else
+            schwabCredentialMessage = "Opened Schwab using \(AppConfig.Schwab.oauthCallbackURL). If the browser lands on a localhost error page, copy that address-bar URL back here."
             openURL(url)
+            #endif
+        } catch {
+            schwabCredentialMessage = schwabOAuthFailureMessage(error, stage: .authorize)
+        }
+    }
+
+    private func copySchwabAuthorizationURL() {
+        do {
+            let url = try SchwabService.shared.authorizationURL()
+            debugSchwabAuthorization(url, action: "copy")
+            setClipboardText(url.absoluteString)
+            schwabCredentialMessage = authURLHasBadClientID(url)
+                ? "Copied OAuth URL, but client_id still has a pipe. Replace the App Key."
+                : "Copied clean OAuth URL using \(AppConfig.Schwab.oauthCallbackURL). The Schwab portal callback must match exactly."
         } catch {
             schwabCredentialMessage = error.localizedDescription
         }
@@ -670,7 +898,7 @@ struct SettingsView: View {
             NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
             NotificationCenter.default.post(name: .schwabConnectionComplete, object: nil)
         } catch {
-            schwabCredentialMessage = error.localizedDescription
+            schwabCredentialMessage = schwabOAuthFailureMessage(error, stage: .token)
         }
     }
 
@@ -715,6 +943,51 @@ struct SettingsView: View {
         NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
     }
 
+    private func authURLHasBadClientID(_ url: URL) -> Bool {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let clientID = components.queryItems?.first(where: { $0.name == "client_id" })?.value else {
+            return true
+        }
+        return clientID.contains("|") || clientID.range(of: "%7C", options: .caseInsensitive) != nil
+    }
+
+    private func debugSchwabAuthorization(_ url: URL, action: String) {
+        #if DEBUG
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        let clientID = components?.queryItems?.first(where: { $0.name == "client_id" })?.value ?? ""
+        let callback = components?.queryItems?.first(where: { $0.name == "redirect_uri" })?.value ?? ""
+        let cleanClient = !authURLHasBadClientID(url)
+        let summary = "action=\(action) client=\(maskedCredential(clientID)) clientLen=\(clientID.count) callback=\(callback) host=\(url.host ?? "missing") cleanClient=\(cleanClient)"
+        schwabOAuthLogger.notice("\(summary, privacy: .public)")
+        print("SCHWAB_OAUTH_DEBUG \(summary)")
+        #endif
+    }
+
+    private func maskedCredential(_ value: String) -> String {
+        let cleaned = AppConfig.Schwab.sanitizedCredential(value)
+        guard cleaned.count > 10 else { return cleaned.isEmpty ? "Missing" : "Stored" }
+        return "\(cleaned.prefix(6))...\(cleaned.suffix(4))"
+    }
+
+    private enum SchwabOAuthStage {
+        case authorize
+        case token
+    }
+
+    private func schwabOAuthFailureMessage(_ error: Error, stage: SchwabOAuthStage) -> String {
+        if case let SchwabService.SchwabError.httpStatus(_, body) = error,
+           body.localizedCaseInsensitiveContains("invalid_client") ||
+           body.localizedCaseInsensitiveContains("unauthorized") {
+            switch stage {
+            case .authorize:
+                return "Schwab rejected the App Key or callback. Confirm the app is Ready in the Developer Portal and the callback is exactly \(AppConfig.Schwab.oauthCallbackURL)."
+            case .token:
+                return "Schwab rejected the token request. Replace the App Secret, confirm the callback is exactly \(AppConfig.Schwab.oauthCallbackURL), then use a fresh OAuth code."
+            }
+        }
+        return error.localizedDescription
+    }
+
     private func pasteSchwabCredentialField(_ field: SchwabCredentialField) {
         guard let pasted = clipboardText?.trimmingCharacters(in: .whitespacesAndNewlines),
               !pasted.isEmpty else {
@@ -726,10 +999,10 @@ struct SettingsView: View {
         let value: String?
         switch field {
         case .appKey:
-            value = parsed.appKey ?? normalizedCredentialValue(pasted)
+            value = AppConfig.Schwab.sanitizedAppKey(parsed.appKey ?? normalizedCredentialValue(pasted))
             if let value { schwabAppKeyInput = value }
         case .appSecret:
-            value = parsed.appSecret ?? normalizedCredentialValue(pasted)
+            value = AppConfig.Schwab.sanitizedCredential(parsed.appSecret ?? normalizedCredentialValue(pasted))
             if let value { schwabAppSecretInput = value }
         }
 
@@ -745,10 +1018,10 @@ struct SettingsView: View {
 
         let parsed = parseSchwabCredentials(from: pasted)
         if let appKey = parsed.appKey {
-            schwabAppKeyInput = appKey
+            schwabAppKeyInput = AppConfig.Schwab.sanitizedAppKey(appKey)
         }
         if let appSecret = parsed.appSecret {
-            schwabAppSecretInput = appSecret
+            schwabAppSecretInput = AppConfig.Schwab.sanitizedCredential(appSecret)
         }
 
         switch (parsed.appKey, parsed.appSecret) {
@@ -770,6 +1043,15 @@ struct SettingsView: View {
         NSPasteboard.general.string(forType: .string)
         #else
         nil
+        #endif
+    }
+
+    private func setClipboardText(_ text: String) {
+        #if os(iOS)
+        UIPasteboard.general.string = text
+        #elseif os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
         #endif
     }
 
@@ -913,6 +1195,30 @@ private struct SystemsPanel<Content: View>: View {
     }
 }
 
+private struct AdaptiveControlRow<Content: View>: View {
+    private let spacing: CGFloat
+    private let content: () -> Content
+
+    init(spacing: CGFloat = 10, @ViewBuilder content: @escaping () -> Content) {
+        self.spacing = spacing
+        self.content = content
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: spacing) {
+                content()
+            }
+            .frame(maxWidth: .infinity)
+
+            VStack(spacing: spacing) {
+                content()
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
 private struct SystemsReadoutRow: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -921,27 +1227,45 @@ private struct SystemsReadoutRow: View {
     let accent: Color
 
     private var labelWidth: CGFloat {
-        horizontalSizeClass == .compact ? 94 : 108
+        horizontalSizeClass == .compact ? 92 : 118
     }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(label.uppercased())
-                .font(DesignSystem.Typography.labelFont)
-                .tracking(1.0)
-                .foregroundColor(DesignSystem.mutedText)
-                .lineLimit(2)
-                .minimumScaleFactor(0.74)
-                .frame(width: labelWidth, alignment: .leading)
+        if horizontalSizeClass == .compact {
+            VStack(alignment: .leading, spacing: 4) {
+                labelText
+                valueText
+            }
+            .frame(maxWidth: .infinity, minHeight: 22, alignment: .topLeading)
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                labelText
+                    .frame(width: labelWidth, alignment: .leading)
 
-            Text(value)
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(accent)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                valueText
+            }
+            .frame(minHeight: 22, alignment: .topLeading)
         }
-        .frame(minHeight: 22, alignment: .topLeading)
+    }
+
+    private var labelText: some View {
+        Text(label.uppercased())
+            .font(DesignSystem.Typography.labelFont)
+            .tracking(1.0)
+            .foregroundColor(DesignSystem.mutedText)
+            .lineLimit(2)
+            .minimumScaleFactor(0.74)
+    }
+
+    private var valueText: some View {
+        Text(value)
+            .font(DesignSystem.Typography.captionFont)
+            .foregroundColor(accent)
+            .lineLimit(4)
+            .minimumScaleFactor(0.80)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
     }
 }
 
@@ -973,6 +1297,96 @@ private struct SystemsStatusPill: View {
         )
     }
 }
+
+#if os(iOS)
+@MainActor
+private final class SchwabWebAuthCoordinator: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
+    private var session: ASWebAuthenticationSession?
+
+    static func canUseInAppCallback(_ callbackURL: String) -> Bool {
+        guard let callback = URL(string: callbackURL),
+              callback.scheme == "https",
+              let host = callback.host?.lowercased() else {
+            return false
+        }
+
+        // Apple requires HTTPS callback hosts to be Associated Domains for the app.
+        // Loopback hosts cannot satisfy that, so they must use the paste fallback.
+        return host != "127.0.0.1" && host != "localhost"
+    }
+
+    func start(authURL: URL, callbackURL: String, completion: @escaping (Result<URL, Error>) -> Void) {
+        guard let callback = URL(string: callbackURL),
+              let scheme = callback.scheme,
+              let host = callback.host,
+              scheme == "https" else {
+            completion(.failure(SchwabWebAuthError.badCallbackURL))
+            return
+        }
+
+        let handler: ASWebAuthenticationSession.CompletionHandler = { [weak self] callbackURL, error in
+            Task { @MainActor in
+                self?.session = nil
+                if let callbackURL {
+                    completion(.success(callbackURL))
+                } else if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.failure(SchwabWebAuthError.noCallbackURL))
+                }
+            }
+        }
+
+        if #available(iOS 17.4, *) {
+            let path = callback.path.isEmpty ? "/" : callback.path
+            session = ASWebAuthenticationSession(
+                url: authURL,
+                callback: .https(host: host, path: path),
+                completionHandler: handler
+            )
+        } else {
+            session = ASWebAuthenticationSession(
+                url: authURL,
+                callbackURLScheme: scheme,
+                completionHandler: handler
+            )
+        }
+
+        session?.presentationContextProvider = self
+        session?.prefersEphemeralWebBrowserSession = false
+
+        guard session?.start() == true else {
+            session = nil
+            completion(.failure(SchwabWebAuthError.couldNotStart))
+            return
+        }
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow } ?? UIWindow()
+    }
+}
+
+private enum SchwabWebAuthError: LocalizedError {
+    case badCallbackURL
+    case couldNotStart
+    case noCallbackURL
+
+    var errorDescription: String? {
+        switch self {
+        case .badCallbackURL:
+            return "Schwab callback must be an HTTPS URL that exactly matches the Developer Portal."
+        case .couldNotStart:
+            return "Could not start the Schwab secure login sheet."
+        case .noCallbackURL:
+            return "Schwab login ended without a callback URL."
+        }
+    }
+}
+#endif
 
 // MARK: - Strategy Audit Sheet
 //

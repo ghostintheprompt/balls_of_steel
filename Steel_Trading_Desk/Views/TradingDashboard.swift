@@ -24,14 +24,22 @@ struct TradingDashboard: View {
         VXXStrategyState(entry: lastMarketDataEntry)
     }
 
+    private var usesCompactPhoneLayout: Bool {
+        #if os(macOS)
+        return false
+        #else
+        return horizontalSizeClass == .compact
+        #endif
+    }
+
     @State private var isSettingsSheetOpen = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 TradingBackdrop()
 
-                if horizontalSizeClass == .compact {
+                if usesCompactPhoneLayout {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 18) {
                             phoneDeskContent
@@ -47,9 +55,9 @@ struct TradingDashboard: View {
                     )
                 }
             }
-            .navigationTitle(horizontalSizeClass == .compact ? "Steel Desk" : "Steel Trading Desk")
+            .navigationTitle(usesCompactPhoneLayout ? "Steel Desk" : "Steel Trading Desk")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .large)
+            .navigationBarTitleDisplayMode(usesCompactPhoneLayout ? .inline : .large)
             #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -66,16 +74,10 @@ struct TradingDashboard: View {
             .sheet(isPresented: $isSettingsSheetOpen) {
                 SettingsView()
                     #if os(macOS)
-                    .frame(width: 860, height: 640)
+                    .frame(width: 1180, height: 780)
                     #endif
             }
         }
-        // Force stack navigation on iPad. Without this, NavigationView defaults
-        // to split-view: the desk gets squeezed into a sidebar pane and the
-        // right ~72% of the iPad screen is empty. Fix 2026-05-14.
-        #if os(iOS)
-        .navigationViewStyle(.stack)
-        #endif
     }
 
     @State private var selectedPhoneGate: PhoneGate?
@@ -786,7 +788,7 @@ private struct VXXStrategyState {
     var decisionDetail: String {
         guard let entry else { return "No tape entered. Start with Tape." }
         if ready {
-            return "All five conditions are live. Size by ratio: \(entry.ratioTier). Review, then execute manually on broker. Time stop still rules."
+            return "All five conditions are live. Size by ratio: \(entry.ratioTier). Review, then execute manually on broker. 4:15 ET session close still rules."
         }
         return "One failed gate means skip or wait. Do not average your way into a trade."
     }
@@ -1050,7 +1052,7 @@ struct CloseManagementCard: View {
 
             HStack(spacing: 16) {
                 timingColumn(label: "First Warning", value: warningTime)
-                timingColumn(label: "Hard Exit", value: hardExitTime)
+                timingColumn(label: "Session Close", value: hardExitTime)
             }
 
             Text(note)
@@ -1399,7 +1401,7 @@ enum SPYFocusWindow {
     var timeRange: String {
         switch self {
         case .open: return "9:35-10:05 AM"
-        case .close: return "3:30-3:55 PM"
+        case .close: return "3:30-4:15 PM"
         }
     }
 }
@@ -1871,17 +1873,20 @@ private struct MacDeskMetrics {
     }
 
     var leftRailWidth: CGFloat {
-        width >= 1320 ? 240 : 218
+        if width >= 1700 { return 320 }
+        if width >= 1440 { return 300 }
+        return 260
     }
 
     var rightRailWidth: CGFloat {
-        if width >= 1320 { return 320 }
-        if width >= 1120 { return 300 }
-        return min(300, max(270, width * 0.32))
+        if width >= 1700 { return 430 }
+        if width >= 1440 { return 390 }
+        if width >= 1120 { return 340 }
+        return min(320, max(290, width * 0.34))
     }
 
     var minimumChartWidth: CGFloat {
-        showsLeftRail ? 520 : 560
+        showsLeftRail ? 540 : 560
     }
 }
 
@@ -2033,6 +2038,54 @@ private struct CompactGateStripView: View {
 private struct LeftRailView: View {
     let state: VXXStrategyState
     @ObservedObject var marketPulse: MarketPulse
+    @State private var now = Date()
+
+    private let clockTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private static let etTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+
+    private struct RailWindowItem: Identifiable {
+        let id: String
+        let time: String
+        let name: String
+        let startMinutes: Int
+        let endMinutes: Int
+    }
+
+    private enum RailWindowStatus {
+        case live
+        case next
+        case idle
+
+        var label: String {
+            switch self {
+            case .live: return "LIVE"
+            case .next: return "NEXT"
+            case .idle: return ""
+            }
+        }
+
+        var accent: Color {
+            switch self {
+            case .live: return DesignSystem.long
+            case .next: return DesignSystem.amber
+            case .idle: return DesignSystem.muted
+            }
+        }
+    }
+
+    private static let railWindows: [RailWindowItem] = [
+        RailWindowItem(id: "open", time: compactRange(start: 9 * 60 + 35, end: 10 * 60 + 5), name: "Open Drive", startMinutes: 9 * 60 + 35, endMinutes: 10 * 60 + 5),
+        RailWindowItem(id: "morning", time: compactRange(StrategySpec.morningWindow), name: "Morning Fade", startMinutes: StrategySpec.morningWindow.startMinutes, endMinutes: StrategySpec.morningWindow.endMinutes),
+        RailWindowItem(id: "lunch", time: compactRange(start: 12 * 60 + 20, end: 12 * 60 + 40), name: "Lunch Window", startMinutes: 12 * 60 + 20, endMinutes: 12 * 60 + 40),
+        RailWindowItem(id: "powerHour", time: compactRange(StrategySpec.powerHourWindow), name: "Power Hour", startMinutes: StrategySpec.powerHourWindow.startMinutes, endMinutes: StrategySpec.powerHourWindow.endMinutes),
+        RailWindowItem(id: "institutional", time: compactRange(StrategySpec.institutionalWindow), name: "Institutional", startMinutes: StrategySpec.institutionalWindow.startMinutes, endMinutes: StrategySpec.institutionalWindow.endMinutes)
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2056,13 +2109,16 @@ private struct LeftRailView: View {
             }
             .padding(.bottom, 14)
 
+            railSection("ET · SESSION")
+            sessionClockBlock
+                .padding(.horizontal, 12)
+                .padding(.bottom, 14)
+
             railSection("TODAY · WINDOWS")
             VStack(alignment: .leading, spacing: 2) {
-                windowRow("09:35-10:05", "Open Drive")
-                windowRow("09:50-10:15", "Morning Fade")
-                windowRow("12:20-12:40", "Lunch Window")
-                windowRow("15:10-15:25", "Power Hour")
-                windowRow("15:45-16:10", "Institutional", highlight: true)
+                ForEach(Self.railWindows) { window in
+                    windowRow(window, status: status(for: window))
+                }
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 14)
@@ -2084,8 +2140,8 @@ private struct LeftRailView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 14)
 
-            railSection("EXECUTION")
-            Text("THINKORSWIM (manual)")
+            railSection("ORDERS")
+            Text("MANUAL ONLY")
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(DesignSystem.text2)
                 .padding(.horizontal, 12)
@@ -2095,6 +2151,7 @@ private struct LeftRailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(DesignSystem.bg1)
+        .onReceive(clockTimer) { now = $0 }
     }
 
     private func railHeader(_ text: String) -> some View {
@@ -2175,16 +2232,118 @@ private struct LeftRailView: View {
         status == .fail ? DesignSystem.short.opacity(0.06) : Color.clear
     }
 
-    private func windowRow(_ time: String, _ name: String, highlight: Bool = false) -> some View {
+    private var sessionClockBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("ET")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.muted)
+                Spacer()
+                Text(Self.etTimeFormatter.string(from: now))
+                    .font(DesignSystem.Typography.monospacedFont)
+                    .foregroundColor(DesignSystem.amber)
+            }
+
+            HStack {
+                Text("4:15 CLOSE")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.muted)
+                Spacer()
+                Text(sessionCloseCountdown)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(sessionCloseColor)
+            }
+        }
+        .padding(.top, 7)
+    }
+
+    private var sessionCloseCountdown: String {
+        let cal = Calendar(identifier: .gregorian)
+        var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
+        components.hour = 16
+        components.minute = 15
+        components.second = 0
+        guard let target = cal.date(from: components) else { return "—" }
+        let interval = target.timeIntervalSince(now)
+        if interval <= 0 { return "CLOSED" }
+        let h = Int(interval) / 3600
+        let m = (Int(interval) % 3600) / 60
+        let s = Int(interval) % 60
+        return String(format: "%02d:%02d:%02d", h, m, s)
+    }
+
+    private var sessionCloseColor: Color {
+        let cal = Calendar(identifier: .gregorian)
+        var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
+        components.hour = 16
+        components.minute = 15
+        components.second = 0
+        guard let target = cal.date(from: components) else { return DesignSystem.muted }
+        let interval = target.timeIntervalSince(now)
+        if interval <= 0 { return DesignSystem.short }
+        if interval < 600 { return DesignSystem.short }
+        if interval < 1800 { return DesignSystem.amber }
+        return DesignSystem.text
+    }
+
+    private static func compactRange(_ window: StrategySpec.TradingWindow) -> String {
+        compactRange(start: window.startMinutes, end: window.endMinutes)
+    }
+
+    private static func compactRange(start: Int, end: Int) -> String {
+        String(
+            format: "%02d:%02d-%02d:%02d",
+            start / 60,
+            start % 60,
+            end / 60,
+            end % 60
+        )
+    }
+
+    private var etMinutes: Int {
+        let eastern = TimeZone(identifier: "America/New_York")!
+        let comps = Calendar.current.dateComponents(in: eastern, from: now)
+        return (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+    }
+
+    private var nextWindowID: String? {
+        Self.railWindows
+            .filter { $0.endMinutes > etMinutes }
+            .min { $0.startMinutes < $1.startMinutes }?
+            .id
+    }
+
+    private func status(for window: RailWindowItem) -> RailWindowStatus {
+        if etMinutes >= window.startMinutes && etMinutes < window.endMinutes {
+            return .live
+        }
+        if window.id == nextWindowID {
+            return .next
+        }
+        return .idle
+    }
+
+    private func windowRow(_ window: RailWindowItem, status: RailWindowStatus) -> some View {
         HStack(spacing: 10) {
-            Text(time)
+            Text(window.time)
                 .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(highlight ? DesignSystem.amber : DesignSystem.text2)
-                .frame(width: 96, alignment: .leading)
-            Text(name)
+                .foregroundColor(status == .idle ? DesignSystem.text2 : status.accent)
+                .frame(width: 92, alignment: .leading)
+            Text(window.name)
                 .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(highlight ? DesignSystem.amber : DesignSystem.muted)
+                .foregroundColor(status == .idle ? DesignSystem.muted : status.accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
             Spacer(minLength: 0)
+            if status != .idle {
+                Text(status.label)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(0.8)
+                    .foregroundColor(status.accent)
+                    .frame(width: 34, alignment: .trailing)
+            }
         }
     }
 }
@@ -2291,16 +2450,7 @@ private struct RightRailView: View {
     let onEditTape: () -> Void
     let onSecondRead: () -> Void
 
-    @State private var now = Date()
     @ObservedObject private var liveTape = LiveTapeService.shared
-    private let clockTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
-    private static let etTimeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
-        f.timeZone = TimeZone(identifier: "America/New_York")
-        return f
-    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2309,12 +2459,9 @@ private struct RightRailView: View {
             rawReadSection
             railDivider
             secondReadSection
-            railDivider
-            clockSection
             Spacer(minLength: 0)
         }
         .background(DesignSystem.bg1)
-        .onReceive(clockTimer) { now = $0 }
     }
 
     private var railDivider: some View {
@@ -2510,62 +2657,6 @@ private struct RightRailView: View {
         .padding(16)
     }
 
-    // MARK: CLOCK
-    private var clockSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("ET")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.6)
-                    .foregroundColor(DesignSystem.muted)
-                Spacer()
-                Text(Self.etTimeFormatter.string(from: now))
-                    .font(DesignSystem.Typography.monospacedFont)
-                    .foregroundColor(DesignSystem.amber)
-            }
-
-            HStack {
-                Text("HARD STOP IN")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.4)
-                    .foregroundColor(DesignSystem.muted)
-                Spacer()
-                Text(hardStopCountdown)
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(hardStopColor)
-            }
-        }
-        .padding(16)
-    }
-
-    private var hardStopCountdown: String {
-        let cal = Calendar(identifier: .gregorian)
-        var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
-        components.hour = 15
-        components.minute = 55
-        components.second = 0
-        guard let target = cal.date(from: components) else { return "—" }
-        let interval = target.timeIntervalSince(now)
-        if interval <= 0 { return "PAST" }
-        let h = Int(interval) / 3600
-        let m = (Int(interval) % 3600) / 60
-        let s = Int(interval) % 60
-        return String(format: "%02d:%02d:%02d", h, m, s)
-    }
-
-    private var hardStopColor: Color {
-        let cal = Calendar(identifier: .gregorian)
-        var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
-        components.hour = 15
-        components.minute = 55
-        components.second = 0
-        guard let target = cal.date(from: components) else { return DesignSystem.muted }
-        let interval = target.timeIntervalSince(now)
-        if interval <= 0 { return DesignSystem.short }
-        if interval < 600 { return DesignSystem.short }
-        if interval < 1800 { return DesignSystem.amber }
-        return DesignSystem.text
-    }
 }
 
 // MARK: - Status Footer
@@ -2582,7 +2673,7 @@ private struct StatusFooterView: View {
             divider
             footerCell("QUOTES", quotesText, accent: quotesAccent)
             divider
-            footerCell("EXEC", "THINKORSWIM", accent: DesignSystem.muted)
+            footerCell("ORDERS", "MANUAL ONLY", accent: DesignSystem.muted)
             divider
             footerCell("PHASE", marketPulse.currentPhase.displayName.uppercased(), accent: DesignSystem.amber)
             Spacer(minLength: 0)
@@ -3731,13 +3822,13 @@ private struct PhoneClockFooter: View {
             Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 24)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("HARD STOP IN")
+                Text("4:15 CLOSE IN")
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.4)
                     .foregroundColor(DesignSystem.muted)
-                Text(hardStopCountdown)
+                Text(sessionCloseCountdown)
                     .font(DesignSystem.Typography.monospacedFont)
-                    .foregroundColor(hardStopAccent)
+                    .foregroundColor(sessionCloseAccent)
             }
 
             Spacer()
@@ -3774,26 +3865,26 @@ private struct PhoneClockFooter: View {
         .onReceive(timer) { now = $0 }
     }
 
-    private var hardStopCountdown: String {
+    private var sessionCloseCountdown: String {
         let cal = Calendar(identifier: .gregorian)
         var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
-        components.hour = 15
-        components.minute = 55
+        components.hour = 16
+        components.minute = 15
         components.second = 0
         guard let target = cal.date(from: components) else { return "—" }
         let interval = target.timeIntervalSince(now)
-        if interval <= 0 { return "PAST" }
+        if interval <= 0 { return "CLOSED" }
         let h = Int(interval) / 3600
         let m = (Int(interval) % 3600) / 60
         let s = Int(interval) % 60
         return String(format: "%02d:%02d:%02d", h, m, s)
     }
 
-    private var hardStopAccent: Color {
+    private var sessionCloseAccent: Color {
         let cal = Calendar(identifier: .gregorian)
         var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
-        components.hour = 15
-        components.minute = 55
+        components.hour = 16
+        components.minute = 15
         components.second = 0
         guard let target = cal.date(from: components) else { return DesignSystem.muted }
         let interval = target.timeIntervalSince(now)
@@ -3841,7 +3932,7 @@ private struct PhoneHardExitTakeover: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("HARD EXIT WINDOW")
+            Text("SESSION CLOSE WINDOW")
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(2.4)
                 .foregroundColor(.black)
@@ -3856,7 +3947,7 @@ private struct PhoneHardExitTakeover: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
 
-            Text("CLOSE EVERYTHING BY 15:55 ET.")
+            Text("EXTENDED SESSION CLOSES AT 16:15 ET.")
                 .font(DesignSystem.Typography.headlineFont)
                 .foregroundColor(DesignSystem.text)
                 .multilineTextAlignment(.center)
@@ -3872,9 +3963,9 @@ private struct PhoneHardExitTakeover: View {
                     .foregroundColor(DesignSystem.amber)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                rule("01", "No new entries after 15:50.")
-                rule("02", "Close winners on the 15:55 bell whether or not they're at target.")
-                rule("03", "Cut losers immediately. No averaging into hope.")
+                rule("01", "No fresh quote signals after 16:10.")
+                rule("02", "Alert session closes at 16:15 ET.")
+                rule("03", "After 16:15, stand down until the next session.")
             }
             .padding(12)
             .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
@@ -3889,8 +3980,8 @@ private struct PhoneHardExitTakeover: View {
     private var countdown: String {
         let cal = Calendar(identifier: .gregorian)
         var components = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: now)
-        components.hour = 15
-        components.minute = 55
+        components.hour = 16
+        components.minute = 15
         components.second = 0
         guard let target = cal.date(from: components) else { return "—" }
         let interval = target.timeIntervalSince(now)

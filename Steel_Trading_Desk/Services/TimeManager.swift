@@ -19,7 +19,7 @@ class TimeManager: ObservableObject {
     }
     
     var marketClose: Date {
-        return createTodayDate(hour: 16, minute: 0)
+        return createTodayDate(hour: 16, minute: 15)
     }
     
     private let formatter: DateFormatter = {
@@ -53,7 +53,7 @@ class TimeManager: ObservableObject {
         case "09:30"..."10:00": return .opening
         case "11:30"..."13:30": return .midday
         case "15:00"..."16:00": return .powerHour
-        case "16:00"...: return .afterHours
+        case "16:15"...: return .afterHours
         default: return .regular
         }
     }
@@ -91,10 +91,18 @@ class TimeManager: ObservableObject {
         guard let h = comps.hour, let m = comps.minute else { return (false, nil) }
         let t = h * 60 + m
 
-        if t >= 9*60+50 && t < 10*60+0  { return (true, .morning) }
-        if t >= 12*60+20 && t < 12*60+35 { return (true, .lunch) }
-        if t >= 15*60+10 && t < 15*60+25 { return (true, .powerHour) }
-        if t >= 15*60+45 && t < 16*60+10 { return (true, .institutional) }
+        if t >= StrategySpec.morningWindow.startMinutes && t < StrategySpec.morningWindow.endMinutes {
+            return (true, .morning)
+        }
+        if t >= 12 * 60 + 20 && t < 12 * 60 + 40 {
+            return (true, .lunch)
+        }
+        if t >= StrategySpec.powerHourWindow.startMinutes && t < StrategySpec.powerHourWindow.endMinutes {
+            return (true, .powerHour)
+        }
+        if t >= StrategySpec.institutionalWindow.startMinutes && t < StrategySpec.institutionalWindow.endMinutes {
+            return (true, .institutional)
+        }
         return (false, nil)
     }
 

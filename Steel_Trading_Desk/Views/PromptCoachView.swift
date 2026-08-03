@@ -10,6 +10,7 @@ import UIKit
 
 struct PromptCoachView: View {
     @StateObject private var viewModel = PromptCoachViewModel()
+    @StateObject private var notifications = SignalNotification.shared
 
     var body: some View {
         NavigationView {
@@ -47,8 +48,16 @@ struct PromptCoachView: View {
                         Button(action: { viewModel.refreshPrompts() }) {
                             Label("Refresh", systemImage: "arrow.clockwise")
                         }
-                        Button(action: { viewModel.toggleNotifications() }) {
-                            Label("Notifications", systemImage: "bell")
+                        Button {
+                            Task {
+                                if notifications.isPermissionGranted {
+                                    notifications.sendTestNotification()
+                                } else {
+                                    await notifications.handlePermissionAction()
+                                }
+                            }
+                        } label: {
+                            Label(notifications.isPermissionGranted ? "Test Notification" : notifications.permissionActionTitle, systemImage: "bell")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -675,7 +684,13 @@ class PromptCoachViewModel: ObservableObject {
     }
 
     func toggleNotifications() {
-        // Implement notification settings
+        Task {
+            if SignalNotification.shared.isPermissionGranted {
+                SignalNotification.shared.sendTestNotification()
+            } else {
+                await SignalNotification.shared.handlePermissionAction()
+            }
+        }
     }
 
     deinit {

@@ -216,42 +216,42 @@ struct StrategyAuditor {
 
         r.append(AuditResult(
             category: .exits,
-            title: "Default hard-exit cutoff (3:55 PM)",
-            expected: "955 minutes",
+            title: "Default session close (4:15 PM)",
+            expected: "975 minutes",
             actual: "\(StrategySpec.defaultHardExitMinutes) minutes",
-            status: StrategySpec.defaultHardExitMinutes == 15 * 60 + 55 ? .pass : .fail,
-            docSource: "thinkorswim_complete_setup_2026.md / Exit Strategy"
+            status: StrategySpec.defaultHardExitMinutes == StrategySpec.extendedSessionCloseMinutes ? .pass : .fail,
+            docSource: "user spec 2026-08-03 / extended session close"
         ))
 
         r.append(AuditResult(
             category: .exits,
-            title: "Institutional hard-exit cutoff (4:05 PM)",
-            expected: "965 minutes",
+            title: "Institutional session close (4:15 PM)",
+            expected: "975 minutes",
             actual: "\(StrategySpec.institutionalHardExitMinutes) minutes",
-            status: StrategySpec.institutionalHardExitMinutes == 16 * 60 + 5 ? .pass : .fail,
-            docSource: "thinkorswim_complete_setup_2026.md / Exit Strategy"
+            status: StrategySpec.institutionalHardExitMinutes == StrategySpec.extendedSessionCloseMinutes ? .pass : .fail,
+            docSource: "user spec 2026-08-03 / extended session close"
         ))
 
-        // Doc-faithful behavior: an Institutional position extends the cutoff.
+        // Quote/alert behavior: all tracked windows share the 4:15 PM ET close.
         let inst = makeDate(hour: 15, minute: 50)
         let earlier = makeDate(hour: 11, minute: 15)
         let withInst = StrategySpec.hardExitMinutes(forOpenedAt: [earlier, inst])
         let withoutInst = StrategySpec.hardExitMinutes(forOpenedAt: [earlier])
         r.append(AuditResult(
             category: .exits,
-            title: "Hard exit with Institutional position open",
-            expected: "16:05",
+            title: "Session close with Institutional position open",
+            expected: "16:15",
             actual: formatMinutes(withInst),
-            status: withInst == 16 * 60 + 5 ? .pass : .fail,
-            docSource: "vxx_trading_prompts_2026.md / PROMPT 3 + user spec 2026-05-14"
+            status: withInst == StrategySpec.extendedSessionCloseMinutes ? .pass : .fail,
+            docSource: "user spec 2026-08-03 / extended session close"
         ))
         r.append(AuditResult(
             category: .exits,
-            title: "Hard exit with only earlier positions",
-            expected: "15:55",
+            title: "Session close with only earlier positions",
+            expected: "16:15",
             actual: formatMinutes(withoutInst),
-            status: withoutInst == 15 * 60 + 55 ? .pass : .fail,
-            docSource: "thinkorswim_complete_setup_2026.md / Exit Strategy"
+            status: withoutInst == StrategySpec.extendedSessionCloseMinutes ? .pass : .fail,
+            docSource: "user spec 2026-08-03 / extended session close"
         ))
 
         return r

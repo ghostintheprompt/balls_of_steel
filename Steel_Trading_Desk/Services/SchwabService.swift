@@ -1,9 +1,9 @@
 import Foundation
 import Combine
 
-// MARK: - EDUCATIONAL MODE SERVICE
-// This app is an educational tool. All data must be entered manually.
-// Connect to your own trading platform (ThinkOrSwim, Schwab, etc.) for live execution.
+// MARK: - SCHWAB MARKET-DATA SERVICE
+// Schwab OAuth is used for quote/candle data only. Steel never sends orders,
+// reads balances, or manages brokerage positions.
 
 class SchwabService: ObservableObject {
     static let shared = SchwabService()
@@ -15,8 +15,9 @@ class SchwabService: ObservableObject {
         self.session = session
     }
 
-    func authorizationURL(state: String = UUID().uuidString, redirectURI: String = AppConfig.Schwab.loopbackCallbackURL) throws -> URL {
+    func authorizationURL(redirectURI: String = AppConfig.Schwab.oauthCallbackURL) throws -> URL {
         let appKey = AppConfig.Schwab.appKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let redirectURI = AppConfig.Schwab.sanitizedCallbackURL(redirectURI)
         guard !appKey.isEmpty else {
             throw SchwabError.missingDeveloperCredentials
         }
@@ -25,11 +26,8 @@ class SchwabService: ObservableObject {
             throw SchwabError.badURL(AppConfig.Schwab.oauthAuthorizeURL)
         }
         components.queryItems = [
-            URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: appKey),
-            URLQueryItem(name: "redirect_uri", value: redirectURI),
-            URLQueryItem(name: "scope", value: "api"),
-            URLQueryItem(name: "state", value: state)
+            URLQueryItem(name: "redirect_uri", value: redirectURI)
         ]
         guard let url = components.url else {
             throw SchwabError.badURL(AppConfig.Schwab.oauthAuthorizeURL)
@@ -57,9 +55,9 @@ class SchwabService: ObservableObject {
         )
     }
 
-    /// Educational mode - No live order execution
+    /// Market-data-only boundary. Manual execution stays outside Steel.
     func placeOrder(order: Order) async throws -> OrderResponse {
-        throw SchwabError.educationalModeOnly 
+        throw SchwabError.marketDataOnly
     }
 
     /// Starts a REST-backed quote pass. Schwab's websocket streamer still needs
@@ -87,7 +85,8 @@ class SchwabService: ObservableObject {
     }
 
     @discardableResult
-    func exchangeCodeForToken(_ code: String, redirectURI: String = AppConfig.Schwab.loopbackCallbackURL) async throws -> String {
+    func exchangeCodeForToken(_ code: String, redirectURI: String = AppConfig.Schwab.oauthCallbackURL) async throws -> String {
+        let redirectURI = AppConfig.Schwab.sanitizedCallbackURL(redirectURI)
         let token = try await requestTokens(
             grantItems: [
                 "grant_type": "authorization_code",
@@ -187,7 +186,7 @@ class SchwabService: ObservableObject {
 
     // MARK: - Error Handling
     enum SchwabError: LocalizedError {
-        case educationalModeOnly
+        case marketDataOnly
         case missingDeveloperCredentials
         case missingOAuthTokens
         case badURL(String)
@@ -196,8 +195,8 @@ class SchwabService: ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .educationalModeOnly:
-                return "This app is educational only. Execute trades on your own platform (ThinkOrSwim, Schwab, TD Ameritrade, etc.)"
+            case .marketDataOnly:
+                return "Steel only uses Schwab for quote data. Place trades manually in your brokerage app."
             case .missingDeveloperCredentials:
                 return "Add your Schwab app key and app secret first."
             case .missingOAuthTokens:

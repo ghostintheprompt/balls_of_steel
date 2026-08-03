@@ -19,6 +19,11 @@ struct MainView: View {
         ZStack {
             TradingBackdrop()
 
+            #if os(macOS)
+            // macOS can briefly report a compact size class during window
+            // restoration; the desktop app should never fall into phone tabs.
+            TradingDashboard(signalMonitor: signalMonitor)
+            #else
             if horizontalSizeClass == .compact {
                 TabView(selection: $compactTab) {
                     compactPhoneTabs
@@ -29,6 +34,7 @@ struct MainView: View {
                 // Gate spine is the navigation; no tab bar, no sub-screens.
                 TradingDashboard(signalMonitor: signalMonitor)
             }
+            #endif
 
             if showLaunchOverlay {
                 LaunchOverlayView()
