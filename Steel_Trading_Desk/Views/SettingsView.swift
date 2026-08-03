@@ -7,6 +7,7 @@ import AppKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @AppStorage("isBackgroundMonitoringEnabled") private var isBackgroundMonitoringEnabled = false
     @AppStorage("alertVolume") private var alertVolume: Double = 0.7 // Default 70%
     @AppStorage(AppConfig.CloseManagement.generalWarningKey) private var generalWarningTime = AppConfig.CloseManagement.defaultGeneralWarning
@@ -14,18 +15,32 @@ struct SettingsView: View {
     @AppStorage(AppConfig.CloseManagement.institutionalWarningKey) private var institutionalWarningTime = AppConfig.CloseManagement.defaultInstitutionalWarning
     @AppStorage(AppConfig.CloseManagement.institutionalHardExitKey) private var institutionalHardExitTime = AppConfig.CloseManagement.defaultInstitutionalHardExit
     @StateObject private var notifications = SignalNotification.shared
+    @ObservedObject private var liveTape = LiveTapeService.shared
     @State private var isAuditSheetOpen: Bool = false
     @State private var schwabAppKeyInput: String = ""
     @State private var schwabAppSecretInput: String = ""
+    @State private var schwabCallbackInput: String = ""
     @State private var isEditingSchwabCredentials: Bool = false
     @State private var schwabCredentialMessage: String?
+    @State private var isConnectingSchwab: Bool = false
+    @State private var isTestingSchwabFeed: Bool = false
 
     var body: some View {
-        #if os(macOS)
-        desktopSystemsPanel
-        #else
-        mobileSystemsPanel
-        #endif
+        Group {
+            #if os(macOS)
+            desktopSystemsPanel
+            #else
+            mobileSystemsPanel
+            #endif
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .schwabConnectionComplete)) { _ in
+            schwabCredentialMessage = "Schwab OAuth connected. Live tape is ready."
+            isEditingSchwabCredentials = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .schwabConnectionFailed)) { notification in
+            let message = notification.userInfo?["message"] as? String ?? "Schwab OAuth failed."
+            schwabCredentialMessage = message
+        }
     }
 
     #if os(macOS)
@@ -109,8 +124,8 @@ struct SettingsView: View {
 
             SystemsStatusPill(
                 title: "DATA",
-                value: AppConfig.Schwab.hasOAuthTokens ? "SCHWAB" : "MANUAL",
-                accent: AppConfig.Schwab.hasOAuthTokens ? DesignSystem.long : DesignSystem.amber
+                value: dataStatusValue,
+                accent: dataStatusAccent
             )
 
             SystemsStatusPill(
@@ -162,8 +177,8 @@ struct SettingsView: View {
             HStack(spacing: 8) {
                 SystemsStatusPill(
                     title: "DATA",
-                    value: AppConfig.Schwab.hasOAuthTokens ? "SCHWAB" : "MANUAL",
-                    accent: AppConfig.Schwab.hasOAuthTokens ? DesignSystem.long : DesignSystem.amber
+                    value: dataStatusValue,
+                    accent: dataStatusAccent
                 )
 
                 SystemsStatusPill(
@@ -183,9 +198,9 @@ struct SettingsView: View {
     private var systemDataCard: some View {
         SystemsPanel(title: "DATA") {
             VStack(spacing: 9) {
-                SystemsReadoutRow(label: "Mode", value: "Manual tape", accent: DesignSystem.amber)
+                SystemsReadoutRow(label: "Mode", value: dataModeValue, accent: dataModeAccent)
                 SystemsReadoutRow(label: "Schwab keys", value: AppConfig.Schwab.hasDeveloperCredentials ? "Stored" : "Missing", accent: AppConfig.Schwab.hasDeveloperCredentials ? DesignSystem.long : DesignSystem.short)
-                SystemsReadoutRow(label: "Live feed", value: AppConfig.Schwab.hasOAuthTokens ? "Token stored" : "Off", accent: AppConfig.Schwab.hasOAuthTokens ? DesignSystem.long : DesignSystem.mutedText)
+                SystemsReadoutRow(label: "Live feed", value: liveFeedValue, accent: liveFeedAccent)
                 SystemsReadoutRow(label: "Execution", value: "Thinkorswim manual", accent: DesignSystem.mutedText)
             }
         }
@@ -196,10 +211,12 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 if AppConfig.Schwab.hasDeveloperCredentials && !isEditingSchwabCredentials {
                     SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
-                    Text("Stored in Keychain on this phone.")
+                    Text(schwabCredentialStatusCopy)
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    schwabOAuthControls
 
                     HStack(spacing: 10) {
                         Button {
@@ -321,6 +338,69 @@ struct SettingsView: View {
         }
     }
 
+    private var schwabOAuthControls: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            if AppConfig.Schwab.hasOAuthTokens {
+                SystemsReadoutRow(label: "Token", value: schwabTokenExpiryText, accent: DesignSystem.long)
+
+                HStack(spacing: 10) {
+                    Button {
+                        Task { await toggleSchwabLiveTape() }
+                    } label: {
+                        Label(liveTape.isEnabled ? "Live Off" : "Live On", systemImage: liveTape.isEnabled ? "pause.fill" : "dot.radiowaves.left.and.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isTestingSchwabFeed)
+
+                    Button {
+                        Task { await testSchwabFeed() }
+                    } label: {
+                        Label(isTestingSchwabFeed ? "Checking" : "Tick", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isTestingSchwabFeed)
+                }
+            } else {
+                Button {
+                    openSchwabAuthorization()
+                } label: {
+                    Label("Open OAuth", systemImage: "safari")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isConnectingSchwab)
+
+                TextField("Paste callback URL or code", text: $schwabCallbackInput)
+                    .textFieldStyle(.roundedBorder)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    #endif
+
+                HStack(spacing: 10) {
+                    Button {
+                        pasteSchwabCallback()
+                    } label: {
+                        Label("Paste", systemImage: "doc.on.clipboard")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        Task { await connectSchwabFromCallback() }
+                    } label: {
+                        Label(isConnectingSchwab ? "Connecting" : "Connect", systemImage: "link")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isConnectingSchwab || schwabCallbackInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+
     private var compactAlertsCard: some View {
         SystemsPanel(title: "ALERTS") {
             VStack(alignment: .leading, spacing: 10) {
@@ -413,15 +493,84 @@ struct SettingsView: View {
     }
 
     private var compactSchwabStatus: String {
+        if liveTape.isLive { return "Live" }
         if AppConfig.Schwab.hasOAuthTokens { return "OAuth stored" }
         if AppConfig.Schwab.hasDeveloperCredentials { return "Keys stored" }
         return "Not stored"
     }
 
+    private var dataStatusValue: String {
+        if liveTape.isLive { return "LIVE" }
+        if AppConfig.Schwab.hasOAuthTokens { return "SCHWAB" }
+        if AppConfig.Schwab.hasDeveloperCredentials { return "KEYS" }
+        return "MANUAL"
+    }
+
+    private var dataStatusAccent: Color {
+        if liveTape.isLive { return DesignSystem.long }
+        if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
+        if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
+        return DesignSystem.amber
+    }
+
+    private var dataModeValue: String {
+        if liveTape.isLive { return "Schwab live" }
+        if AppConfig.Schwab.hasOAuthTokens { return "Schwab token" }
+        if AppConfig.Schwab.hasDeveloperCredentials { return "Schwab setup" }
+        return "Manual tape"
+    }
+
+    private var dataModeAccent: Color {
+        if liveTape.isLive { return DesignSystem.long }
+        if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
+        if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
+        return DesignSystem.amber
+    }
+
+    private var liveFeedValue: String {
+        if liveTape.isLive, let last = liveTape.lastTickAt {
+            let delta = Int(Date().timeIntervalSince(last))
+            return "\(delta)s ago"
+        }
+        if liveTape.isLive { return "Live" }
+        if liveTape.isEnabled, liveTape.lastError != nil { return "Error" }
+        if AppConfig.Schwab.hasOAuthTokens { return "Ready" }
+        if AppConfig.Schwab.hasDeveloperCredentials { return "OAuth needed" }
+        return "Off"
+    }
+
+    private var liveFeedAccent: Color {
+        if liveTape.isLive { return DesignSystem.long }
+        if liveTape.isEnabled, liveTape.lastError != nil { return DesignSystem.short }
+        if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
+        if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
+        return DesignSystem.mutedText
+    }
+
+    private var schwabCredentialStatusCopy: String {
+        if liveTape.isLive {
+            return "Schwab is feeding the live tape on this phone."
+        }
+        if AppConfig.Schwab.hasOAuthTokens {
+            return "OAuth token is stored in Keychain on this phone. Turn Live On when you want Schwab to feed the tape."
+        }
+        return "Keys are stored in Keychain. Live feed still needs the Schwab OAuth connection."
+    }
+
     private var schwabStatusAccent: Color {
+        if liveTape.isLive { return DesignSystem.long }
         if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
         if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
         return DesignSystem.short
+    }
+
+    private var schwabTokenExpiryText: String {
+        guard let expiresAt = AppConfig.Schwab.accessTokenExpiresAt else {
+            return "Stored"
+        }
+        let minutes = Int(expiresAt.timeIntervalSinceNow / 60)
+        if minutes <= 0 { return "Refresh due" }
+        return "\(minutes)m"
     }
 
     private func saveSchwabDeveloperCredentials() {
@@ -458,10 +607,111 @@ struct SettingsView: View {
         AppConfig.Schwab.refreshTokenStored = false
         AppConfig.Schwab.developerCredentialsStored = false
         AppConfig.Schwab.oauthTokensStored = false
+        AppConfig.Schwab.accessTokenExpiresAt = nil
+        liveTape.isEnabled = false
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
+        schwabCallbackInput = ""
         isEditingSchwabCredentials = false
         schwabCredentialMessage = "Cleared Schwab credentials from this phone."
+        NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
+    }
+
+    private func openSchwabAuthorization() {
+        guard AppConfig.Schwab.hasDeveloperCredentials else {
+            schwabCredentialMessage = "Save your Schwab app key and app secret first."
+            return
+        }
+
+        do {
+            let url = try SchwabService.shared.authorizationURL()
+            schwabCredentialMessage = "Opened Schwab. After the redirect, paste the final URL or code here."
+            openURL(url)
+        } catch {
+            schwabCredentialMessage = error.localizedDescription
+        }
+    }
+
+    private func pasteSchwabCallback() {
+        guard let pasted = clipboardText?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !pasted.isEmpty else {
+            schwabCredentialMessage = "Clipboard is empty."
+            return
+        }
+        schwabCallbackInput = pasted
+        schwabCredentialMessage = SchwabService.shared.authorizationCode(from: pasted) == nil
+            ? "Pasted callback text, but no code was found yet."
+            : "Pasted Schwab callback code."
+    }
+
+    @MainActor
+    private func connectSchwabFromCallback() async {
+        guard !isConnectingSchwab else { return }
+        let input = schwabCallbackInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let code = SchwabService.shared.authorizationCode(from: input) else {
+            schwabCredentialMessage = "Paste the full Schwab callback URL or just the code value."
+            return
+        }
+
+        isConnectingSchwab = true
+        defer { isConnectingSchwab = false }
+
+        do {
+            _ = try await SchwabService.shared.exchangeCodeForToken(code)
+            MarketDataRegistry.shared.use(.schwab)
+            liveTape.isEnabled = true
+            await liveTape.tickNow()
+            schwabCallbackInput = ""
+            if let error = liveTape.lastError {
+                schwabCredentialMessage = "OAuth connected. First live tick needs attention: \(error)"
+            } else {
+                schwabCredentialMessage = "Schwab OAuth connected. Live tape is on."
+            }
+            NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
+            NotificationCenter.default.post(name: .schwabConnectionComplete, object: nil)
+        } catch {
+            schwabCredentialMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func toggleSchwabLiveTape() async {
+        guard AppConfig.Schwab.hasOAuthTokens else {
+            schwabCredentialMessage = "Connect Schwab OAuth first."
+            return
+        }
+
+        if liveTape.isEnabled {
+            liveTape.isEnabled = false
+            schwabCredentialMessage = "Schwab live tape is off."
+            return
+        }
+
+        await testSchwabFeed()
+    }
+
+    @MainActor
+    private func testSchwabFeed() async {
+        guard !isTestingSchwabFeed else { return }
+        guard AppConfig.Schwab.hasOAuthTokens else {
+            schwabCredentialMessage = "Connect Schwab OAuth first."
+            return
+        }
+
+        isTestingSchwabFeed = true
+        defer { isTestingSchwabFeed = false }
+
+        MarketDataRegistry.shared.use(.schwab)
+        liveTape.isEnabled = true
+        await liveTape.tickNow()
+
+        if let error = liveTape.lastError {
+            schwabCredentialMessage = "Schwab live tick failed: \(error)"
+        } else if let snapshot = liveTape.lastSnapshot {
+            schwabCredentialMessage = String(format: "Schwab live tick loaded VXX %.2f / VIX %.2f.", snapshot.vxxPrice, snapshot.vixPrice)
+        } else {
+            schwabCredentialMessage = "Schwab live tape is on."
+        }
         NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
     }
 

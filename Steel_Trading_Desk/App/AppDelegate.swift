@@ -19,12 +19,26 @@ enum SchwabOAuthCallbackHandler {
             do {
                 let token = try await SchwabService.shared.exchangeCodeForToken(code)
                 AppConfig.apiKey = token
+                await MainActor.run {
+                    MarketDataRegistry.shared.use(.schwab)
+                    LiveTapeService.shared.isEnabled = true
+                }
+                await LiveTapeService.shared.tickNow()
 
-                NotificationCenter.default.post(
-                    name: .schwabConnectionComplete,
-                    object: nil
-                )
+                await MainActor.run {
+                    NotificationCenter.default.post(
+                        name: .schwabConnectionComplete,
+                        object: nil
+                    )
+                }
             } catch {
+                await MainActor.run {
+                    NotificationCenter.default.post(
+                        name: .schwabConnectionFailed,
+                        object: nil,
+                        userInfo: ["message": error.localizedDescription]
+                    )
+                }
                 #if DEBUG
                 print("Schwab auth error: \(error)")
                 #endif
@@ -147,5 +161,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension Notification.Name {
     static let schwabConnectionComplete = Notification.Name("schwabConnectionComplete")
+    static let schwabConnectionFailed = Notification.Name("schwabConnectionFailed")
     static let schwabCredentialsChanged = Notification.Name("schwabCredentialsChanged")
 }

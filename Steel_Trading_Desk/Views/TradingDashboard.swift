@@ -92,16 +92,18 @@ struct TradingDashboard: View {
             } else {
                 VStack(alignment: .leading, spacing: 14) {
                     PhoneTickerStrip(entry: lastMarketDataEntry, phase: marketPulse.currentPhase)
-                    PhoneCommandCard(state: phoneStrategyState, signalMonitor: signalMonitor, openTape: openTape, openRisk: openRisk)
                     PhoneStrategyRail(entry: lastMarketDataEntry, openTape: openTape, onSelectGate: { selectedPhoneGate = $0 })
                     PhoneCandleStrip(symbol: lastMarketDataEntry?.instrument ?? .vxx) {
                         isChartSheetOpen = true
                     }
-                    PhoneClockFooter()
+                    PhoneCommandCard(state: phoneStrategyState, signalMonitor: signalMonitor, openRisk: openRisk)
 
                     if !signalMonitor.activeTrades.isEmpty {
                         activeTradesSection
                     }
+
+                    PhoneClockFooter()
+                    PhoneTapeActionCard(state: phoneStrategyState, openTape: openTape)
                 }
                 .sheet(item: $selectedPhoneGate) { gate in
                     PhoneGateDetailSheet(gate: gate, state: phoneStrategyState, entry: lastMarketDataEntry, openTape: openTape)
@@ -203,7 +205,6 @@ private struct PhoneDeskHeader: View {
 private struct PhoneCommandCard: View {
     let state: VXXStrategyState
     @ObservedObject var signalMonitor: SignalMonitor
-    let openTape: (() -> Void)?
     let openRisk: (() -> Void)?
 
     var body: some View {
@@ -261,25 +262,40 @@ private struct PhoneCommandCard: View {
                         .buttonStyle(.borderedProminent)
                     }
                 }
-            } else {
-                if let openTape {
-                    Button(action: openTape) {
-                        Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else {
-                    NavigationLink {
-                        ManualDataEntryView()
-                    } label: {
-                        Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
             }
         }
         .deskPanel(glow: .clear, padding: 16)
+    }
+}
+
+private struct PhoneTapeActionCard: View {
+    let state: VXXStrategyState
+    let openTape: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("TAPE")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.2)
+                .foregroundColor(DesignSystem.mutedText)
+
+            if let openTape {
+                Button(action: openTape) {
+                    Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                NavigationLink {
+                    ManualDataEntryView()
+                } label: {
+                    Label(state.primaryActionTitle, systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .deskPanel(glow: .clear, padding: 14)
     }
 }
 

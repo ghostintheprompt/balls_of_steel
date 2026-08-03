@@ -99,23 +99,38 @@ struct SchwabProviderAdapter: MarketDataProvider {
     let requiresApiKey = true
     let apiKeyHelpURL = URL(string: "https://developer.schwab.com")
     let deliversRealtime = true
-    let setupNote = "Requires a Schwab developer account and OAuth flow. Power-user path."
+    let setupNote = "Requires a Schwab developer account, app key, app secret, and OAuth connection."
 
     func quote(_ symbol: String) async throws -> Quote {
-        throw MarketDataProviderError.notImplemented("Schwab quote pass-through pending wire-up to existing SchwabService.")
+        try await SchwabService.shared.fetchQuote(symbol)
     }
 
     func vwap(_ symbol: String) async throws -> Double {
-        throw MarketDataProviderError.notImplemented("Schwab vwap pass-through pending.")
+        try await SchwabService.shared.vwap(symbol)
     }
 
     func volumeVsAvg(_ symbol: String, period: Int) async throws -> Double {
-        throw MarketDataProviderError.notImplemented("Schwab volumeVsAvg pass-through pending.")
+        try await SchwabService.shared.volumeVsAvg(symbol, period: period)
     }
 
     func subscribe(_ symbols: [String]) -> AsyncStream<Quote> {
         AsyncStream { continuation in
-            continuation.finish()
+            let task = Task {
+                while !Task.isCancelled {
+                    for symbol in symbols {
+                        guard !Task.isCancelled else { break }
+                        if let quote = try? await SchwabService.shared.fetchQuote(symbol) {
+                            continuation.yield(quote)
+                        }
+                    }
+                    try? await Task.sleep(nanoseconds: 30_000_000_000)
+                }
+                continuation.finish()
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
         }
     }
 }

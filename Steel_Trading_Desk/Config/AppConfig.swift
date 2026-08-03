@@ -37,6 +37,7 @@ struct AppConfig {
         static let refreshTokenStoredKey = "schwabRefreshTokenStored"
         static let developerCredentialsStoredKey = "schwabDeveloperCredentialsStored"
         static let oauthTokensStoredKey = "schwabOAuthTokensStored"
+        static let accessTokenExpiresAtKey = "schwabAccessTokenExpiresAt"
 
         static var appKey: String {
             get { KeychainService.load(key: appKeyKeychainKey) ?? "" }
@@ -110,6 +111,21 @@ struct AppConfig {
         static var oauthTokensStored: Bool {
             get { UserDefaults.standard.bool(forKey: oauthTokensStoredKey) }
             set { UserDefaults.standard.set(newValue, forKey: oauthTokensStoredKey) }
+        }
+
+        static var accessTokenExpiresAt: Date? {
+            get {
+                let rawValue = UserDefaults.standard.double(forKey: accessTokenExpiresAtKey)
+                guard rawValue > 0 else { return nil }
+                return Date(timeIntervalSince1970: rawValue)
+            }
+            set {
+                if let newValue {
+                    UserDefaults.standard.set(newValue.timeIntervalSince1970, forKey: accessTokenExpiresAtKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: accessTokenExpiresAtKey)
+                }
+            }
         }
     }
 
