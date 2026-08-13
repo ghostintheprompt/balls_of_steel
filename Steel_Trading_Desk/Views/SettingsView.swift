@@ -587,10 +587,12 @@ struct SettingsView: View {
 
                 Divider().background(DesignSystem.hairline)
 
-                Toggle("Background monitoring", isOn: $isBackgroundMonitoringEnabled)
+                Toggle("Exit timer", isOn: $isBackgroundMonitoringEnabled)
                     .font(DesignSystem.Typography.captionFont)
                     .foregroundColor(DesignSystem.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                SystemsReadoutRow(label: "Scope", value: "APP OPEN", accent: DesignSystem.amber)
             }
         }
     }

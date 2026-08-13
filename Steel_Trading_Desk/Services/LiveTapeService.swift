@@ -47,8 +47,11 @@ final class LiveTapeService: ObservableObject {
     private static let enabledKey = "liveTape.enabled"
     private static let entryKey = "lastMarketDataEntry"
     private static let pollInterval: TimeInterval = 30
+    private static let liveAlertCooldown: TimeInterval = 15 * 60
 
     private var pollTask: Task<Void, Never>?
+    private var lastLiveAlertSignature: String?
+    private var lastLiveAlertAt: Date?
 
     var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: Self.enabledKey) }
@@ -100,6 +103,9 @@ final class LiveTapeService: ObservableObject {
             let vix = try await vixQuote
             let volMul = (try? await volMultiple) ?? 0
 
+            MarketDataService.shared.updateQuoteCache(vxx)
+            MarketDataService.shared.updateQuoteCache(vix)
+
             let entry = composeEntry(vxx: vxx, vix: vix, volumeMultiple: volMul)
             persist(entry)
             lastSnapshot = LiveSnapshot(
@@ -115,6 +121,7 @@ final class LiveTapeService: ObservableObject {
             lastTickAt = Date()
             lastError = nil
             isLive = true
+            handleClearedAlertIfNeeded(entry)
         } catch {
             lastError = error.localizedDescription
             isLive = false
@@ -164,6 +171,96 @@ final class LiveTapeService: ObservableObject {
     private func persist(_ entry: MarketDataEntry) {
         guard let data = try? JSONEncoder().encode(entry) else { return }
         UserDefaults.standard.set(data, forKey: Self.entryKey)
+    }
+
+    private func handleClearedAlertIfNeeded(_ entry: MarketDataEntry) {
+        guard liveEntryIsCleared(entry) else { return }
+
+        let now = Date()
+        let signature = liveAlertSignature(for: entry, now: now)
+        if signature == lastLiveAlertSignature,
+           let lastLiveAlertAt,
+           now.timeIntervalSince(lastLiveAlertAt) < Self.liveAlertCooldown {
+            return
+        }
+
+        lastLiveAlertSignature = signature
+        lastLiveAlertAt = now
+        SignalMonitor.shared.handleLiveTapeSignal(liveSignal(for: entry, now: now))
+    }
+
+    private func liveEntryIsCleared(_ entry: MarketDataEntry) -> Bool {
+        entry.instrument == .vxx &&
+        entry.volumePercent >= entry.timeWindow.requiredVolumePercent &&
+        entry.timeWindow.isVXXEntryWindow &&
+        entry.ratio >= StrategySpec.minimumRatioForEntry &&
+        entry.keyLevelConfirmed &&
+        entry.patternConfirmed
+    }
+
+    private func liveSignal(for entry: MarketDataEntry, now: Date) -> Signal {
+        let entryPrice = entry.price
+        return Signal(
+            symbol: entry.instrument.symbol,
+            strategy: liveStrategy(for: entry.timeWindow),
+            direction: .bearish,
+            entry: entryPrice,
+            stop: entryPrice * 1.01,
+            target: entryPrice * 0.98,
+            timestamp: now,
+            confidence: liveConfidence(for: entry),
+            setupQuality: liveSetupQuality(for: entry),
+            positionSizePercent: livePositionSize(for: entry),
+            kind: .entry,
+            vix: entry.vixLevel,
+            vxxVixRatio: entry.ratio
+        )
+    }
+
+    private func liveStrategy(for window: TimeWindowInput) -> Strategy {
+        switch window {
+        case .morning:
+            return .vxxMorningWindow
+        case .powerHour:
+            return .vxxPowerHour
+        case .institutional:
+            return .vxxInstitutionalFlow
+        default:
+            return .vxxFadeSetup
+        }
+    }
+
+    private func liveConfidence(for entry: MarketDataEntry) -> Double {
+        let volumeScore = min(entry.volumePercent / max(entry.timeWindow.requiredVolumePercent, 1), 1.0)
+        let ratioScore = min(entry.ratio / StrategySpec.minimumRatioForEntry, 1.0)
+        return min((volumeScore + ratioScore + 1.0) / 3.0, 0.98)
+    }
+
+    private func liveSetupQuality(for entry: MarketDataEntry) -> Strategy.SetupQuality {
+        if entry.ratio >= 1.60,
+           entry.volumePercent >= entry.timeWindow.requiredVolumePercent * 1.25 {
+            return .perfect
+        }
+        return .good
+    }
+
+    private func livePositionSize(for entry: MarketDataEntry) -> Double {
+        liveStrategy(for: entry.timeWindow).getPositionSize(
+            vix: entry.vixLevel,
+            setupQuality: liveSetupQuality(for: entry)
+        )
+    }
+
+    private func liveAlertSignature(for entry: MarketDataEntry, now: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return [
+            formatter.string(from: now),
+            entry.timeWindow.rawValue,
+            entry.ratioTier
+        ].joined(separator: "|")
     }
 
     /// Map the current ET clock to the closest `TimeWindowInput` case.

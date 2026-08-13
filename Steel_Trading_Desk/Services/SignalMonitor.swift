@@ -105,6 +105,10 @@ class SignalMonitor: ObservableObject {
         highlightedSignalID = id
     }
 
+    func handleLiveTapeSignal(_ signal: Signal) {
+        handleNewSignal(signal)
+    }
+
     func stopBackgroundMonitoring() {
         backgroundMonitoringCancellable?.cancel()
         backgroundMonitoringCancellable = nil
