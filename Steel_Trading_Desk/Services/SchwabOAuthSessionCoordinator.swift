@@ -10,6 +10,7 @@ import UIKit
 
 enum SchwabOAuthLaunchResult: Equatable {
     case systemSession
+    case startingLoopback(String)
     case externalBrowser(String)
 }
 
@@ -52,18 +53,29 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
 
         #if os(macOS)
         if Self.isLoopbackCallback(callbackURL) {
+            self.completion = completion
             do {
-                try loopbackServer.start(callbackURL: callbackURL) { [weak self] result in
-                    Task { @MainActor in
-                        self?.finish(result)
+                try loopbackServer.start(
+                    callbackURL: callbackURL,
+                    onReady: {
+                        Task { @MainActor in
+                            Self.debug("action=loopback_ready_open callback=\(callbackURL)")
+                            Self.openExternally(authURL)
+                        }
+                    },
+                    onCallback: { [weak self] result in
+                        Task { @MainActor in
+                            self?.finish(result)
+                        }
                     }
-                }
-                self.completion = completion
+                )
                 isRunning = true
-                Self.openExternally(authURL)
-                return .externalBrowser(Self.localLoopbackLaunchMessage(for: callbackURL))
+                Self.debug("action=loopback_start callback=\(callbackURL)")
+                return .startingLoopback(Self.localLoopbackStartingMessage(for: callbackURL))
             } catch {
-                Self.openExternally(authURL)
+                self.completion = nil
+                isRunning = false
+                Self.debug("action=loopback_start_failed callback=\(callbackURL) error=\(error.localizedDescription)")
                 return .externalBrowser(Self.loopbackFailureMessage(error, callbackURL: callbackURL))
             }
         }
@@ -156,12 +168,16 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
         "Opened Schwab in your browser and armed the Mac callback listener at \(callbackURL). If Chrome shows a certificate warning after login, continue to 127.0.0.1 once."
     }
 
+    private static func localLoopbackStartingMessage(for callbackURL: String) -> String {
+        "Starting the Mac callback listener at \(callbackURL). Schwab will open when the listener is ready."
+    }
+
     private static func loopbackFailureMessage(_ error: Error, callbackURL: String) -> String {
         let detail = error.localizedDescription
         if URL(string: AppConfig.Schwab.sanitizedCallbackURL(callbackURL))?.port == nil {
-            return "Opened Schwab in your browser, but Mac auto-callback cannot bind no-port HTTPS 443. Set the Schwab portal callback to https://127.0.0.1:8182 for local Mac OAuth, or paste the final callback URL."
+            return "Mac auto-callback cannot bind no-port HTTPS 443. Set the Schwab portal callback to https://127.0.0.1:8182 for local Mac OAuth."
         }
-        return "Opened Schwab in your browser, but the Mac callback listener could not start: \(detail). Paste the final callback URL or code into Steel."
+        return "The Mac callback listener could not start: \(detail). Schwab was not opened; try again after closing any stale Steel window."
     }
 
     private static func externalLaunchMessage(for callbackURL: String) -> String {
@@ -198,6 +214,12 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
         NSWorkspace.shared.open(url)
         #elseif os(iOS)
         UIApplication.shared.open(url)
+        #endif
+    }
+
+    nonisolated fileprivate static func debug(_ summary: String) {
+        #if DEBUG
+        print("SCHWAB_OAUTH_DEBUG \(summary)")
         #endif
     }
 }
@@ -254,7 +276,11 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
     private var listener: NWListener?
     private var didComplete = false
 
-    func start(callbackURL: String, onCallback: @escaping (Result<URL, Error>) -> Void) throws {
+    func start(
+        callbackURL: String,
+        onReady: @escaping () -> Void,
+        onCallback: @escaping (Result<URL, Error>) -> Void
+    ) throws {
         stop()
         didComplete = false
 
@@ -287,8 +313,18 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
             self?.handle(connection, registeredURL: registeredURL, onCallback: onCallback)
         }
         listener.stateUpdateHandler = { [weak self] state in
-            guard case .failed(let error) = state else { return }
-            self?.complete(.failure(error), onCallback: onCallback)
+            switch state {
+            case .ready:
+                SchwabOAuthSessionCoordinator.debug("action=loopback_ready port=\(requestedPort)")
+                onReady()
+            case .failed(let error):
+                SchwabOAuthSessionCoordinator.debug("action=loopback_failed port=\(requestedPort) error=\(error.localizedDescription)")
+                self?.complete(.failure(error), onCallback: onCallback)
+            case .cancelled:
+                SchwabOAuthSessionCoordinator.debug("action=loopback_cancelled port=\(requestedPort)")
+            default:
+                break
+            }
         }
         listener.start(queue: queue)
         self.listener = listener

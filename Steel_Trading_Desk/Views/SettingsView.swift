@@ -872,6 +872,10 @@ struct SettingsView: View {
             }
 
             switch result {
+            case .startingLoopback(let message):
+                schwabCredentialMessage = normalizedCredentials
+                    ? "Cleaned credentials. \(message)"
+                    : message
             case .systemSession:
                 schwabCredentialMessage = normalizedCredentials
                     ? "Cleaned credentials, then opened Schwab in the system sign-in session."

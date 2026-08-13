@@ -200,23 +200,30 @@ private enum SchwabOAuthDebugHooks {
 #if os(macOS)
 enum MacWindowStateRepair {
     private static let minimumDeskSize = CGSize(width: 1180, height: 720)
-    private static let minimumPaneWidth: CGFloat = 240
-    private static let minimumPaneHeight: CGFloat = 520
 
     static func repairPersistedStateIfNeeded(defaults: UserDefaults = .standard) {
-        var repairedKeys: [String] = []
-
-        for (key, value) in defaults.dictionaryRepresentation() where isDeskWindowStateKey(key) {
-            if key.hasPrefix("NSWindow Frame "), isBrokenWindowFrame(value) {
-                defaults.removeObject(forKey: key)
-                repairedKeys.append(key)
-            } else if key.hasPrefix("NSSplitView Subview Frames "), isBrokenSplitFrames(value) {
-                defaults.removeObject(forKey: key)
-                repairedKeys.append(key)
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "app.mdrn.steel"
+        var domain = defaults.persistentDomain(forName: bundleIdentifier) ?? [:]
+        let repairedKeys = domain.compactMap { key, value -> String? in
+            guard isDeskWindowStateKey(key) else {
+                return nil
             }
+
+            if key.hasPrefix("NSSplitView Subview Frames ") {
+                return key
+            }
+            if key.hasPrefix("NSWindow Frame "), isBrokenWindowFrame(value) {
+                return key
+            }
+            return nil
+        }
+
+        for key in repairedKeys {
+            domain.removeValue(forKey: key)
         }
 
         guard !repairedKeys.isEmpty else { return }
+        defaults.setPersistentDomain(domain, forName: bundleIdentifier)
         defaults.synchronize()
 
         #if DEBUG
@@ -228,7 +235,10 @@ enum MacWindowStateRepair {
     private static func isDeskWindowStateKey(_ key: String) -> Bool {
         let isFrameState = key.hasPrefix("NSWindow Frame ") ||
             key.hasPrefix("NSSplitView Subview Frames ")
-        return isFrameState && key.contains("Steel_Trading_Desk.MainView")
+        let isSteelWindow = key.contains("Steel_Trading_Desk") ||
+            key.contains("SidebarNavigationView") ||
+            key.contains("AppWindow")
+        return isFrameState && isSteelWindow
     }
 
     private static func isBrokenWindowFrame(_ value: Any) -> Bool {
@@ -236,28 +246,10 @@ enum MacWindowStateRepair {
               let rect = rect(from: string) else {
             return false
         }
-        return rect.width < minimumDeskSize.width || rect.height < minimumDeskSize.height
-    }
-
-    private static func isBrokenSplitFrames(_ value: Any) -> Bool {
-        let frames = strings(from: value).compactMap(rect(from:))
-        guard !frames.isEmpty else { return false }
-
-        return frames.contains { frame in
-            frame.width > 0 &&
-                frame.height > 0 &&
-                (frame.width < minimumPaneWidth || frame.height < minimumPaneHeight)
-        }
-    }
-
-    private static func strings(from value: Any) -> [String] {
-        if let strings = value as? [String] {
-            return strings
-        }
-        if let values = value as? [Any] {
-            return values.compactMap { $0 as? String }
-        }
-        return []
+        return rect.width < minimumDeskSize.width ||
+            rect.height < minimumDeskSize.height ||
+            rect.minX < 0 ||
+            rect.minY < 0
     }
 
     private static func rect(from value: String) -> CGRect? {
@@ -297,6 +289,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        MacWindowStateRepair.repairPersistedStateIfNeeded()
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         SchwabOAuthCallbackHandler.handle(url)
@@ -313,6 +309,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func normalizeDeskWindowAfterLaunch() {
         [0.05, 0.25, 0.75, 1.5, 2.5].forEach { delay in
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                MacWindowStateRepair.repairPersistedStateIfNeeded()
                 self?.normalizeDeskWindows()
             }
         }
