@@ -146,7 +146,7 @@ These need user input before code work begins:
 2. **Refresh-token storage policy.** Keychain with biometric gate (Face ID / Touch ID), or Keychain without? Biometric is more secure but adds a launch-time friction step.
 3. **What happens when the refresh token expires?** Force re-auth interactively, or show a passive "RE-AUTHENTICATE" card in Settings? The latter is gentler; the former is more boiler-room.
 4. **Does the streamer subscribe to options chains too**, or only the underlying quotes? Options chain subscriptions consume more streamer quota; underlyings + on-demand chain pulls might be enough.
-5. **What is the App Store-grade iPhone callback?** Schwab requires HTTPS. Local testing can use `https://127.0.0.1` or `https://127.0.0.1:8182`, but that cannot auto-return to the app on iPhone. Production OAuth should use a controlled HTTPS app link such as `https://mdrn.app/steel/oauth/callback`, with both the Schwab Developer Portal callback and Apple's Associated Domains/AASA file matching that exact host/path.
+5. **What is the App Store-grade iPhone callback?** Schwab requires HTTPS. Local Mac testing should use `https://127.0.0.1:8182`; the app starts a loopback HTTPS listener for that callback and exchanges the code after Schwab redirects. `https://127.0.0.1` with no port maps to privileged port 443 and cannot be auto-captured by a normal macOS app. Native iPhone OAuth still needs a controlled HTTPS app link such as `https://mdrn.app/steel/oauth/callback`, with both the Schwab Developer Portal callback and Apple's Associated Domains/AASA file matching that exact host/path.
 
 ---
 

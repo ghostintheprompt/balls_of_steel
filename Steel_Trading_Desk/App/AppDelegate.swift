@@ -6,6 +6,12 @@ import AppKit
 enum SchwabOAuthCallbackHandler {
     @discardableResult
     static func handle(_ url: URL) -> Bool {
+        #if DEBUG
+        if SchwabOAuthDebugHooks.handle(url) {
+            return true
+        }
+        #endif
+
         guard isRegisteredCallback(url),
               let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let code = components.queryItems?.first(where: { $0.name == "code" })?.value
@@ -95,6 +101,86 @@ enum SchwabOAuthCallbackHandler {
         return registeredPath == callbackPath
     }
 }
+
+
+#if DEBUG
+private enum SchwabOAuthDebugHooks {
+    static func handle(_ url: URL) -> Bool {
+        guard url.scheme == "steeltradingdesk",
+              url.host == "debug" else {
+            return false
+        }
+
+        switch url.path {
+        case "/settings":
+            NotificationCenter.default.post(name: .debugOpenSettings, object: nil)
+            return true
+        case "/schwab-oauth-start":
+            Task { @MainActor in
+                await startOAuth()
+            }
+            return true
+        default:
+            return false
+        }
+    }
+
+    @MainActor
+    private static func startOAuth() async {
+        do {
+            let callbackURL = AppConfig.Schwab.oauthCallbackURL
+            let authURL = try SchwabService.shared.authorizationURL(redirectURI: callbackURL)
+            _ = SchwabOAuthSessionCoordinator.shared.start(authURL: authURL, callbackURL: callbackURL) { result in
+                Task { @MainActor in
+                    await finishOAuth(result: result, redirectURI: callbackURL)
+                }
+            }
+        } catch {
+            NotificationCenter.default.post(
+                name: .schwabConnectionFailed,
+                object: nil,
+                userInfo: ["message": error.localizedDescription]
+            )
+        }
+    }
+
+    @MainActor
+    private static func finishOAuth(result: Result<URL, Error>, redirectURI: String) async {
+        switch result {
+        case .success(let callbackURL):
+            guard let code = SchwabService.shared.authorizationCode(from: callbackURL.absoluteString) else {
+                NotificationCenter.default.post(
+                    name: .schwabConnectionFailed,
+                    object: nil,
+                    userInfo: ["message": "Schwab callback arrived without an authorization code."]
+                )
+                return
+            }
+
+            do {
+                let token = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
+                AppConfig.apiKey = token
+                MarketDataRegistry.shared.use(.schwab)
+                LiveTapeService.shared.isEnabled = true
+                await LiveTapeService.shared.tickNow()
+                NotificationCenter.default.post(name: .schwabConnectionComplete, object: nil)
+            } catch {
+                NotificationCenter.default.post(
+                    name: .schwabConnectionFailed,
+                    object: nil,
+                    userInfo: ["message": error.localizedDescription]
+                )
+            }
+        case .failure(let error):
+            NotificationCenter.default.post(
+                name: .schwabConnectionFailed,
+                object: nil,
+                userInfo: ["message": error.localizedDescription]
+            )
+        }
+    }
+}
+#endif
 
 #if os(macOS)
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -217,4 +303,7 @@ extension Notification.Name {
     static let schwabConnectionComplete = Notification.Name("schwabConnectionComplete")
     static let schwabConnectionFailed = Notification.Name("schwabConnectionFailed")
     static let schwabCredentialsChanged = Notification.Name("schwabCredentialsChanged")
+    #if DEBUG
+    static let debugOpenSettings = Notification.Name("debugOpenSettings")
+    #endif
 }

@@ -18,7 +18,7 @@ struct AppConfig {
         // must exactly match the Schwab portal's Callback URL.
         static let plainLoopbackCallbackURL = "https://127.0.0.1"
         static let portedLoopbackCallbackURL = "https://127.0.0.1:8182"
-        static let loopbackCallbackURL = plainLoopbackCallbackURL
+        static let loopbackCallbackURL = portedLoopbackCallbackURL
 
         // Internal app return URL. Do not register this with Schwab; the portal
         // rejects non-HTTPS callbacks.

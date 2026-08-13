@@ -77,6 +77,11 @@ struct TradingDashboard: View {
                     .frame(width: 1180, height: 780)
                     #endif
             }
+            #if DEBUG
+            .onReceive(NotificationCenter.default.publisher(for: .debugOpenSettings)) { _ in
+                isSettingsSheetOpen = true
+            }
+            #endif
         }
     }
 

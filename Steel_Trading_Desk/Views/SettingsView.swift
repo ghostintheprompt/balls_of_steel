@@ -455,13 +455,18 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Button {
-                    openSchwabAuthorization()
+                    if oauthSession.isRunning {
+                        oauthSession.cancel()
+                        schwabCredentialMessage = "Schwab sign-in canceled."
+                    } else {
+                        openSchwabAuthorization()
+                    }
                 } label: {
-                    Label(oauthSession.isRunning ? "Signing In" : "Schwab Sign In", systemImage: "lock.shield")
+                    Label(oauthSession.isRunning ? "Cancel Sign In" : "Schwab Sign In", systemImage: oauthSession.isRunning ? "xmark" : "lock.shield")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isConnectingSchwab || oauthSession.isRunning)
+                .disabled(isConnectingSchwab)
 
                 schwabOAuthDiagnostics
 
@@ -703,7 +708,7 @@ struct SettingsView: View {
     }
 
     private var schwabPortalCallbackCopy: String {
-        "Uses exactly the Schwab Developer Portal callback. Local 127.0.0.1 callbacks are Mac-dev only; phone launch needs a controlled HTTPS app link."
+        "Uses exactly the Schwab Developer Portal callback. Mac auto-capture needs https://127.0.0.1:8182; phone launch needs a controlled HTTPS app link."
     }
 
     private var schwabAppKeyDiagnosticValue: String {
