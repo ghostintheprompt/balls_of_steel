@@ -65,6 +65,12 @@ struct KeychainService {
         }
     }
 
+    static func cachedSessionValue(for key: String) -> String? {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        return cachedValues[key]
+    }
+
     static func load(key: String, allowUserPrompt: Bool = true) -> String? {
         if let cached = cachedValue(for: key) {
             return cached

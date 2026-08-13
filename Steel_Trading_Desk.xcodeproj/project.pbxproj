@@ -78,6 +78,7 @@
 		B000000000000001A000006 /* TradeJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000005 /* TradeJournal.swift */; };
 		B000000000000001A000008 /* VXXTradingWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000007 /* VXXTradingWindow.swift */; };
 		B000000000000001A00000A /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000009 /* UpdateChecker.swift */; };
+		1A0A07000000000000000001 /* SchwabOAuthSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -154,6 +155,7 @@
 		B000000000000001A000005 /* TradeJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeJournal.swift; sourceTree = "<group>"; };
 		B000000000000001A000007 /* VXXTradingWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VXXTradingWindow.swift; sourceTree = "<group>"; };
 		B000000000000001A000009 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchwabOAuthSessionCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -271,6 +273,7 @@
 				1A000201000000000000001A /* OptionSelector.swift */,
 				1A00003A000000000000001A /* OrderService.swift */,
 				1A00003C000000000000001A /* SchwabService.swift */,
+				1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */,
 				1A00003E000000000000001A /* SignalMonitor.swift */,
 				1A000040000000000000001A /* SignalNotification.swift */,
 				1A000042000000000000001A /* SignalScanner.swift */,
@@ -458,6 +461,7 @@
 				1A000200000000000000001A /* OptionSelector.swift in Sources */,
 				1A000039000000000000001A /* OrderService.swift in Sources */,
 				1A00003B000000000000001A /* SchwabService.swift in Sources */,
+				1A0A07000000000000000001 /* SchwabOAuthSessionCoordinator.swift in Sources */,
 				1A00003D000000000000001A /* SignalMonitor.swift in Sources */,
 				1A00003F000000000000001A /* SignalNotification.swift in Sources */,
 				1A000041000000000000001A /* SignalScanner.swift in Sources */,

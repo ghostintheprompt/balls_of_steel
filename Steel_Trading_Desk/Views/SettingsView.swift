@@ -1,8 +1,5 @@
 import SwiftUI
 import OSLog
-#if canImport(WebKit)
-import WebKit
-#endif
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -11,14 +8,6 @@ import AppKit
 
 #if DEBUG
 private let schwabOAuthLogger = Logger(subsystem: "app.mdrn.steel", category: "SchwabOAuth")
-#endif
-
-#if canImport(WebKit)
-private struct SchwabOAuthSheetSession: Identifiable {
-    let id = UUID()
-    let authURL: URL
-    let callbackURL: String
-}
 #endif
 
 struct SettingsView: View {
@@ -30,6 +19,7 @@ struct SettingsView: View {
     @AppStorage(AppConfig.CloseManagement.institutionalWarningKey) private var institutionalWarningTime = AppConfig.CloseManagement.defaultInstitutionalWarning
     @AppStorage(AppConfig.CloseManagement.institutionalHardExitKey) private var institutionalHardExitTime = AppConfig.CloseManagement.defaultInstitutionalHardExit
     @StateObject private var notifications = SignalNotification.shared
+    @StateObject private var oauthSession = SchwabOAuthSessionCoordinator.shared
     @ObservedObject private var liveTape = LiveTapeService.shared
     @State private var isAuditSheetOpen: Bool = false
     @State private var schwabAppKeyInput: String = ""
@@ -41,9 +31,6 @@ struct SettingsView: View {
     @State private var isConnectingSchwab: Bool = false
     @State private var isTestingSchwabFeed: Bool = false
     @State private var isConfirmingSchwabCredentialClear: Bool = false
-    #if canImport(WebKit)
-    @State private var schwabOAuthSheet: SchwabOAuthSheetSession?
-    #endif
 
     var body: some View {
         Group {
@@ -61,30 +48,6 @@ struct SettingsView: View {
             let message = notification.userInfo?["message"] as? String ?? "Schwab OAuth failed."
             schwabCredentialMessage = message
         }
-        #if canImport(WebKit)
-        .sheet(item: $schwabOAuthSheet) { session in
-            SchwabOAuthWebSheet(
-                session: session,
-                onCancel: {
-                    schwabOAuthSheet = nil
-                    schwabCredentialMessage = "Schwab OAuth closed."
-                },
-                onCallback: { callbackURL in
-                    Task { @MainActor in
-                        schwabOAuthSheet = nil
-                        schwabCallbackInput = callbackURL.absoluteString
-                        await connectSchwabFromCallback(redirectURI: session.callbackURL)
-                    }
-                },
-                onFailure: { message in
-                    Task { @MainActor in
-                        schwabOAuthSheet = nil
-                        schwabCredentialMessage = message
-                    }
-                }
-            )
-        }
-        #endif
         .confirmationDialog(
             "Clear Schwab credentials?",
             isPresented: $isConfirmingSchwabCredentialClear,
@@ -117,7 +80,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .frame(minWidth: 980, idealWidth: 1180, minHeight: 700, idealHeight: 780)
+        .frame(minWidth: 1120, idealWidth: 1240, minHeight: 720, idealHeight: 800)
         .task {
             await notifications.refreshAuthorizationStatus()
         }
@@ -470,7 +433,7 @@ struct SettingsView: View {
                     Button {
                         setSchwabCallbackPreset(AppConfig.Schwab.plainLoopbackCallbackURL)
                     } label: {
-                        Label("Use 127.0.0.1", systemImage: "link")
+                        Label("Local 127", systemImage: "link")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -479,7 +442,7 @@ struct SettingsView: View {
                     Button {
                         setSchwabCallbackPreset(AppConfig.Schwab.portedLoopbackCallbackURL)
                     } label: {
-                        Label("Use :8182", systemImage: "link.badge.plus")
+                        Label("Local :8182", systemImage: "link.badge.plus")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -494,11 +457,11 @@ struct SettingsView: View {
                 Button {
                     openSchwabAuthorization()
                 } label: {
-                    Label("Open OAuth", systemImage: "lock.shield")
+                    Label(oauthSession.isRunning ? "Signing In" : "Schwab Sign In", systemImage: "lock.shield")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isConnectingSchwab)
+                .disabled(isConnectingSchwab || oauthSession.isRunning)
 
                 schwabOAuthDiagnostics
 
@@ -740,7 +703,7 @@ struct SettingsView: View {
     }
 
     private var schwabPortalCallbackCopy: String {
-        "Schwab portal callback must match this field exactly. Try no port first unless the portal app explicitly lists :8182."
+        "Uses exactly the Schwab Developer Portal callback. Local 127.0.0.1 callbacks are Mac-dev only; phone launch needs a controlled HTTPS app link."
     }
 
     private var schwabAppKeyDiagnosticValue: String {
@@ -877,24 +840,36 @@ struct SettingsView: View {
 
         do {
             let normalizedCredentials = AppConfig.Schwab.normalizeStoredDeveloperCredentials()
-            let url = try SchwabService.shared.authorizationURL()
+            let callbackURL = AppConfig.Schwab.oauthCallbackURL
+            let url = try SchwabService.shared.authorizationURL(redirectURI: callbackURL)
             if authURLHasBadClientID(url) {
                 schwabCredentialMessage = "App Key still has a bad client_id. Replace it with the exact Schwab App Key."
                 debugSchwabAuthorization(url, action: "blocked_bad_client")
                 return
             }
-            debugSchwabAuthorization(url, action: "open")
-            schwabCredentialMessage = normalizedCredentials
-                ? "Cleaned pasted Schwab credentials, then opened secure login."
-                : "Opening Schwab secure login."
-            #if canImport(WebKit)
-            schwabOAuthSheet = SchwabOAuthSheetSession(
-                authURL: url,
-                callbackURL: AppConfig.Schwab.oauthCallbackURL
-            )
-            #else
-            schwabCredentialMessage = "Web login is unavailable on this device."
-            #endif
+            debugSchwabAuthorization(url, action: "system_auth")
+            let result = oauthSession.start(authURL: url, callbackURL: callbackURL) { callbackResult in
+                Task { @MainActor in
+                    switch callbackResult {
+                    case .success(let returnedURL):
+                        schwabCallbackInput = returnedURL.absoluteString
+                        await connectSchwabFromCallback(redirectURI: callbackURL)
+                    case .failure(let error):
+                        schwabCredentialMessage = error.localizedDescription
+                    }
+                }
+            }
+
+            switch result {
+            case .systemSession:
+                schwabCredentialMessage = normalizedCredentials
+                    ? "Cleaned credentials, then opened Schwab in the system sign-in session."
+                    : "Opened Schwab in the system sign-in session."
+            case .externalBrowser(let message):
+                schwabCredentialMessage = normalizedCredentials
+                    ? "Cleaned credentials. \(message)"
+                    : message
+            }
         } catch {
             schwabCredentialMessage = schwabOAuthFailureMessage(error, stage: .authorize)
         }
@@ -1275,7 +1250,6 @@ private struct AdaptiveControlRow<Content: View>: View {
             HStack(spacing: spacing) {
                 content()
             }
-            .fixedSize(horizontal: true, vertical: false)
             .frame(maxWidth: .infinity)
 
             VStack(spacing: spacing) {
@@ -1364,234 +1338,6 @@ private struct SystemsStatusPill: View {
         )
     }
 }
-
-
-#if canImport(WebKit)
-private struct SchwabOAuthWebSheet: View {
-    let session: SchwabOAuthSheetSession
-    let onCancel: () -> Void
-    let onCallback: (URL) -> Void
-    let onFailure: (String) -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("SCHWAB OAUTH")
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.1)
-                        .foregroundColor(DesignSystem.amber)
-                    Text(session.authURL.host ?? "api.schwabapi.com")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                Button {
-                    onCancel()
-                } label: {
-                    Image(systemName: "xmark")
-                        .frame(width: 28, height: 28)
-                }
-                .buttonStyle(.borderless)
-                .help("Close")
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(DesignSystem.bg)
-
-            Rectangle()
-                .fill(DesignSystem.hairline)
-                .frame(height: 1)
-
-            SchwabOAuthWebView(
-                session: session,
-                onCallback: onCallback,
-                onFailure: onFailure
-            )
-        }
-        #if os(macOS)
-        .frame(width: 980, height: 720)
-        #else
-        .ignoresSafeArea(edges: .bottom)
-        #endif
-    }
-}
-
-#if os(macOS)
-private struct SchwabOAuthWebView: NSViewRepresentable {
-    let session: SchwabOAuthSheetSession
-    let onCallback: (URL) -> Void
-    let onFailure: (String) -> Void
-
-    func makeCoordinator() -> SchwabOAuthNavigationCoordinator {
-        SchwabOAuthNavigationCoordinator(
-            callbackURL: session.callbackURL,
-            onCallback: onCallback,
-            onFailure: onFailure
-        )
-    }
-
-    func makeNSView(context: Context) -> WKWebView {
-        makeWebView(context: context)
-    }
-
-    func updateNSView(_ webView: WKWebView, context: Context) {}
-
-    private func makeWebView(context: Context) -> WKWebView {
-        let webView = WKWebView(frame: .zero, configuration: Self.configuration())
-        webView.navigationDelegate = context.coordinator
-        webView.allowsBackForwardNavigationGestures = true
-        webView.load(URLRequest(url: session.authURL))
-        return webView
-    }
-
-    private static func configuration() -> WKWebViewConfiguration {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
-        return configuration
-    }
-}
-#else
-private struct SchwabOAuthWebView: UIViewRepresentable {
-    let session: SchwabOAuthSheetSession
-    let onCallback: (URL) -> Void
-    let onFailure: (String) -> Void
-
-    func makeCoordinator() -> SchwabOAuthNavigationCoordinator {
-        SchwabOAuthNavigationCoordinator(
-            callbackURL: session.callbackURL,
-            onCallback: onCallback,
-            onFailure: onFailure
-        )
-    }
-
-    func makeUIView(context: Context) -> WKWebView {
-        makeWebView(context: context)
-    }
-
-    func updateUIView(_ webView: WKWebView, context: Context) {}
-
-    private func makeWebView(context: Context) -> WKWebView {
-        let webView = WKWebView(frame: .zero, configuration: Self.configuration())
-        webView.navigationDelegate = context.coordinator
-        webView.allowsBackForwardNavigationGestures = true
-        webView.load(URLRequest(url: session.authURL))
-        return webView
-    }
-
-    private static func configuration() -> WKWebViewConfiguration {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
-        return configuration
-    }
-}
-#endif
-
-private final class SchwabOAuthNavigationCoordinator: NSObject, WKNavigationDelegate {
-    private let registeredCallbackURL: URL?
-    private let onCallback: (URL) -> Void
-    private let onFailure: (String) -> Void
-    private var didComplete = false
-
-    init(
-        callbackURL: String,
-        onCallback: @escaping (URL) -> Void,
-        onFailure: @escaping (String) -> Void
-    ) {
-        self.registeredCallbackURL = URL(string: callbackURL)
-        self.onCallback = onCallback
-        self.onFailure = onFailure
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
-        guard let url = navigationAction.request.url else {
-            decisionHandler(.allow)
-            return
-        }
-
-        if isRegisteredCallback(url) {
-            decisionHandler(.cancel)
-            complete(with: url)
-            return
-        }
-
-        decisionHandler(.allow)
-    }
-
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        handleNavigationFailure(error)
-    }
-
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        handleNavigationFailure(error)
-    }
-
-    private func complete(with url: URL) {
-        guard !didComplete else { return }
-        didComplete = true
-
-        if let message = callbackFailureMessage(from: url) {
-            onFailure(message)
-        } else {
-            onCallback(url)
-        }
-    }
-
-    private func handleNavigationFailure(_ error: Error) {
-        guard !didComplete else { return }
-        let nsError = error as NSError
-        if nsError.code == NSURLErrorCancelled { return }
-
-        if let failingURL = nsError.userInfo[NSURLErrorFailingURLErrorKey] as? URL,
-           isRegisteredCallback(failingURL) {
-            complete(with: failingURL)
-            return
-        }
-
-        onFailure("Schwab page failed: \(error.localizedDescription)")
-    }
-
-    private func isRegisteredCallback(_ url: URL) -> Bool {
-        guard let registered = registeredCallbackURL,
-              url.scheme?.lowercased() == registered.scheme?.lowercased(),
-              url.host?.lowercased() == registered.host?.lowercased(),
-              url.port == registered.port,
-              Self.normalizedPath(url.path) == Self.normalizedPath(registered.path) else {
-            return false
-        }
-
-        return true
-    }
-
-    private func callbackFailureMessage(from url: URL) -> String? {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let error = components.queryItems?.first(where: { $0.name == "error" })?.value,
-              !error.isEmpty else {
-            return nil
-        }
-
-        let description = components.queryItems?
-            .first(where: { $0.name == "error_description" })?
-            .value?
-            .removingPercentEncoding
-        if let description, !description.isEmpty {
-            return "Schwab OAuth failed: \(error). \(description)"
-        }
-        return "Schwab OAuth failed: \(error)."
-    }
-
-    private static func normalizedPath(_ path: String) -> String {
-        path.isEmpty ? "/" : path
-    }
-}
-#endif
 
 
 // MARK: - Strategy Audit Sheet

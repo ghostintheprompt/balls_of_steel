@@ -4,7 +4,8 @@ import AppKit
 #endif
 
 enum SchwabOAuthCallbackHandler {
-    static func handle(_ url: URL) {
+    @discardableResult
+    static func handle(_ url: URL) -> Bool {
         guard isRegisteredCallback(url),
               let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let code = components.queryItems?.first(where: { $0.name == "code" })?.value
@@ -12,7 +13,7 @@ enum SchwabOAuthCallbackHandler {
             #if DEBUG
             print("Invalid Schwab callback URL")
             #endif
-            return
+            return false
         }
 
         Task {
@@ -44,6 +45,16 @@ enum SchwabOAuthCallbackHandler {
                 #endif
             }
         }
+        return true
+    }
+
+    @discardableResult
+    static func handle(_ userActivity: NSUserActivity) -> Bool {
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity.webpageURL else {
+            return false
+        }
+        return handle(url)
     }
 
     private static func isRegisteredCallback(_ url: URL) -> Bool {
@@ -111,6 +122,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         SchwabOAuthCallbackHandler.handle(url)
+    }
+
+    func application(
+        _ application: NSApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([NSUserActivityRestoring]) -> Void
+    ) -> Bool {
+        SchwabOAuthCallbackHandler.handle(userActivity)
     }
 
     private func normalizeDeskWindowAfterLaunch() {

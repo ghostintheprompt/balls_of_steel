@@ -38,6 +38,17 @@ enum EnvSeeder {
                 continue
             }
         }
+        if let rawCallback = environment["SCHWAB_CALLBACK_URL"],
+           valueLooksReal(rawCallback) {
+            let callback = AppConfig.Schwab.sanitizedCallbackURL(rawCallback)
+            if let url = URL(string: callback),
+               url.scheme == "https",
+               url.host != nil {
+                AppConfig.Schwab.oauthCallbackURL = callback
+                print("[EnvSeeder] loaded Schwab callback URL from process environment for this debug session")
+            }
+        }
+
         let hasSchwabKey = valueLooksReal(environment["SCHWAB_APP_KEY"] ?? "")
         let hasSchwabSecret = valueLooksReal(environment["SCHWAB_APP_SECRET"] ?? "")
         if hasSchwabKey && hasSchwabSecret {

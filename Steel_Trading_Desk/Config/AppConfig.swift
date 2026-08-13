@@ -62,7 +62,7 @@ struct AppConfig {
         }
 
         static var rawAppKeyWithoutPrompt: String {
-            KeychainService.load(key: appKeyKeychainKey, allowUserPrompt: false) ?? ""
+            KeychainService.cachedSessionValue(for: appKeyKeychainKey) ?? ""
         }
 
         static var appKeyWithoutPrompt: String {

@@ -25,10 +25,16 @@ struct MainApp: App {
                 .onOpenURL { url in
                     SchwabOAuthCallbackHandler.handle(url)
                 }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+                    SchwabOAuthCallbackHandler.handle(userActivity)
+                }
             #else
             MainView()
                 .onOpenURL { url in
                     SchwabOAuthCallbackHandler.handle(url)
+                }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+                    SchwabOAuthCallbackHandler.handle(userActivity)
                 }
                 .task {
                     await SignalNotification.shared.prepareForLaunch()
