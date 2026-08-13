@@ -12,6 +12,9 @@ struct MainApp: App {
     @StateObject private var updateChecker = UpdateChecker.shared
 
     init() {
+        #if os(macOS)
+        MacWindowStateRepair.repairPersistedStateIfNeeded()
+        #endif
         // DEBUG-only: seed Keychain from Xcode scheme environment values.
         // No-op in Release builds.
         EnvSeeder.seedFromDebugEnvironmentIfNeeded()

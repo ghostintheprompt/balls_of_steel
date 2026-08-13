@@ -198,6 +198,83 @@ private enum SchwabOAuthDebugHooks {
 #endif
 
 #if os(macOS)
+enum MacWindowStateRepair {
+    private static let minimumDeskSize = CGSize(width: 1180, height: 720)
+    private static let minimumPaneWidth: CGFloat = 240
+    private static let minimumPaneHeight: CGFloat = 520
+
+    static func repairPersistedStateIfNeeded(defaults: UserDefaults = .standard) {
+        var repairedKeys: [String] = []
+
+        for (key, value) in defaults.dictionaryRepresentation() where isDeskWindowStateKey(key) {
+            if key.hasPrefix("NSWindow Frame "), isBrokenWindowFrame(value) {
+                defaults.removeObject(forKey: key)
+                repairedKeys.append(key)
+            } else if key.hasPrefix("NSSplitView Subview Frames "), isBrokenSplitFrames(value) {
+                defaults.removeObject(forKey: key)
+                repairedKeys.append(key)
+            }
+        }
+
+        guard !repairedKeys.isEmpty else { return }
+        defaults.synchronize()
+
+        #if DEBUG
+        let summary = repairedKeys.map { $0.replacingOccurrences(of: "\n", with: " ") }.joined(separator: " | ")
+        print("MAC_WINDOW_REPAIR removed \(repairedKeys.count) stale frame key(s): \(summary)")
+        #endif
+    }
+
+    private static func isDeskWindowStateKey(_ key: String) -> Bool {
+        let isFrameState = key.hasPrefix("NSWindow Frame ") ||
+            key.hasPrefix("NSSplitView Subview Frames ")
+        return isFrameState && key.contains("Steel_Trading_Desk.MainView")
+    }
+
+    private static func isBrokenWindowFrame(_ value: Any) -> Bool {
+        guard let string = value as? String,
+              let rect = rect(from: string) else {
+            return false
+        }
+        return rect.width < minimumDeskSize.width || rect.height < minimumDeskSize.height
+    }
+
+    private static func isBrokenSplitFrames(_ value: Any) -> Bool {
+        let frames = strings(from: value).compactMap(rect(from:))
+        guard !frames.isEmpty else { return false }
+
+        return frames.contains { frame in
+            frame.width > 0 &&
+                frame.height > 0 &&
+                (frame.width < minimumPaneWidth || frame.height < minimumPaneHeight)
+        }
+    }
+
+    private static func strings(from value: Any) -> [String] {
+        if let strings = value as? [String] {
+            return strings
+        }
+        if let values = value as? [Any] {
+            return values.compactMap { $0 as? String }
+        }
+        return []
+    }
+
+    private static func rect(from value: String) -> CGRect? {
+        let tokens = value.split { character in
+            !(character.isNumber || character == "." || character == "-")
+        }
+        let numbers = tokens.compactMap { Double($0) }
+        guard numbers.count >= 4 else { return nil }
+        return CGRect(
+            x: numbers[0],
+            y: numbers[1],
+            width: numbers[2],
+            height: numbers[3]
+        )
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     private let minimumDeskSize = NSSize(width: 1180, height: 720)
     private let idealDeskSize = NSSize(width: 1440, height: 860)
@@ -234,7 +311,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func normalizeDeskWindowAfterLaunch() {
-        [0.05, 0.25, 0.75].forEach { delay in
+        [0.05, 0.25, 0.75, 1.5, 2.5].forEach { delay in
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                 self?.normalizeDeskWindows()
             }
