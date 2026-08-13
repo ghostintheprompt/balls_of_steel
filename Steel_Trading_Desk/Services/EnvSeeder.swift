@@ -18,14 +18,22 @@ enum EnvSeeder {
             switch envKey {
             case "SCHWAB_APP_KEY":
                 if !valueLooksReal(value) { continue }
-                if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored { continue }
-                AppConfig.Schwab.appKey = value
-                print("[EnvSeeder] seeded Schwab app key from process environment")
+                let cleaned = AppConfig.Schwab.sanitizedAppKey(value)
+                KeychainService.cacheSessionValue(cleaned, for: AppConfig.Schwab.appKeyKeychainKey)
+                if !(AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored) {
+                    AppConfig.Schwab.appKey = cleaned
+                }
+                AppConfig.Schwab.appKeyStored = true
+                print("[EnvSeeder] loaded Schwab app key from process environment for this debug session")
             case "SCHWAB_APP_SECRET":
                 if !valueLooksReal(value) { continue }
-                if AppConfig.Schwab.appSecretStored || AppConfig.Schwab.developerCredentialsStored { continue }
-                AppConfig.Schwab.appSecret = value
-                print("[EnvSeeder] seeded Schwab app secret from process environment")
+                let cleaned = AppConfig.Schwab.sanitizedCredential(value)
+                KeychainService.cacheSessionValue(cleaned, for: AppConfig.Schwab.appSecretKeychainKey)
+                if !(AppConfig.Schwab.appSecretStored || AppConfig.Schwab.developerCredentialsStored) {
+                    AppConfig.Schwab.appSecret = cleaned
+                }
+                AppConfig.Schwab.appSecretStored = true
+                print("[EnvSeeder] loaded Schwab app secret from process environment for this debug session")
             default:
                 continue
             }

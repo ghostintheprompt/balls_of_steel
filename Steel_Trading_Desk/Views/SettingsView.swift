@@ -744,15 +744,25 @@ struct SettingsView: View {
     }
 
     private var schwabAppKeyDiagnosticValue: String {
-        let appKey = AppConfig.Schwab.appKey
-        guard !appKey.isEmpty else { return "Missing" }
-        let suffix = AppConfig.Schwab.appKeyNeedsNormalization ? " / normalize" : ""
-        return "\(maskedCredential(appKey)) / \(appKey.count) chars\(suffix)"
+        let appKey = AppConfig.Schwab.appKeyWithoutPrompt
+        if !appKey.isEmpty {
+            let suffix = AppConfig.Schwab.appKeyNeedsNormalizationWithoutPrompt ? " / normalize" : ""
+            return "\(maskedCredential(appKey)) / \(appKey.count) chars\(suffix)"
+        }
+        if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored {
+            return KeychainService.isInteractionSuppressedForSession ? "Stored / denied" : "Stored / unlock on OAuth"
+        }
+        return "Missing"
     }
 
     private var schwabAppKeyDiagnosticAccent: Color {
-        if AppConfig.Schwab.appKey.isEmpty { return DesignSystem.short }
-        return AppConfig.Schwab.appKeyNeedsNormalization ? DesignSystem.amber : DesignSystem.long
+        if !AppConfig.Schwab.appKeyWithoutPrompt.isEmpty {
+            return AppConfig.Schwab.appKeyNeedsNormalizationWithoutPrompt ? DesignSystem.amber : DesignSystem.long
+        }
+        if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored {
+            return DesignSystem.amber
+        }
+        return DesignSystem.short
     }
 
     private var schwabCallbackDiagnosticValue: String {
@@ -777,21 +787,25 @@ struct SettingsView: View {
     }
 
     private var schwabAuthURLDiagnosticValue: String {
-        do {
-            let url = try SchwabService.shared.authorizationURL()
-            return authURLHasBadClientID(url) ? "Bad client_id" : "Clean client_id"
-        } catch {
-            return "Not ready"
+        let appKey = AppConfig.Schwab.appKeyWithoutPrompt
+        if !appKey.isEmpty {
+            return appKeyHasBadClientID(appKey) ? "Bad client_id" : "Clean client_id"
         }
+        if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored {
+            return KeychainService.isInteractionSuppressedForSession ? "Keychain denied" : "Unlock on OAuth"
+        }
+        return "Not ready"
     }
 
     private var schwabAuthURLDiagnosticAccent: Color {
-        do {
-            let url = try SchwabService.shared.authorizationURL()
-            return authURLHasBadClientID(url) ? DesignSystem.short : DesignSystem.long
-        } catch {
-            return DesignSystem.short
+        let appKey = AppConfig.Schwab.appKeyWithoutPrompt
+        if !appKey.isEmpty {
+            return appKeyHasBadClientID(appKey) ? DesignSystem.short : DesignSystem.long
         }
+        if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored {
+            return DesignSystem.amber
+        }
+        return DesignSystem.short
     }
 
     private func saveSchwabDeveloperCredentials() {
@@ -990,7 +1004,11 @@ struct SettingsView: View {
               let clientID = components.queryItems?.first(where: { $0.name == "client_id" })?.value else {
             return true
         }
-        return clientID.contains("|") ||
+        return appKeyHasBadClientID(clientID)
+    }
+
+    private func appKeyHasBadClientID(_ clientID: String) -> Bool {
+        clientID.contains("|") ||
             clientID.range(of: "%7C", options: .caseInsensitive) != nil ||
             AppConfig.Schwab.credentialHasNonASCII(clientID)
     }
@@ -1020,6 +1038,9 @@ struct SettingsView: View {
     }
 
     private func schwabOAuthFailureMessage(_ error: Error, stage: SchwabOAuthStage) -> String {
+        if KeychainService.isInteractionSuppressedForSession {
+            return "Keychain access was denied earlier in this app session. Relaunch Steel, then choose Allow once when opening Schwab OAuth."
+        }
         if case let SchwabService.SchwabError.httpStatus(_, body) = error,
            body.localizedCaseInsensitiveContains("invalid_client") ||
            body.localizedCaseInsensitiveContains("unauthorized") {

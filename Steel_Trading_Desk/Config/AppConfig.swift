@@ -61,6 +61,19 @@ struct AppConfig {
             }
         }
 
+        static var rawAppKeyWithoutPrompt: String {
+            KeychainService.load(key: appKeyKeychainKey, allowUserPrompt: false) ?? ""
+        }
+
+        static var appKeyWithoutPrompt: String {
+            sanitizedAppKey(rawAppKeyWithoutPrompt)
+        }
+
+        static var appKeyNeedsNormalizationWithoutPrompt: Bool {
+            let raw = rawAppKeyWithoutPrompt
+            return !raw.isEmpty && sanitizedAppKey(raw) != raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
         static func sanitizedAppKey(_ value: String) -> String {
             var cleaned = sanitizedCredential(value)
 
