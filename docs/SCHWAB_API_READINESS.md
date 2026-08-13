@@ -28,7 +28,7 @@ Portal walkthrough: `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`.
 - `apiBaseURL = "https://api.schwabapi.com"`.
 - OAuth authorize/token URLs under `/v1/oauth`.
 - Market-data and trader base paths under `/marketdata/v1` and `/trader/v1`.
-- Schwab portal callback for local testing: `https://127.0.0.1:8182`.
+- Schwab portal callback for local testing: `https://127.0.0.1:8182`. If the Schwab portal displays multiple callbacks in one comma-separated field, Steel must still send exactly one registered callback as the OAuth `redirect_uri`; the app picks the Mac loopback callback from the list on macOS.
 - Internal native return URL: `steeltradingdesk://oauth/callback`. Do not register this with Schwab; the portal requires HTTPS.
 - Keychain slots for Schwab app key, app secret, access token, and refresh token.
 
@@ -110,7 +110,7 @@ Real Schwab Trader API uses `$VIX.X` for the VIX index (CBOE Volatility Index). 
 | Need | Have | Gap |
 | --- | --- | --- |
 | OAuth 2.0 flow | Nothing | Full implementation: `ASWebAuthenticationSession`, code-exchange POST, token refresh logic, Keychain storage of refresh token. |
-| Client ID + redirect URI | App key/app secret Keychain slots + HTTPS loopback callback | User creates the Schwab portal app, copies credentials, and registers `https://127.0.0.1:8182` exactly for local testing. |
+| Client ID + redirect URI | App key/app secret Keychain slots + HTTPS loopback callback | User creates the Schwab portal app, copies credentials, and registers `https://127.0.0.1:8182` for local testing. If the portal also lists a web callback, Steel normalizes the list and sends one active redirect URI. |
 | REST quote endpoint | `fetchQuote` shape from `0115bf5` | Rewrite for correct URL + auth header + response shape. Use for bootstrap/fallback, not primary alerts. |
 | Intraday candles | Nothing usable (Finnhub provider doesn't apply) | New `fetchPriceHistory` method. |
 | Daily candles for vol average | Nothing usable | Same method, different params. |
@@ -127,7 +127,7 @@ Real Schwab Trader API uses `$VIX.X` for the VIX index (CBOE Volatility Index). 
 
 Sequenced. Each step blocks the next.
 
-1. **Create the Schwab portal app.** Use `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`: Market Data Production, order limit `0` if accepted, market-data-only description, and HTTPS callback `https://127.0.0.1:8182`.
+1. **Create the Schwab portal app.** Use `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`: Market Data Production, order limit `0` if accepted, market-data-only description, and HTTPS callback `https://127.0.0.1:8182`. If a phone universal-link callback is also present in the portal, Steel must send only the active platform callback during OAuth.
 2. **Capture the integration parameters.** Client ID / app key, client secret, registered callback URLs. For local Debug tests, Xcode scheme environment variables can seed Keychain. For normal app use, enter credentials in Settings -> Schwab Developer Access. Never commit credentials or ship a shared secret.
 3. **Read the live Schwab docs.** Confirm: OAuth flow shape, REST base URL, market-data endpoints, streamer URL + protocol, current rate limits, VIX symbol convention. Reconcile against this doc; update this doc if anything's drifted.
 4. **OAuth flow first, REST sanity check second, streamer third.** REST proves tokens and symbols; streaming is the product path.
@@ -146,7 +146,7 @@ These need user input before code work begins:
 2. **Refresh-token storage policy.** Keychain with biometric gate (Face ID / Touch ID), or Keychain without? Biometric is more secure but adds a launch-time friction step.
 3. **What happens when the refresh token expires?** Force re-auth interactively, or show a passive "RE-AUTHENTICATE" card in Settings? The latter is gentler; the former is more boiler-room.
 4. **Does the streamer subscribe to options chains too**, or only the underlying quotes? Options chain subscriptions consume more streamer quota; underlyings + on-demand chain pulls might be enough.
-5. **What is the App Store-grade iPhone callback?** Schwab requires HTTPS. Local Mac testing should use `https://127.0.0.1:8182`; the app starts a loopback HTTPS listener for that callback and exchanges the code after Schwab redirects. `https://127.0.0.1` with no port maps to privileged port 443 and cannot be auto-captured by a normal macOS app. Native iPhone OAuth still needs a controlled HTTPS app link such as `https://mdrn.app/steel/oauth/callback`, with both the Schwab Developer Portal callback and Apple's Associated Domains/AASA file matching that exact host/path.
+5. **What is the App Store-grade iPhone callback?** Schwab requires HTTPS. Local Mac testing should use `https://127.0.0.1:8182`; the app starts a loopback HTTPS listener for that callback and exchanges the code after Schwab redirects. `https://127.0.0.1` with no port maps to privileged port 443 and cannot be auto-captured by a normal macOS app. Native iPhone OAuth still needs a controlled HTTPS app link such as `https://mdrn.app/steel/oauth/callback`, with both the Schwab Developer Portal callback and Apple's Associated Domains/AASA file matching that exact host/path. If the portal displays both callbacks in one field, the OAuth request still uses only one member of that list.
 
 ---
 

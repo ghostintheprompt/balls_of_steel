@@ -426,6 +426,9 @@ struct SettingsView: View {
                         #endif
                         .onChange(of: schwabCallbackURLInput) { _, newValue in
                             AppConfig.Schwab.oauthCallbackURL = newValue
+                            if AppConfig.Schwab.callbackURLCandidates(from: newValue).count > 1 {
+                                schwabCredentialMessage = "Using \(AppConfig.Schwab.oauthCallbackURL) on this device from the portal callback list."
+                            }
                         }
                 }
 
@@ -513,7 +516,7 @@ struct SettingsView: View {
     private var schwabOAuthDiagnostics: some View {
         VStack(spacing: 4) {
             SystemsReadoutRow(label: "App key", value: schwabAppKeyDiagnosticValue, accent: schwabAppKeyDiagnosticAccent)
-            SystemsReadoutRow(label: "Callback", value: schwabCallbackDiagnosticValue, accent: schwabCallbackDiagnosticAccent)
+            SystemsReadoutRow(label: "Redirect", value: schwabCallbackDiagnosticValue, accent: schwabCallbackDiagnosticAccent)
             SystemsReadoutRow(label: "Auth URL", value: schwabAuthURLDiagnosticValue, accent: schwabAuthURLDiagnosticAccent)
         }
     }
@@ -683,10 +686,10 @@ struct SettingsView: View {
 
     private var schwabCredentialStatusCopy: String {
         if liveTape.isLive {
-            return "Schwab is feeding the live tape on this phone."
+            return "Schwab is feeding the live tape on this device."
         }
         if AppConfig.Schwab.hasOAuthTokens {
-            return "OAuth token is stored in Keychain on this phone. Turn Live On when you want Schwab to feed the tape."
+            return "OAuth token is stored in Keychain on this device. Turn Live On when you want Schwab to feed the tape."
         }
         return "Keys are stored in Keychain. Live feed still needs the Schwab OAuth connection."
     }
@@ -708,7 +711,7 @@ struct SettingsView: View {
     }
 
     private var schwabPortalCallbackCopy: String {
-        "Uses exactly the Schwab Developer Portal callback. Mac auto-capture needs https://127.0.0.1:8182; phone launch needs a controlled HTTPS app link."
+        "You can paste the Schwab portal callback list. Mac uses https://127.0.0.1:8182; iPhone uses the HTTPS app link."
     }
 
     private var schwabAppKeyDiagnosticValue: String {
@@ -738,11 +741,14 @@ struct SettingsView: View {
         guard let url = URL(string: callback), url.scheme == "https", url.host != nil else {
             return "HTTPS URL needed"
         }
+        let suffix = AppConfig.Schwab.callbackURLCandidates(from: schwabCallbackURLInput).count > 1
+            ? " / picked"
+            : ""
         if callback == AppConfig.Schwab.plainLoopbackCallbackURL ||
             callback == AppConfig.Schwab.portedLoopbackCallbackURL {
-            return callback
+            return "\(callback)\(suffix)"
         }
-        return "\(callback) / custom"
+        return "\(callback) / custom\(suffix)"
     }
 
     private var schwabCallbackDiagnosticAccent: Color {
@@ -834,7 +840,7 @@ struct SettingsView: View {
     private func setSchwabCallbackPreset(_ callback: String) {
         schwabCallbackURLInput = callback
         AppConfig.Schwab.oauthCallbackURL = callback
-        schwabCredentialMessage = "Callback set to \(callback). It must exactly match the Schwab Developer Portal."
+        schwabCredentialMessage = "Callback set to \(callback). It must be listed in the Schwab Developer Portal."
     }
 
     private func openSchwabAuthorization() {
@@ -890,7 +896,7 @@ struct SettingsView: View {
                 ? "Copied OAuth URL, but client_id still has a pipe. Replace the App Key."
                 : normalizedCredentials
                     ? "Cleaned pasted credentials and copied OAuth URL using \(AppConfig.Schwab.oauthCallbackURL)."
-                    : "Copied clean OAuth URL using \(AppConfig.Schwab.oauthCallbackURL). The Schwab portal callback must match exactly."
+                    : "Copied clean OAuth URL using \(AppConfig.Schwab.oauthCallbackURL). That redirect must be registered in the Schwab portal."
         } catch {
             schwabCredentialMessage = error.localizedDescription
         }
@@ -1026,9 +1032,9 @@ struct SettingsView: View {
            body.localizedCaseInsensitiveContains("unauthorized") {
             switch stage {
             case .authorize:
-                return "Schwab rejected the App Key or callback. Confirm the app is Ready in the Developer Portal and the callback is exactly \(AppConfig.Schwab.oauthCallbackURL)."
+                return "Schwab rejected the App Key or redirect. Confirm the app is Ready in the Developer Portal and \(AppConfig.Schwab.oauthCallbackURL) is registered."
             case .token:
-                return "Schwab rejected the token request. Replace the App Secret, confirm the callback is exactly \(AppConfig.Schwab.oauthCallbackURL), then use a fresh OAuth code."
+                return "Schwab rejected the token request. Replace the App Secret, confirm \(AppConfig.Schwab.oauthCallbackURL) is registered, then use a fresh OAuth code."
             }
         }
         return error.localizedDescription

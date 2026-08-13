@@ -30,7 +30,7 @@ Use these values on Schwab Developer Portal -> Dashboard -> Apps -> Create App.
 | Order Limit | `0` first. If Schwab rejects `0`, use the lowest accepted value and document it in the app notes. Do not choose a high throttle. |
 | App Name | `Steel Trading Desk` |
 | App Description | `Personal market-data-only setup checker for discretionary VXX/VIX/VWAP trading. It validates volume, time window, ratio, VWAP/key level, and pattern, then issues local alerts. No orders, balances, account management, or automated trading.` |
-| Callback URL | `https://127.0.0.1:8182` |
+| Callback URL | Mac local test: `https://127.0.0.1:8182`. If the portal also lists the phone callback, Steel still sends only one active redirect URI during OAuth. |
 
 Do not add `Accounts and Trading Production` unless the live Schwab docs or a `403` response proves the streamer bootstrap endpoint requires it. If that happens, the code must still block order placement, order preview, balances, positions, and transaction history. The only acceptable reason to touch `/trader/v1` is to retrieve Schwab's authenticated streamer metadata, such as `userPreference`, when Schwab requires it for streaming login.
 
@@ -78,6 +78,14 @@ Use that exact value:
 - No path.
 - No trailing slash.
 
+If the Schwab portal shows both callbacks in one field, for example:
+
+```text
+https://127.0.0.1:8182,https://oauth.mdrn.app/schwab/callback
+```
+
+that is a portal registration list, not the OAuth `redirect_uri` value. Steel Settings can accept the pasted list, but macOS will pick `https://127.0.0.1:8182` for the auth URL. The phone path should pick the controlled HTTPS app-link callback when that flow is wired and tested.
+
 If Schwab still rejects `https://127.0.0.1:8182`, stop before creating the app with a throwaway callback. Public Schwab wrapper docs report intermittent Schwab portal bugs around callback validation. The next clean options are:
 
 1. Retry the exact value in a fresh browser session.
@@ -96,9 +104,10 @@ The app may show a review or pending state. Once Schwab exposes credentials:
 ```sh
 SCHWAB_APP_KEY=your_app_key_here
 SCHWAB_APP_SECRET=your_app_secret_here
+SCHWAB_CALLBACK_URL=https://127.0.0.1:8182
 ```
 
-`EnvSeeder` can seed those into the platform Keychain in Debug builds. Release/TestFlight builds skip `EnvSeeder` and must not ship app credentials.
+`EnvSeeder` can seed those into the platform Keychain in Debug builds. If `SCHWAB_CALLBACK_URL` is pasted from the portal as a comma-separated list, Steel normalizes it to the active redirect for the current platform. Release/TestFlight builds skip `EnvSeeder` and must not ship app credentials.
 
 ## How The Phone Gets Credentials
 

@@ -2,6 +2,9 @@ import SwiftUI
 #if os(macOS)
 import AppKit
 #endif
+#if DEBUG
+import OSLog
+#endif
 
 enum SchwabOAuthCallbackHandler {
     @discardableResult
@@ -105,6 +108,8 @@ enum SchwabOAuthCallbackHandler {
 
 #if DEBUG
 private enum SchwabOAuthDebugHooks {
+    private static let logger = Logger(subsystem: "app.mdrn.steel", category: "schwab-oauth")
+
     static func handle(_ url: URL) -> Bool {
         guard url.scheme == "steeltradingdesk",
               url.host == "debug" else {
@@ -129,7 +134,11 @@ private enum SchwabOAuthDebugHooks {
     private static func startOAuth() async {
         do {
             let callbackURL = AppConfig.Schwab.oauthCallbackURL
+            debug("action=debug_route_start callback=\(callbackURL)")
             let authURL = try SchwabService.shared.authorizationURL(redirectURI: callbackURL)
+            let authComponents = URLComponents(url: authURL, resolvingAgainstBaseURL: false)
+            let redirectURI = authComponents?.queryItems?.first(where: { $0.name == "redirect_uri" })?.value ?? "missing"
+            debug("action=debug_route_auth callback=\(redirectURI) clientLen=\(AppConfig.Schwab.appKeyWithoutPrompt.count)")
             _ = SchwabOAuthSessionCoordinator.shared.start(authURL: authURL, callbackURL: callbackURL) { result in
                 Task { @MainActor in
                     await finishOAuth(result: result, redirectURI: callbackURL)
@@ -141,6 +150,7 @@ private enum SchwabOAuthDebugHooks {
                 object: nil,
                 userInfo: ["message": error.localizedDescription]
             )
+            debug("action=debug_route_failed error=\(error.localizedDescription)")
         }
     }
 
@@ -178,6 +188,11 @@ private enum SchwabOAuthDebugHooks {
                 userInfo: ["message": error.localizedDescription]
             )
         }
+    }
+
+    private static func debug(_ summary: String) {
+        logger.notice("\(summary, privacy: .public)")
+        print("SCHWAB_OAUTH_DEBUG \(summary)")
     }
 }
 #endif

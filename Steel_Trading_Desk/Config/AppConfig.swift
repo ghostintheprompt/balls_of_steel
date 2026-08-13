@@ -14,8 +14,9 @@ struct AppConfig {
         static let oauthAuthorizeURL = "\(apiBaseURL)/v1/oauth/authorize"
         static let oauthTokenURL = "\(apiBaseURL)/v1/oauth/token"
 
-        // Schwab requires HTTPS callback URLs. The value used in the auth URL
-        // must exactly match the Schwab portal's Callback URL.
+        // Schwab requires HTTPS callback URLs. The authorization request must
+        // send one registered redirect_uri, even when the portal displays a
+        // comma-separated callback list.
         static let plainLoopbackCallbackURL = "https://127.0.0.1"
         static let portedLoopbackCallbackURL = "https://127.0.0.1:8182"
         static let loopbackCallbackURL = portedLoopbackCallbackURL
@@ -202,7 +203,73 @@ struct AppConfig {
         }
 
         static func sanitizedCallbackURL(_ value: String) -> String {
-            sanitizedCredential(value)
+            preferredCallbackURL(from: value) ?? sanitizedCredential(value)
+        }
+
+        static func callbackURLCandidates(from value: String) -> [String] {
+            let folded = sanitizedCredential(value)
+            let separators = CharacterSet.whitespacesAndNewlines
+                .union(CharacterSet(charactersIn: ",;"))
+            var seen = Set<String>()
+
+            return folded
+                .components(separatedBy: separators)
+                .compactMap { piece -> String? in
+                    let candidate = sanitizedCredential(piece)
+                    guard let url = URL(string: candidate),
+                          url.scheme?.lowercased() == "https",
+                          url.host != nil,
+                          seen.insert(candidate).inserted else {
+                        return nil
+                    }
+                    return candidate
+                }
+        }
+
+        static func preferredCallbackURL(from value: String) -> String? {
+            let candidates = callbackURLCandidates(from: value)
+            guard !candidates.isEmpty else { return nil }
+
+            #if os(macOS)
+            if candidates.contains(portedLoopbackCallbackURL) {
+                return portedLoopbackCallbackURL
+            }
+            if let loopbackWithPort = candidates.first(where: { candidate in
+                let port = callbackPort(candidate)
+                return isLoopbackCallbackURL(candidate) && port != nil && port != 443
+            }) {
+                return loopbackWithPort
+            }
+            if let browserCallback = candidates.first(where: { !isLoopbackCallbackURL($0) }) {
+                return browserCallback
+            }
+            #elseif os(iOS)
+            if let appLinkCallback = candidates.first(where: { !isLoopbackCallbackURL($0) }) {
+                return appLinkCallback
+            }
+            if candidates.contains(portedLoopbackCallbackURL) {
+                return portedLoopbackCallbackURL
+            }
+            #endif
+
+            return candidates.first
+        }
+
+        static func isLoopbackCallbackURL(_ value: String) -> Bool {
+            guard let url = URL(string: sanitizedCredential(value)),
+                  url.scheme?.lowercased() == "https",
+                  let host = url.host?.lowercased() else {
+                return false
+            }
+            return isLoopbackHost(host)
+        }
+
+        private static func callbackPort(_ value: String) -> Int? {
+            URL(string: sanitizedCredential(value))?.port
+        }
+
+        private static func isLoopbackHost(_ host: String) -> Bool {
+            host == "127.0.0.1" || host == "localhost" || host == "::1"
         }
 
         static var hasDeveloperCredentials: Bool {
