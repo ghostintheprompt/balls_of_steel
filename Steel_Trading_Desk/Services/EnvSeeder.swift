@@ -13,21 +13,9 @@ enum EnvSeeder {
     static func seedFromDebugEnvironmentIfNeeded() {
         #if DEBUG
         let environment = ProcessInfo.processInfo.environment
-        for envKey in ["FINNHUB_API_KEY", "POLYGON_API_KEY", "SCHWAB_APP_KEY", "SCHWAB_APP_SECRET"] {
+        for envKey in ["SCHWAB_APP_KEY", "SCHWAB_APP_SECRET"] {
             guard let value = environment[envKey] else { continue }
             switch envKey {
-            case "FINNHUB_API_KEY":
-                if !valueLooksReal(value) { continue }
-                if KeychainService.load(key: FinnhubProvider.keychainKey) == nil {
-                    KeychainService.save(key: FinnhubProvider.keychainKey, value: value)
-                    print("[EnvSeeder] seeded Finnhub key from process environment")
-                }
-            case "POLYGON_API_KEY":
-                if !valueLooksReal(value) { continue }
-                if KeychainService.load(key: PolygonProvider.keychainKey) == nil {
-                    KeychainService.save(key: PolygonProvider.keychainKey, value: value)
-                    print("[EnvSeeder] seeded Polygon key from process environment")
-                }
             case "SCHWAB_APP_KEY":
                 if !valueLooksReal(value) { continue }
                 if AppConfig.Schwab.appKeyStored || AppConfig.Schwab.developerCredentialsStored { continue }

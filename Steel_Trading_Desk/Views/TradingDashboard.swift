@@ -1267,7 +1267,7 @@ struct SPYTradingDashboard: View {
                 spyFocusRow(title: "Open Drive", detail: "9:35-10:05. Arrow first. VWAP agreement. Volume there. No begging.")
                 spyFocusRow(
                     title: "Close Drive",
-                    detail: "3:30-\(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Warning at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Hard exit later at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime)) if you are still managing."
+                    detail: "3:30-\(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Warning at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Alert session closes at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime)) if you are still managing."
                 )
                 spyFocusRow(title: "News Filter", detail: "Heavy news can pay. It still has to prove it on volume before it graduates from watch to entry.")
             }
@@ -1726,7 +1726,7 @@ private struct SPYSetupMetricCard: View {
 // MARK: - Mac Single-Window Terminal (Phase 3)
 //
 // Three-column boiler-room layout: ticker strip / left rail / chart / right rail / status.
-// The chart center is a placeholder until Phase 5 wires the TradingView WKWebView.
+// The chart center renders only Schwab-authenticated live tape candles.
 
 private enum MacTerminalSheet: Identifiable {
     case tape
@@ -2348,7 +2348,7 @@ private struct LeftRailView: View {
     }
 }
 
-// MARK: - Chart Center (Phase 5 wires TradingView)
+// MARK: - Schwab Live Chart Center
 
 private struct ChartCenterView: View {
     let symbol: TradingInstrument
@@ -2417,19 +2417,42 @@ private struct ChartCenterView: View {
         )
     }
 
+    @ObservedObject private var liveTape = LiveTapeService.shared
+
+    @ViewBuilder
     private var placeholder: some View {
-        ChartWebView(symbol: ChartWebView.tradingViewSymbol(for: symbol))
-            .background(DesignSystem.bg)
+        if let series = currentSeries, !series.candles.isEmpty {
+            PhoneCandleChart(
+                series: series,
+                showAxisLabels: true,
+                windowStripeOpacity: 0.10,
+                showPatternMarkers: true
+            )
+            .padding(12)
+        } else {
+            SchwabChartLockedState()
+        }
     }
 
+    private var currentSeries: PhoneChartSeries? {
+        let bars = liveTape.lastSnapshot?.vxxCandles ?? []
+        guard AppConfig.Schwab.hasOAuthTokens, !bars.isEmpty else { return nil }
+        return PhoneChartSeries.build(from: bars, bucketSeconds: 5 * 60)
+    }
 
     private var chartFooter: some View {
         HStack {
-            Text("SRC · TRADINGVIEW · 15M DELAYED")
+            Text(chartSourceText)
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.4)
-                .foregroundColor(DesignSystem.muted)
+                .foregroundColor(chartSourceAccent)
             Spacer()
+            if let tick = liveTape.lastTickAt {
+                Text("LAST · \(Self.tickFormatter.string(from: tick))")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.faint)
+            }
         }
         .padding(.horizontal, 16)
         .frame(height: 22)
@@ -2439,7 +2462,88 @@ private struct ChartCenterView: View {
             alignment: .top
         )
     }
+
+    private var chartSourceText: String {
+        if liveTape.isLive { return "SRC · SCHWAB LIVE" }
+        if AppConfig.Schwab.hasOAuthTokens { return "SRC · SCHWAB · WAITING FOR TICK" }
+        if AppConfig.Schwab.hasDeveloperCredentials { return "SRC · SCHWAB · OAUTH REQUIRED" }
+        return "SRC · SCHWAB · KEYS REQUIRED"
+    }
+
+    private var chartSourceAccent: Color {
+        liveTape.isLive ? DesignSystem.long : DesignSystem.amber
+    }
+
+    private static let tickFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
 }
+
+
+private struct SchwabChartLockedState: View {
+    @ObservedObject private var liveTape = LiveTapeService.shared
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("SCHWAB LIVE REQUIRED")
+                .font(DesignSystem.Typography.titleFont)
+                .foregroundColor(DesignSystem.amber)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+
+            Text(statusText)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.mutedText)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                statusPip
+                Text(sourceText)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(statusAccent)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var statusText: String {
+        if let error = liveTape.lastError, !error.isEmpty {
+            return error
+        }
+        if AppConfig.Schwab.hasOAuthTokens {
+            return "OAuth is connected. Waiting for the first verified Schwab candle batch."
+        }
+        if AppConfig.Schwab.hasDeveloperCredentials {
+            return "Open Settings and complete Schwab OAuth to unlock live candles."
+        }
+        return "Add Schwab app key and app secret in Settings to unlock live candles."
+    }
+
+    private var sourceText: String {
+        if liveTape.isLive { return "SCHWAB LIVE" }
+        if AppConfig.Schwab.hasOAuthTokens { return "TOKEN STORED" }
+        if AppConfig.Schwab.hasDeveloperCredentials { return "OAUTH REQUIRED" }
+        return "KEYS REQUIRED"
+    }
+
+    private var statusAccent: Color {
+        liveTape.isLive ? DesignSystem.long : DesignSystem.amber
+    }
+
+    private var statusPip: some View {
+        Circle()
+            .fill(statusAccent)
+            .frame(width: 7, height: 7)
+    }
+}
+
 
 // MARK: - Right Rail
 
@@ -2669,7 +2773,7 @@ private struct StatusFooterView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            footerCell("CHART", "TRADINGVIEW · 15M", accent: DesignSystem.muted)
+            footerCell("CHART", chartText, accent: chartAccent)
             divider
             footerCell("QUOTES", quotesText, accent: quotesAccent)
             divider
@@ -2688,6 +2792,21 @@ private struct StatusFooterView: View {
         .onReceive(NotificationCenter.default.publisher(for: .schwabCredentialsChanged)) { _ in
             schwabCredentialRevision += 1
         }
+    }
+
+    private var chartText: String {
+        _ = schwabCredentialRevision
+        if liveTape.isLive { return "SCHWAB LIVE" }
+        if AppConfig.Schwab.oauthTokensStored { return "SCHWAB WAIT" }
+        if AppConfig.Schwab.developerCredentialsStored { return "OAUTH REQ" }
+        return "LOCKED"
+    }
+
+    private var chartAccent: Color {
+        _ = schwabCredentialRevision
+        if liveTape.isLive { return DesignSystem.long }
+        if AppConfig.Schwab.oauthTokensStored || AppConfig.Schwab.developerCredentialsStored { return DesignSystem.amber }
+        return DesignSystem.muted
     }
 
     private var quotesText: String {
@@ -2858,11 +2977,11 @@ private struct PhoneTickerStrip: View {
 // MARK: Phone Candle Strip + Chart Sheet
 //
 // Two-tier chart for the iPhone home, matching the pattern Robinhood / Webull /
-// Schwab / ToS mobile / TradingView's own iOS app use: a compact native candle
+// Schwab and ToS mobile use a compact native candle preview inline,
 // preview inline on the dense view, and a fullscreen native chart on tap.
 //
 // Strategy context (see docs/trading docs/): the trader reads candle shape at
-// VWAP / 20 SMA / 50 SMA to confirm entry. A 140pt squashed TradingView embed
+// VWAP / 20 SMA / 50 SMA to confirm entry. A 140pt squashed web embed
 // hides exactly that wick-vs-body detail. Swift Charts gives crisp candles at
 // 96pt and lets us draw the ToS overlays at the right colors.
 
@@ -3458,7 +3577,7 @@ private struct PhoneChartSheet: View {
             Text("ENABLE LIVE MODE IN SETTINGS.")
                 .font(DesignSystem.Typography.bodyFont)
                 .foregroundColor(DesignSystem.faint)
-            Text("OR PASTE A FINNHUB KEY UNDER DATA SOURCE.")
+            Text("CONNECT SCHWAB OAUTH IN SETTINGS.")
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.2)
                 .foregroundColor(DesignSystem.faint)
@@ -3469,7 +3588,7 @@ private struct PhoneChartSheet: View {
 
     private var footer: some View {
         HStack {
-            Text("FINNHUB · 1-MIN BARS AGGREGATED · 15M DELAYED")
+            Text("SCHWAB · 1-MIN BARS AGGREGATED")
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.4)
                 .foregroundColor(DesignSystem.muted)
@@ -3920,7 +4039,7 @@ private struct PhoneClockFooter: View {
     }
 }
 
-// MARK: Phone Hard-Exit Takeover (3:50-4:10 ET)
+// MARK: Phone Session-Close Takeover (16:10-16:15 ET)
 
 private struct PhoneHardExitTakeover: View {
     @ObservedObject var signalMonitor: SignalMonitor

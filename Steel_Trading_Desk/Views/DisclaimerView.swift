@@ -619,7 +619,7 @@ struct PrivacyPolicyView: View {
                 - Manual data entries (VXX price, volume, etc.)
                 - App preferences (haptic settings, platform choice)
                 - Onboarding completion status
-                - API keys for the optional market-data provider (in Keychain)
+                - Schwab developer credentials and OAuth tokens for optional live market data (in Keychain)
 
                 2.3 This data:
                 - Never leaves your device
@@ -638,12 +638,13 @@ struct PrivacyPolicyView: View {
                 - Cloud storage services
                 - Tracking pixels or beacons
 
-                3.2 OPTIONAL: If you enable Live Mode in Settings → Data Source and provide an API key, the App will make network requests directly from your device to the market data provider you choose (Finnhub, Polygon, Schwab, or Yahoo) to fetch VXX and VIX market data. Specifically:
-                - Requests contain only ticker symbols and your API key
+                3.2 OPTIONAL: If you enable Schwab Live Mode in Settings and complete OAuth with your own Schwab developer app, the App will make market-data requests directly from your device to Schwab to fetch VXX and VIX market data. Specifically:
+                - Requests contain only ticker symbols and your local Schwab OAuth token
                 - Responses (current price, previous close, intraday candles) are processed on-device
                 - No part of these requests is routed through us
-                - We never see your API key, your queries, or any returned data
-                - Disabling Live Mode in Settings stops all network requests
+                - We never see your Schwab app key, app secret, OAuth token, queries, or returned data
+                - The App does not place orders, read balances, read positions, or automate brokerage activity
+                - Disabling Live Mode in Settings stops all market-data requests
 
                 3.3 Your relationship with the data provider is governed by THEIR privacy policy and terms — not ours.
 
@@ -756,7 +757,7 @@ struct PrivacyPolicyView: View {
 
                 **Your privacy:** locked down
 
-                Your trading strategies, manual entries, and app usage stay private on YOUR device. The only optional outbound traffic is the market-data API you turn on in Settings, and even that bypasses us entirely — your device talks to the provider directly.
+                Your trading strategies, manual entries, and app usage stay private on YOUR device. The only optional outbound traffic is Schwab market data you turn on in Settings, and even that bypasses us entirely: your device talks to Schwab directly.
 
                 Your privacy is respected.
                 """)

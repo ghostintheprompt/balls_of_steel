@@ -8,8 +8,8 @@
 
 - **Boiler-room redesign complete.** All 9 phases shipped. Both iOS + macOS Debug builds verified green via `xcodebuild` (last verified 2026-05-14). Signed Release installed on paired iPhone `ZZZ` 2026-05-13.
 - **Compliance + branding clean.** App named "Steel Trading Desk", subtitle "Native Volatility Analysis Tool". No "Pro/Premium/Coach/Unlock" surfaces anywhere. Disclaimer wired. Privacy policy refreshed (`docs/PRIVACY.md`). Privacy Manifest present. App Tracking Transparency not requested.
-- **Live tape pulled for v1.0.** The third-party provider path (Finnhub default, Polygon/Yahoo alternatives) was broken — Finnhub paywalled `/stock/candle` mid-2024 — and was pulled from the Settings UI in the 2026-05-16 session. Both Settings → Data Source and Broker cards now render placeholder copy ("MANUAL ENTRY — FALLBACK" / "LIVE FEED — RESTORING" / "SCHWAB — INTEGRATION PENDING") in the same design. `LiveTapeService` no longer auto-starts.
-- **Future provider = Schwab Trader API market-data streaming.** See `docs/SCHWAB_API_READINESS.md` for the full restoration plan. v1.0 ships manual-first with placeholder framing; Schwab integration is v1.1, gated on `developer.schwab.com` configuration. Schwab order/account APIs are out of scope.
+- **Schwab live tape is the only live-data path.** The old third-party provider scaffolding was removed. Live alerts and the chart fail closed unless the user enters Schwab developer credentials, completes OAuth, and the feed returns fresh VXX/VIX data.
+- **Schwab OAuth/live tape is wired for market data only.** The app stores user-supplied developer credentials locally, completes OAuth, enables the live tape after token exchange, and keeps Schwab order/account APIs out of scope.
 - **All targets building** — iOS, iPadOS, macOS. Three-column terminal layout on macOS, native Swift Charts on iPhone (tile + fullscreen sheet with VWAP / 20-50 SMA / window stripes / volume panel / ratio tier band / pattern markers / tap-to-OHLCV).
 
 ---
@@ -27,15 +27,15 @@
 
 ## 3. Release posture
 
-The release is no-paywall. Full VXX/VIX/VWAP discipline workflow, embedded chart, prompt support, hard-exit takeover, and manual tape entry available without in-app purchase. StoreKit / paywall code is not in the release path.
+The release is no-paywall. Full VXX/VIX/VWAP discipline workflow, Schwab-gated native chart, prompt support, session-close takeover, and manual tape entry are available without in-app purchase. StoreKit / paywall code is not in the release path.
 
 | Area | Release Posture |
 | :--- | :--- |
 | Manual entry | Full tape entry for VXX, VIX, volume, VWAP, key level, pattern, window, news |
 | Desk sequence | Full five-condition setup check: volume, valid window, ratio, VWAP/key level, rejection pattern. Each condition is visible on phone, iPad, and desktop. |
 | Accuracy posture | Alerts must fail closed. Stale, delayed, simulated, partial, disconnected, or unverifiable data is labeled and cannot trigger a live alert. |
-| Embedded chart | TradingView widget on Mac/iPad, native Swift Charts on iPhone, 15-min delayed disclosure |
-| Live data | None in v1.0 — placeholder card explains restoration in progress. Schwab Trader API market-data streaming lands in v1.1. |
+| Chart | Native chart on all platforms, unlocked only by verified Schwab live candles; otherwise a locked source state is shown |
+| Live data | Schwab market data only. Requires the user's own Schwab developer app key/secret plus OAuth; stale or disconnected data fails closed. |
 | Prompt Desk | Available without purchase prompts |
 | Risk tools | Available without purchase prompts |
 | Brokerage | Manual execution only — phone alert, quick human review, user fires any order in Thinkorswim/Schwab or another broker |
@@ -53,7 +53,7 @@ Monetization is the separate **Steel SPY Desk** paid app planned alongside this 
 | Value-prop drift | Medium | Position as a personal five-condition setup checker for multitasking and fast human review, not a generic trading dashboard or automated system. |
 | Schwab credentials accidentally bundled | High | `.env` is not in Copy Bundle Resources. Pre-archive check: no credential files in app bundle, no real credentials in scheme/archive settings. |
 | Scope creep | Medium | Hard rule: every feature must serve the one strategy (VXX/VIX divergence fade). |
-| Schwab live-data wire-up | Medium | Portal access is restored; create the Market Data Production app with `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`, then implement OAuth, REST sanity checks, and streamer validation. |
+| Schwab portal approval / callback drift | Medium | Keep the callback URL exactly matched between Settings and the Schwab Developer Portal. OAuth/token failures must remain visible and fail closed. |
 | Two-app shipping plan (free VXX + paid SPY) | Medium | Not a v1.0 risk. Re-check App Review guidelines around paid trading-adjacent apps before SPY submission, especially around anything that could read as a signals subscription. |
 
 ---
@@ -65,9 +65,9 @@ Verify on real device (`ZZZ`) and a fresh simulator before "Submit":
 - [ ] **Disclaimer.** First-run `DisclaimerView` appears before any trading workflow.
 - [ ] **Tape logic.** Enter `volume 350%`, valid time window, `VXX/VIX ratio 1.62`, VWAP/key-level confirmation, and a rejection pattern. The five-condition check clears in order; the NEXT MOVE verb cycles `WAIT` → `WAIT LEVEL` → `WAIT PATTERN` → `CLEARED`.
 - [ ] **Divergence read.** Live data showing VIX outpacing VXX at a stretched ratio surfaces explicit caution copy ("VIX is leading VXX — wait for a cleaner read or size down").
-- [ ] **Hard-exit takeover.** Between 15:50 and 16:10 ET, the iPhone screen is fully replaced by the red countdown takeover. (For testing outside that window, temporarily adjust the time check in `TradingDashboard.currentDeskState`.)
-- [ ] **Settings → Data Source + Broker.** Both cards render the placeholder copy ("MANUAL ENTRY — FALLBACK" / "LIVE FEED — RESTORING" / "SCHWAB — INTEGRATION PENDING"). No broken API key field, no broken Connect button, no errors logged.
-- [ ] **Embedded chart.** TradingView widget loads on Mac/iPad. iPhone shows native Swift Charts (tile + fullscreen sheet, all 7 overlays present).
+- [ ] **Session-close takeover.** From 16:10 to 16:15 ET, the iPhone screen is fully replaced by the red close-management countdown. (For testing outside that window, temporarily adjust the time check in `TradingDashboard.currentDeskState`.)
+- [ ] **Settings -> Systems.** Schwab credentials paste/save cleanly, OAuth opens in-app, the diagnostics row shows a clean client_id, alerts can be enabled after permission, and no labels are cropped on phone or Mac.
+- [ ] **Chart.** Without Schwab OAuth, the chart shows the locked Schwab-live-required state. With OAuth/live tape, native candles and all overlays render.
 - [ ] **Plex fonts.** IBM Plex renders correctly throughout (Mono numbers, Sans body, Sans Condensed Bold hero verb).
 - [ ] **Strategy Audit.** Settings → Strategy Audit runs end-to-end and returns PASS for all categories.
 
@@ -89,7 +89,7 @@ Canonical paste sheet for App Store Connect: `docs/APP_STORE_CONNECT_COPY.md`.
 1. iPhone Desk default — ticker strip + NEXT MOVE verb + five-condition stack with amber blocker highlight
 2. iPhone gate-detail sheet — big number + tier table + house rule
 3. iPhone fullscreen chart sheet — native chart with VWAP / SMA / window stripes / volume panel / ratio tier band / pattern markers
-4. iPhone hard-exit takeover — red countdown + open positions + 3 exit rules
+4. iPhone session-close takeover: red countdown + open positions + 3 close-management rules
 5. iPad / Mac terminal — three-column layout with gate spine + chart center + right rail
 
 ### Reviewer note (compliance guard)
@@ -98,9 +98,9 @@ Canonical paste sheet for App Store Connect: `docs/APP_STORE_CONNECT_COPY.md`.
 >
 > Manual tape entry works without credentials. Settings also includes Schwab Developer Access for users who have their own Schwab developer account; the user enters an app key/client ID and app secret, stored locally in Keychain. Steel ships with no shared Schwab secret. Schwab order placement, account balances, positions, and automated execution are out of scope.
 >
-> The core value of the app is accuracy-gated alerting. Future live-data builds must suppress alerts when data is stale, delayed, simulated, partial, disconnected, or unverifiable. The workflow is phone alert, quick human review to confirm the read is not bad, manual execution in Thinkorswim/Schwab or another broker.
+> The core value of the app is accuracy-gated alerting. The live-data path suppresses alerts when data is stale, delayed, simulated, partial, disconnected, or unverifiable. The workflow is phone alert, quick human review to confirm the read is not bad, manual execution in Thinkorswim/Schwab or another broker.
 >
-> The reviewer can exercise the entire app on first-launch state with no external service configuration. The embedded TradingView chart loads with public delayed data and requires no account.
+> The reviewer can exercise the manual-entry workflow on first launch with no external service configuration. The chart clearly states Schwab live data is required until OAuth/live tape is connected.
 
 ---
 
@@ -132,4 +132,4 @@ Day-to-day P0 work tracked in `docs/RELEASE_PUNCH_LIST.md`.
 
 ---
 
-**v1.1 roadmap** (Schwab market-data streaming): `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md` first, then `docs/SCHWAB_API_READINESS.md`.
+Schwab portal setup remains documented in `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`; implementation status lives in the source and this guide.

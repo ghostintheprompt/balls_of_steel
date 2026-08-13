@@ -20,8 +20,8 @@ Steel Trading Desk is a local-first, accuracy-first desk for a personal VXX/VIX/
 | **Tape entry** | Fast manual input from ThinkOrSwim, Schwab, or your primary charting platform. |
 | **Schwab dev access** | Narrow-audience by design: enter your own Schwab developer app key and app secret, stored locally in Keychain. Schwab market-data streaming is the target feed. No shared secret ships with the app. |
 | **Feed suitability checks** | Live data has to prove it is suitable for this system: correct symbols, source timestamps, freshness, heartbeats, complete VXX/VIX/VWAP inputs, and fail-closed alert behavior. |
-| **Embedded chart** | TradingView Advanced Chart (VWAP + SMA + Volume) directly in the desk. 15-min delayed disclosure built in. |
-| **Hard-exit takeover** | Between 15:50 and 16:10 ET, the iPhone screen is replaced by a red countdown to 15:55, open positions, and three exit rules. |
+| **Schwab-gated chart** | Native chart surface uses verified Schwab live candles only. Without Schwab OAuth it shows a locked source state, not public delayed data. |
+| **Session-close takeover** | From 16:10 to the 16:15 ET extended close, the phone prioritizes close-management rules, open risk, and the alert-session countdown. |
 | **Second Read** | Copy a structured prompt for outside-model sanity checks. Never the green light. |
 | **Boiler-room visual system** | CRT amber on near-black, IBM Plex everything, hairline borders, sharp corners. |
 | **Local-first privacy** | Zero telemetry. Zero analytics. All data stays on your hardware. |
@@ -46,10 +46,10 @@ In Xcode, select the **Steel_Trading_Desk** scheme, target **Any iOS Device** or
 
 1. **Tape:** Pull VXX, VIX, volume, VWAP, key level, pattern, and window from your charting platform — or use verified live market data when available.
 2. **Sequence:** Watch the setup check on the Desk. Don't act until every condition clears.
-3. **Chart:** Use the embedded TradingView chart for context.
+3. **Chart:** Use the native chart only when Schwab live candles are connected; otherwise the chart explicitly shows what is missing.
 4. **Prompt:** Use the Second Read panel only when a structured outside read helps.
 5. **Execute:** Take a quick look to reject nonsense, then place trades manually in Thinkorswim, Schwab, or your own broker. Steel never places orders.
-6. **Manage:** Track active risk and obey the 15:55 ET hard exit (the app takes over the screen for the last 20 minutes).
+6. **Manage:** Track active risk through the 16:15 ET extended close; the app takes over the phone screen during the final close-management window.
 
 ## Privacy
 

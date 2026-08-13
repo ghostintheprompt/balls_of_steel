@@ -10,7 +10,7 @@ import Combine
 // re-renders automatically because `TradingDashboard` observes that key via
 // `@AppStorage`.
 //
-// Live mode is opt-in via Settings → Data Source. When off, the manual tape
+// Live mode is opt-in via Settings -> Systems after Schwab OAuth. When off, the manual tape
 // remains the only source of truth.
 
 @MainActor

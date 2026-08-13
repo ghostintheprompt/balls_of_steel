@@ -37,15 +37,13 @@ The app's live-data roadmap is Schwab Trader API market-data streaming. Live cre
 For dev, `EnvSeeder.swift` (`#if DEBUG` only) reads process environment variables and seeds platform Keychain values on launch. Add these values to the Xcode scheme's **Run -> Arguments -> Environment Variables** panel, or pass them through a local launch wrapper:
 
 ```bash
-#   FINNHUB_API_KEY=your_actual_key
-#   POLYGON_API_KEY=your_actual_key
 #   SCHWAB_APP_KEY=your_schwab_app_key
 #   SCHWAB_APP_SECRET=your_schwab_app_secret
 ```
 
 `.env` is gitignored and may be useful as a local note, but it is not copied into the app bundle and the app does not read it directly. Do not add `.env` back to the Xcode resource phase.
 
-Legacy Finnhub/Polygon scaffolding remains in the repo, but the product path is Schwab streaming with fail-closed alerting. Stale, delayed, simulated, partial, disconnected, or unverifiable data must not trigger a live alert.
+The product path is Schwab streaming with fail-closed alerting. Stale, delayed, simulated, partial, disconnected, or unverifiable data must not trigger a live alert or unlock the chart.
 
 Schwab portal setup lives in `docs/SCHWAB_DEV_PORTAL_WALKTHROUGH.md`. Use that doc for the exact Market Data Production, callback URL, and order-limit choices.
 

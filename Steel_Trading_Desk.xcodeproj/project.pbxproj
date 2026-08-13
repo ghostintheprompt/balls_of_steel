@@ -60,7 +60,6 @@
 		1A000051000000000000001A /* StrategyBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000052000000000000001A /* StrategyBadge.swift */; };
 		1A000053000000000000001A /* (null) in Resources */ = {isa = PBXBuildFile; };
 		1A000200000000000000001A /* OptionSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000201000000000000001A /* OptionSelector.swift */; };
-		1ACW01000000000000000001 /* ChartWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACW01000000000000000002 /* ChartWebView.swift */; };
 		1ADS01000000000000000001 /* DeskState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADS01000000000000000002 /* DeskState.swift */; };
 		1AEN01000000000000000001 /* EnvSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AEN01000000000000000002 /* EnvSeeder.swift */; };
 		1AES0002000000000000001A /* ExitSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AES0001000000000000001A /* ExitSignal.swift */; };
@@ -71,9 +70,6 @@
 		1AFT05000000000000000001 /* IBMPlexMono-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AFT05000000000000000002 /* IBMPlexMono-SemiBold.ttf */; };
 		1ALT01000000000000000001 /* LiveTapeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ALT01000000000000000002 /* LiveTapeService.swift */; };
 		1AMD01000000000000000001 /* MarketDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD01000000000000000002 /* MarketDataProvider.swift */; };
-		1AMD02000000000000000001 /* FinnhubProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD02000000000000000002 /* FinnhubProvider.swift */; };
-		1AMD03000000000000000001 /* PolygonProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD03000000000000000002 /* PolygonProvider.swift */; };
-		1AMD04000000000000000001 /* YahooProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AMD04000000000000000002 /* YahooProvider.swift */; };
 		1AOR0002000000000000001A /* Order.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AOR0001000000000000001A /* Order.swift */; };
 		1ASA01000000000000000001 /* StrategyAuditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASA01000000000000000002 /* StrategyAuditor.swift */; };
 		1ASS01000000000000000001 /* StrategySpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASS01000000000000000002 /* StrategySpec.swift */; };
@@ -140,7 +136,6 @@
 		1A000055000000000000001A /* Steel_Trading_Desk.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steel_Trading_Desk.entitlements; sourceTree = "<group>"; };
 		1A000056000000000000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A000201000000000000001A /* OptionSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionSelector.swift; sourceTree = "<group>"; };
-		1ACW01000000000000000002 /* ChartWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWebView.swift; sourceTree = "<group>"; };
 		1ADS01000000000000000002 /* DeskState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskState.swift; sourceTree = "<group>"; };
 		1AEN01000000000000000002 /* EnvSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvSeeder.swift; sourceTree = "<group>"; };
 		1AES0001000000000000001A /* ExitSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitSignal.swift; sourceTree = "<group>"; };
@@ -151,9 +146,6 @@
 		1AFT05000000000000000002 /* IBMPlexMono-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-SemiBold.ttf"; sourceTree = "<group>"; };
 		1ALT01000000000000000002 /* LiveTapeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTapeService.swift; sourceTree = "<group>"; };
 		1AMD01000000000000000002 /* MarketDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketDataProvider.swift; sourceTree = "<group>"; };
-		1AMD02000000000000000002 /* FinnhubProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubProvider.swift; sourceTree = "<group>"; };
-		1AMD03000000000000000002 /* PolygonProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonProvider.swift; sourceTree = "<group>"; };
-		1AMD04000000000000000002 /* YahooProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooProvider.swift; sourceTree = "<group>"; };
 		1AOR0001000000000000001A /* Order.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Order.swift; sourceTree = "<group>"; };
 		1ASA01000000000000000002 /* StrategyAuditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyAuditor.swift; sourceTree = "<group>"; };
 		1ASS01000000000000000002 /* StrategySpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategySpec.swift; sourceTree = "<group>"; };
@@ -290,10 +282,7 @@
 				B000000000000001A000009 /* UpdateChecker.swift */,
 				00000000000000001A00007E /* ArcadeEnergyService.swift */,
 				1AMD01000000000000000002 /* MarketDataProvider.swift */,
-				1AMD02000000000000000002 /* FinnhubProvider.swift */,
-				1AMD03000000000000000002 /* PolygonProvider.swift */,
-				1AMD04000000000000000002 /* YahooProvider.swift */,
-				1ALT01000000000000000002 /* LiveTapeService.swift */,
+										1ALT01000000000000000002 /* LiveTapeService.swift */,
 				1AEN01000000000000000002 /* EnvSeeder.swift */,
 			);
 			path = Services;
@@ -330,8 +319,7 @@
 				1A000052000000000000001A /* StrategyBadge.swift */,
 				00000000000000001A00008E /* SharedSignalRowView.swift */,
 				00000000000000001A000094 /* DesignSystem.swift */,
-				1ACW01000000000000000002 /* ChartWebView.swift */,
-			);
+					);
 			path = Components;
 			sourceTree = "<group>";
 		};
@@ -493,16 +481,12 @@
 				00000000000000001A000085 /* PromptCoachView.swift in Sources */,
 				00000000000000001A00008D /* SharedSignalRowView.swift in Sources */,
 				00000000000000001A000093 /* DesignSystem.swift in Sources */,
-				1ACW01000000000000000001 /* ChartWebView.swift in Sources */,
 				B000000000000001A000002 /* DailyRiskManager.swift in Sources */,
 				B000000000000001A000004 /* KeychainService.swift in Sources */,
 				B000000000000001A000006 /* TradeJournal.swift in Sources */,
 				B000000000000001A000008 /* VXXTradingWindow.swift in Sources */,
 				B000000000000001A00000A /* UpdateChecker.swift in Sources */,
 				1AMD01000000000000000001 /* MarketDataProvider.swift in Sources */,
-				1AMD02000000000000000001 /* FinnhubProvider.swift in Sources */,
-				1AMD03000000000000000001 /* PolygonProvider.swift in Sources */,
-				1AMD04000000000000000001 /* YahooProvider.swift in Sources */,
 				1ALT01000000000000000001 /* LiveTapeService.swift in Sources */,
 				1AEN01000000000000000001 /* EnvSeeder.swift in Sources */,
 			);

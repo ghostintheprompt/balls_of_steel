@@ -21,7 +21,7 @@ Canonical paste sheet for App Store Connect version `1.0`. **Single source of tr
 
 ### Promotional Text
 
-Accuracy-first VXX/VIX/VWAP entry desk. Five-condition setup check, one verb, hard exit at 15:55. No brokerage automation, no fantasy fills, no alert unless the data is live, fresh, sourced, and complete.
+Accuracy-first VXX/VIX/VWAP entry desk. Five-condition setup check, one verb, Schwab-gated live alerts, and session-close management through 16:15 ET. No brokerage automation, no fantasy fills.
 
 ### Description
 
@@ -37,7 +37,7 @@ Steel keeps the trade in order:
 4. Rejection pattern
 5. Manual execution and risk management
 
-Enter the tape from your charting or brokerage platform, or configure Schwab Developer Access with your own Schwab developer app key and app secret. Watch the conditions clear in order, view an embedded chart for context, copy a structured prompt when a second read helps, take a quick look to reject bad reads, and execute manually on your broker.
+Enter the tape from your charting or brokerage platform, or configure Schwab Developer Access with your own Schwab developer app key and app secret. Watch the conditions clear in order, use the Schwab-gated native chart when live candles are connected, copy a structured prompt when a second read helps, take a quick look to reject bad reads, and execute manually on your broker.
 
 Built for one purpose: fewer forced trades, cleaner entries, stricter exits, and alerts that fail closed when the data is not good enough.
 
@@ -45,11 +45,11 @@ Key features:
 
 - **Five-condition setup check** — volume, valid window, VXX/VIX ratio, VWAP/key level, and rejection pattern. Every condition is visible; nothing is hidden inside a summary row.
 - **Accuracy-gated alerts** — alerts are valid only when the app can verify the feed source, timestamp freshness, and required VXX/VIX/VWAP inputs. No stale, delayed, simulated, partial, or unverifiable data is allowed to masquerade as actionable.
-- **Native chart on iPhone** (Swift Charts): VWAP, 20-period and 50-period SMAs, time-window stripes, volume sub-panel, VXX/VIX ratio tier band, candlestick pattern markers, tap-to-OHLCV. TradingView Advanced Chart embed on Mac and iPad with VWAP, SMA, and volume overlays.
+- **Schwab-gated native chart**: VWAP, 20-period and 50-period SMAs, time-window stripes, volume sub-panel, VXX/VIX ratio tier band, candlestick pattern markers, and tap-to-OHLCV. The chart unlocks only from verified Schwab live candles; otherwise it displays the missing auth/feed state.
 - **Tape entry** for fast manual input of VXX, VIX, volume, VWAP, key level, pattern, time window, and news.
 - **Schwab Developer Access** — optional user-supplied Schwab app key and app secret stored in the device Keychain. Steel ships with no shared Schwab secret.
 - **Feed suitability checks** — live data must prove correct symbols, source timestamps, freshness, complete VXX/VIX/VWAP inputs, and connection health before it can matter.
-- **Hard-exit takeover** between 3:50 and 4:10 PM ET — the screen replaces itself with a giant countdown to 15:55, the open position summary, and the three exit rules.
+- **Session-close takeover** from 4:10 to 4:15 PM ET: the phone prioritizes close-management rules, open risk, and the alert-session countdown.
 - **Second Read** structured prompts to paste into the model of your choice when you want an outside check.
 - **Risk discipline** — active-risk and close-management surfaces for keeping the trade honest.
 - **Local-first privacy** — no accounts, no telemetry, no tracking. User-supplied Schwab developer credentials are stored in the platform Keychain.
@@ -87,7 +87,7 @@ Suggested order:
 1. iPhone Desk default — ticker strip + NEXT MOVE verb + five-condition stack with amber blocker highlight
 2. iPhone gate-detail sheet — big number + tier table + house rule
 3. iPhone fullscreen chart sheet — native chart with VWAP / SMA / window stripes / volume panel / ratio tier band / pattern markers
-4. iPhone hard-exit takeover — red countdown + open positions + 3 exit rules
+4. iPhone session-close takeover: red countdown + open positions + 3 close-management rules
 5. iPad / Mac terminal — three-column layout with gate spine + chart center + right rail
 
 Screenshot specs:
@@ -115,9 +115,9 @@ Steel Trading Desk is an accuracy-first entry-discipline utility for discretiona
 
 The strategy implemented here is the developer's personal five-condition VXX/VIX/VWAP setup checker. Manual tape entry works without credentials. Settings also includes Schwab Developer Access for users who have their own Schwab developer account; the user can enter an app key/client ID and app secret, which are stored locally in Keychain. The app ships with no shared Schwab secret. All execution happens on the user's own brokerage account, outside this app.
 
-Future live-data builds must fail closed: if the feed is stale, delayed, simulated, partial, disconnected, or unverifiable, the app must label the condition and suppress alerts. The intended workflow is phone alert → quick human review to confirm it is not a bad read → user manually places any order in Thinkorswim/Schwab or another brokerage platform.
+Live data must fail closed: if the feed is stale, delayed, simulated, partial, disconnected, or unverifiable, the app labels the condition and suppresses alerts. The intended workflow is phone alert → quick human review to confirm it is not a bad read → user manually places any order in Thinkorswim/Schwab or another brokerage platform.
 
-The embedded TradingView chart on Mac and iPad loads public delayed data and requires no account. The iPhone uses native Swift Charts and does not make any chart-related network calls.
+The chart is native and Schwab-gated. Without Schwab OAuth/live candles, it displays a locked source state instead of loading public delayed data.
 
 Suggested review path:
 
@@ -134,7 +134,7 @@ Suggested review path:
 | Tracking | No |
 | Data Collection | None |
 | Required Reasons API | UserDefaults (Category CA92.1) — local user preferences only (alert volume, time settings, last tape entry). |
-| Outbound third-party calls | TradingView (Mac/iPad chart embed, no auth, no user data sent). No other outbound calls in v1.0. Future: Schwab Trader API (per-user OAuth on user's own account, not yet integrated). |
+| Outbound third-party calls | Schwab Trader API market data only, using the user's own developer app credentials and OAuth token. No brokerage order/account/position automation. |
 
 Full privacy disclosure: `docs/PRIVACY.md`.
 

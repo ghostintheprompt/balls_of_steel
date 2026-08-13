@@ -1,11 +1,9 @@
 import Foundation
-import SwiftUI
 
-// MARK: - Market Data Provider Protocol (Phase 6)
+// MARK: - Market Data Provider Protocol
 //
-// One protocol, multiple backends. Default at v1.0 ship: Finnhub free tier.
-// Schwab demoted from default to power-user opt-in. Yahoo as silent fallback.
-// Each provider conforms by implementing quote/vwap/volume/subscribe.
+// Schwab is the only live market-data provider. The app can still accept manual
+// tape entries, but no delayed/stub provider is allowed to masquerade as live.
 
 protocol MarketDataProvider {
     var id: MarketDataProviderID { get }
@@ -22,33 +20,25 @@ protocol MarketDataProvider {
 }
 
 enum MarketDataProviderID: String, CaseIterable, Identifiable {
-    case finnhub
-    case polygon
     case schwab
-    case yahoo
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .finnhub: return "Finnhub"
-        case .polygon: return "Polygon"
-        case .schwab:  return "Schwab"
-        case .yahoo:   return "Yahoo"
+        case .schwab: return "Schwab"
         }
     }
 }
 
 enum MarketDataProviderError: LocalizedError {
     case notConfigured(String)
-    case notImplemented(String)
     case network(String)
     case unsupportedSymbol(String)
 
     var errorDescription: String? {
         switch self {
         case .notConfigured(let detail): return "Provider not configured. \(detail)"
-        case .notImplemented(let detail): return "Provider not yet implemented. \(detail)"
         case .network(let detail): return "Network error: \(detail)"
         case .unsupportedSymbol(let s): return "Unsupported symbol: \(s)"
         }
@@ -56,10 +46,6 @@ enum MarketDataProviderError: LocalizedError {
 }
 
 // MARK: - Registry
-//
-// Single source of truth for which provider is active. Persisted via @AppStorage
-// in the host view; this class just holds the resolved provider so callers don't
-// have to know the wiring.
 
 @MainActor
 final class MarketDataRegistry: ObservableObject {
@@ -68,53 +54,54 @@ final class MarketDataRegistry: ObservableObject {
     @Published private(set) var active: MarketDataProvider
 
     private init() {
-        let stored = UserDefaults.standard.string(forKey: "marketDataProviderID") ?? MarketDataProviderID.finnhub.rawValue
-        let id = MarketDataProviderID(rawValue: stored) ?? .finnhub
-        self.active = Self.makeProvider(for: id)
+        self.active = SchwabProviderAdapter()
+        UserDefaults.standard.set(MarketDataProviderID.schwab.rawValue, forKey: "marketDataProviderID")
     }
 
     func use(_ id: MarketDataProviderID) {
-        active = Self.makeProvider(for: id)
-        UserDefaults.standard.set(id.rawValue, forKey: "marketDataProviderID")
-    }
-
-    private static func makeProvider(for id: MarketDataProviderID) -> MarketDataProvider {
-        switch id {
-        case .finnhub: return FinnhubProvider()
-        case .polygon: return PolygonProvider()
-        case .schwab:  return SchwabProviderAdapter()
-        case .yahoo:   return YahooProvider()
-        }
+        active = SchwabProviderAdapter()
+        UserDefaults.standard.set(MarketDataProviderID.schwab.rawValue, forKey: "marketDataProviderID")
     }
 }
 
 // MARK: - Schwab adapter
-//
-// Wraps the existing SchwabService so it conforms to MarketDataProvider without
-// changing SchwabService itself. Methods route through the existing service.
 
 struct SchwabProviderAdapter: MarketDataProvider {
     let id: MarketDataProviderID = .schwab
-    let displayName = "Schwab (brokerage)"
+    let displayName = "Schwab"
     let requiresApiKey = true
     let apiKeyHelpURL = URL(string: "https://developer.schwab.com")
     let deliversRealtime = true
-    let setupNote = "Requires a Schwab developer account, app key, app secret, and OAuth connection."
+    let setupNote = "Requires Schwab app key, app secret, and OAuth connection."
 
     func quote(_ symbol: String) async throws -> Quote {
-        try await SchwabService.shared.fetchQuote(symbol)
+        guard AppConfig.Schwab.hasOAuthTokens else {
+            throw MarketDataProviderError.notConfigured("Connect Schwab OAuth first.")
+        }
+        return try await SchwabService.shared.fetchQuote(symbol)
     }
 
     func vwap(_ symbol: String) async throws -> Double {
-        try await SchwabService.shared.vwap(symbol)
+        guard AppConfig.Schwab.hasOAuthTokens else {
+            throw MarketDataProviderError.notConfigured("Connect Schwab OAuth first.")
+        }
+        return try await SchwabService.shared.vwap(symbol)
     }
 
     func volumeVsAvg(_ symbol: String, period: Int) async throws -> Double {
-        try await SchwabService.shared.volumeVsAvg(symbol, period: period)
+        guard AppConfig.Schwab.hasOAuthTokens else {
+            throw MarketDataProviderError.notConfigured("Connect Schwab OAuth first.")
+        }
+        return try await SchwabService.shared.volumeVsAvg(symbol, period: period)
     }
 
     func subscribe(_ symbols: [String]) -> AsyncStream<Quote> {
         AsyncStream { continuation in
+            guard AppConfig.Schwab.hasOAuthTokens else {
+                continuation.finish()
+                return
+            }
+
             let task = Task {
                 while !Task.isCancelled {
                     for symbol in symbols {

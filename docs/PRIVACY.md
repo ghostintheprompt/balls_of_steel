@@ -18,17 +18,13 @@ When you delete the app, all of this is removed by the operating system.
 
 ## 3. Outbound network calls (third-party services)
 
-The app makes outbound HTTPS calls only to services *you explicitly configure* in Settings → Data Source. We never proxy these calls through our servers; they go directly from your device to the provider:
+The app makes outbound HTTPS calls only to Schwab market data after you explicitly configure Schwab in Settings. We never proxy these calls through our servers; they go directly from your device to Schwab:
 
 | Provider | Endpoint | Purpose | Required? |
 |---|---|---|---|
-| TradingView | `s3.tradingview.com`, `tradingview.com` | Embedded chart widget (15-min delayed quotes) | Used whenever the chart is visible. No account / no auth. |
-| Finnhub | `finnhub.io`, `ws.finnhub.io` | Real-time VXX / VIX quote data | Only if you provide a Finnhub API key |
-| Polygon.io | `api.polygon.io`, `socket.polygon.io` | Real-time quote data (alternative provider) | Only if you provide a Polygon API key |
-| Schwab | `api.schwabapi.com`, Schwab streamer endpoint | Real-time market-data quotes for accuracy-gated alerts | Only if you complete the Schwab OAuth flow |
-| Yahoo Finance (unofficial) | `query1.finance.yahoo.com` | Delayed quote fallback | Only if you select Yahoo as your provider |
+| Schwab | `api.schwabapi.com`, Schwab streamer endpoint | Real-time VXX / VIX quotes and candles for accuracy-gated alerts and the in-app chart | Only if you enter your own Schwab developer credentials and complete OAuth |
 
-Each provider's privacy policy governs how *they* handle the requests they receive. We do not share your API keys with anyone, ever.
+Schwab's privacy policy governs how Schwab handles the requests it receives. We do not share your app key, app secret, OAuth token, or market-data responses with anyone, ever.
 
 Steel Trading Desk does not use broker APIs to place orders, read balances, manage positions, or automate trading. Any live-data provider is used only to evaluate the app's on-device entry gates and alert freshness. You place any trade manually in your own brokerage platform.
 

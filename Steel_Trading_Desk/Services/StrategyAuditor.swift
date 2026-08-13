@@ -12,7 +12,7 @@ import Foundation
 //   - Time-window boundary errors (e.g. the Morning-window-unreachable bug
 //     that was the first thing this auditor caught).
 //   - Pattern-recognizer divergence from the doc.
-//   - Hard-exit-time drift.
+//   - Session-close-time drift.
 //
 // What it does NOT catch:
 //   - Doc changes that haven't been mirrored into `StrategySpec` (the spec
