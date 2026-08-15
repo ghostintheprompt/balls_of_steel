@@ -418,7 +418,7 @@ struct SettingsView: View {
                         .tracking(1.0)
                         .foregroundColor(DesignSystem.mutedText)
 
-                    TextField(AppConfig.Schwab.loopbackCallbackURL, text: $schwabCallbackURLInput)
+                    TextField(AppConfig.Schwab.appLinkCallbackURL, text: $schwabCallbackURLInput)
                         .textFieldStyle(.roundedBorder)
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
@@ -434,18 +434,9 @@ struct SettingsView: View {
 
                 AdaptiveControlRow {
                     Button {
-                        setSchwabCallbackPreset(AppConfig.Schwab.plainLoopbackCallbackURL)
+                        setSchwabCallbackPreset(AppConfig.Schwab.appLinkCallbackURL)
                     } label: {
-                        Label("Local 127", systemImage: "link")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(DesignSystem.amber)
-
-                    Button {
-                        setSchwabCallbackPreset(AppConfig.Schwab.portedLoopbackCallbackURL)
-                    } label: {
-                        Label("Local :8182", systemImage: "link.badge.plus")
+                        Label("App Link", systemImage: "link")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -711,7 +702,7 @@ struct SettingsView: View {
     }
 
     private var schwabPortalCallbackCopy: String {
-        "You can paste the Schwab portal callback list. Mac uses https://127.0.0.1:8182; iPhone uses the HTTPS app link."
+        "Register https://oauth.mdrn.app/schwab/callback in the Schwab Developer Portal. If the portal shows multiple callbacks, Steel will pick this app-link."
     }
 
     private var schwabAppKeyDiagnosticValue: String {
@@ -744,9 +735,8 @@ struct SettingsView: View {
         let suffix = AppConfig.Schwab.callbackURLCandidates(from: schwabCallbackURLInput).count > 1
             ? " / picked"
             : ""
-        if callback == AppConfig.Schwab.plainLoopbackCallbackURL ||
-            callback == AppConfig.Schwab.portedLoopbackCallbackURL {
-            return "\(callback)\(suffix)"
+        if callback == AppConfig.Schwab.appLinkCallbackURL {
+            return "\(callback) / app-link\(suffix)"
         }
         return "\(callback) / custom\(suffix)"
     }
@@ -756,8 +746,7 @@ struct SettingsView: View {
         guard let url = URL(string: callback), url.scheme == "https", url.host != nil else {
             return DesignSystem.short
         }
-        return callback == AppConfig.Schwab.plainLoopbackCallbackURL ||
-            callback == AppConfig.Schwab.portedLoopbackCallbackURL ? DesignSystem.long : DesignSystem.amber
+        return callback == AppConfig.Schwab.appLinkCallbackURL ? DesignSystem.long : DesignSystem.amber
     }
 
     private var schwabAuthURLDiagnosticValue: String {
@@ -859,7 +848,13 @@ struct SettingsView: View {
                 return
             }
             debugSchwabAuthorization(url, action: "system_auth")
-            let result = oauthSession.start(authURL: url, callbackURL: callbackURL) { callbackResult in
+            let result = oauthSession.start(
+                authURL: url,
+                callbackURL: callbackURL,
+                statusUpdate: { message in
+                    schwabCredentialMessage = message
+                }
+            ) { callbackResult in
                 Task { @MainActor in
                     switch callbackResult {
                     case .success(let returnedURL):
@@ -931,7 +926,10 @@ struct SettingsView: View {
         defer { isConnectingSchwab = false }
 
         do {
-            _ = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI ?? AppConfig.Schwab.oauthCallbackURL)
+            let callbackRedirectURI = redirectURI
+                ?? schwabRedirectURI(fromCallbackText: input)
+                ?? AppConfig.Schwab.oauthCallbackURL
+            _ = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: callbackRedirectURI)
             MarketDataRegistry.shared.use(.schwab)
             liveTape.isEnabled = true
             await liveTape.tickNow()
@@ -946,6 +944,24 @@ struct SettingsView: View {
         } catch {
             schwabCredentialMessage = schwabOAuthFailureMessage(error, stage: .token)
         }
+    }
+
+    private func schwabRedirectURI(fromCallbackText text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              url.scheme?.lowercased() == "https",
+              url.host != nil else {
+            return nil
+        }
+
+        var components = URLComponents()
+        components.scheme = url.scheme
+        components.host = url.host
+        components.port = url.port
+        if !url.path.isEmpty, url.path != "/" {
+            components.percentEncodedPath = url.path
+        }
+        return components.url.map { AppConfig.Schwab.sanitizedCallbackURL($0.absoluteString) }
     }
 
     @MainActor

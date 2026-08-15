@@ -40,7 +40,10 @@ enum EnvSeeder {
         }
         if let rawCallback = environment["SCHWAB_CALLBACK_URL"],
            valueLooksReal(rawCallback) {
-            let callback = AppConfig.Schwab.sanitizedCallbackURL(rawCallback)
+            let sanitized = AppConfig.Schwab.sanitizedCallbackURL(rawCallback)
+            let callback = AppConfig.Schwab.isLoopbackCallbackURL(sanitized)
+                ? AppConfig.Schwab.appLinkCallbackURL
+                : sanitized
             if let url = URL(string: callback),
                url.scheme == "https",
                url.host != nil {

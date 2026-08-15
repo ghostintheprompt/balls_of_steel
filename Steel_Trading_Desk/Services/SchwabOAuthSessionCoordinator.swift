@@ -47,6 +47,7 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
     func start(
         authURL: URL,
         callbackURL: String,
+        statusUpdate: ((String) -> Void)? = nil,
         completion: @escaping (Result<URL, Error>) -> Void
     ) -> SchwabOAuthLaunchResult {
         cancel()
@@ -57,6 +58,11 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
             do {
                 try loopbackServer.start(
                     callbackURL: callbackURL,
+                    onStatus: { message in
+                        Task { @MainActor in
+                            statusUpdate?(message)
+                        }
+                    },
                     onReady: {
                         Task { @MainActor in
                             Self.debug("action=loopback_ready_open callback=\(callbackURL)")
@@ -79,10 +85,13 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
                 return .externalBrowser(Self.loopbackFailureMessage(error, callbackURL: callbackURL))
             }
         }
+
+        Self.openExternally(authURL)
+        return .externalBrowser(Self.externalLaunchMessage(for: callbackURL))
         #endif
 
-        #if os(macOS) || os(iOS)
-        if #available(iOS 17.4, macOS 14.4, *),
+        #if os(iOS)
+        if #available(iOS 17.4, *),
            let callback = Self.systemAuthenticationCallback(for: callbackURL) {
             let session = ASWebAuthenticationSession(url: authURL, callback: callback) { [weak self] callbackURL, error in
                 Task { @MainActor in
@@ -102,10 +111,10 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
             isRunning = true
             return .systemSession
         }
-        #endif
 
         Self.openExternally(authURL)
         return .externalBrowser(Self.externalLaunchMessage(for: callbackURL))
+        #endif
     }
 
     func cancel() {
@@ -169,7 +178,7 @@ final class SchwabOAuthSessionCoordinator: NSObject, ObservableObject {
     }
 
     private static func localLoopbackStartingMessage(for callbackURL: String) -> String {
-        "Starting the Mac callback listener at \(callbackURL). Schwab will open when the listener is ready."
+        "Starting the Mac callback listener at \(callbackURL). Schwab will open only after Steel confirms the listener is ready."
     }
 
     private static func loopbackFailureMessage(_ error: Error, callbackURL: String) -> String {
@@ -249,6 +258,7 @@ private enum SchwabLocalOAuthServerError: LocalizedError {
     case invalidPort
     case identityUnavailable
     case invalidHTTPRequest
+    case listenerTimedOut(Int)
 
     var errorDescription: String? {
         switch self {
@@ -262,6 +272,8 @@ private enum SchwabLocalOAuthServerError: LocalizedError {
             return "The local OAuth TLS identity could not be loaded."
         case .invalidHTTPRequest:
             return "The local OAuth callback request was not valid HTTP."
+        case .listenerTimedOut(let port):
+            return "The Mac callback listener did not become ready on port \(port)."
         }
     }
 }
@@ -275,14 +287,18 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
     private let queue = DispatchQueue(label: "app.mdrn.steel.schwab.oauth.loopback")
     private var listener: NWListener?
     private var didComplete = false
+    private var didBecomeReady = false
+    private var readinessTimeout: DispatchWorkItem?
 
     func start(
         callbackURL: String,
+        onStatus: @escaping (String) -> Void,
         onReady: @escaping () -> Void,
         onCallback: @escaping (Result<URL, Error>) -> Void
     ) throws {
         stop()
         didComplete = false
+        didBecomeReady = false
 
         guard let registeredURL = URL(string: AppConfig.Schwab.sanitizedCallbackURL(callbackURL)),
               registeredURL.scheme?.lowercased() == "https",
@@ -306,18 +322,29 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
         let parameters = try Self.tlsParameters()
         let ip = IPv4Address("127.0.0.1")!
         parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(ip), port: port)
-        parameters.allowLocalEndpointReuse = true
 
-        let listener = try NWListener(using: parameters, on: port)
+        let listener = try NWListener(using: parameters)
         listener.newConnectionHandler = { [weak self] connection in
             self?.handle(connection, registeredURL: registeredURL, onCallback: onCallback)
         }
         listener.stateUpdateHandler = { [weak self] state in
             switch state {
+            case .setup:
+                onStatus("Preparing the Mac callback listener on port \(requestedPort).")
+                SchwabOAuthSessionCoordinator.debug("action=loopback_setup port=\(requestedPort)")
+            case .waiting(let error):
+                onStatus("Mac callback listener is waiting on port \(requestedPort): \(error.localizedDescription)")
+                SchwabOAuthSessionCoordinator.debug("action=loopback_waiting port=\(requestedPort) error=\(error.localizedDescription)")
             case .ready:
+                self?.didBecomeReady = true
+                self?.readinessTimeout?.cancel()
+                self?.readinessTimeout = nil
+                onStatus("Mac callback listener is ready on https://127.0.0.1:\(requestedPort). Opening Schwab.")
                 SchwabOAuthSessionCoordinator.debug("action=loopback_ready port=\(requestedPort)")
                 onReady()
             case .failed(let error):
+                self?.readinessTimeout?.cancel()
+                self?.readinessTimeout = nil
                 SchwabOAuthSessionCoordinator.debug("action=loopback_failed port=\(requestedPort) error=\(error.localizedDescription)")
                 self?.complete(.failure(error), onCallback: onCallback)
             case .cancelled:
@@ -326,14 +353,26 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
                 break
             }
         }
-        listener.start(queue: queue)
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, !self.didComplete, !self.didBecomeReady else { return }
+            let error = SchwabLocalOAuthServerError.listenerTimedOut(requestedPort)
+            onStatus(error.localizedDescription)
+            SchwabOAuthSessionCoordinator.debug("action=loopback_timeout port=\(requestedPort)")
+            self.complete(.failure(error), onCallback: onCallback)
+        }
+        readinessTimeout = timeout
         self.listener = listener
+        listener.start(queue: queue)
+        queue.asyncAfter(deadline: .now() + 5, execute: timeout)
     }
 
     func stop() {
+        readinessTimeout?.cancel()
+        readinessTimeout = nil
         listener?.cancel()
         listener = nil
         didComplete = true
+        didBecomeReady = false
     }
 
     private func handle(
@@ -373,6 +412,8 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
     private func complete(_ result: Result<URL, Error>, onCallback: @escaping (Result<URL, Error>) -> Void) {
         guard !didComplete else { return }
         didComplete = true
+        readinessTimeout?.cancel()
+        readinessTimeout = nil
         listener?.cancel()
         listener = nil
         onCallback(result)

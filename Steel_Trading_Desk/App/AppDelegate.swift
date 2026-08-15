@@ -27,7 +27,8 @@ enum SchwabOAuthCallbackHandler {
 
         Task {
             do {
-                let token = try await SchwabService.shared.exchangeCodeForToken(code)
+                let redirectURI = registeredRedirectURI(from: url) ?? AppConfig.Schwab.oauthCallbackURL
+                let token = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
                 AppConfig.apiKey = token
                 await MainActor.run {
                     MarketDataRegistry.shared.use(.schwab)
@@ -73,6 +74,12 @@ enum SchwabOAuthCallbackHandler {
             return true
         }
 
+        if url.scheme == "https",
+           url.host == "oauth.mdrn.app",
+           url.path == "/schwab/callback" {
+            return true
+        }
+
         if matchesStoredCallback(url) {
             return true
         }
@@ -85,6 +92,22 @@ enum SchwabOAuthCallbackHandler {
         }
 
         return false
+    }
+
+    private static func registeredRedirectURI(from url: URL) -> String? {
+        guard url.scheme?.lowercased() == "https",
+              url.host != nil else {
+            return nil
+        }
+
+        var components = URLComponents()
+        components.scheme = url.scheme
+        components.host = url.host
+        components.port = url.port
+        if !url.path.isEmpty, url.path != "/" {
+            components.path = url.path
+        }
+        return components.url.map { AppConfig.Schwab.sanitizedCallbackURL($0.absoluteString) }
     }
 
     private static func matchesStoredCallback(_ url: URL) -> Bool {
