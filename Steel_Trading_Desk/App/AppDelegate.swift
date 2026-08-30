@@ -75,8 +75,8 @@ enum SchwabOAuthCallbackHandler {
         }
 
         if url.scheme == "https",
-           url.host == "oauth.mdrn.app",
-           url.path == "/schwab/callback" {
+           url.host == "mdrn.app",
+           url.path == "/apps/steeltradingdesk/schwab/oauth/callback" {
             return true
         }
 

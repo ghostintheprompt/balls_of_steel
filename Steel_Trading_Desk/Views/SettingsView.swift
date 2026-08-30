@@ -433,6 +433,17 @@ struct SettingsView: View {
                 }
 
                 AdaptiveControlRow {
+                    #if os(macOS)
+                    Button {
+                        setSchwabCallbackPreset(AppConfig.Schwab.portedLoopbackCallbackURL)
+                    } label: {
+                        Label("This Mac", systemImage: "desktopcomputer")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(DesignSystem.amber)
+                    #endif
+
                     Button {
                         setSchwabCallbackPreset(AppConfig.Schwab.appLinkCallbackURL)
                     } label: {
@@ -702,7 +713,11 @@ struct SettingsView: View {
     }
 
     private var schwabPortalCallbackCopy: String {
-        "Register https://oauth.mdrn.app/schwab/callback in the Schwab Developer Portal. If the portal shows multiple callbacks, Steel will pick this app-link."
+        #if os(macOS)
+        return "Register exactly https://127.0.0.1:8182 in the Schwab Developer Portal, then use This Mac. App Link is only for a deployed, associated callback domain."
+        #else
+        return "Register exactly https://mdrn.app/apps/steeltradingdesk/schwab/oauth/callback in the Schwab Developer Portal."
+        #endif
     }
 
     private var schwabAppKeyDiagnosticValue: String {
@@ -738,6 +753,9 @@ struct SettingsView: View {
         if callback == AppConfig.Schwab.appLinkCallbackURL {
             return "\(callback) / app-link\(suffix)"
         }
+        if AppConfig.Schwab.isLoopbackCallbackURL(callback) {
+            return "\(callback) / local Mac\(suffix)"
+        }
         return "\(callback) / custom\(suffix)"
     }
 
@@ -746,7 +764,11 @@ struct SettingsView: View {
         guard let url = URL(string: callback), url.scheme == "https", url.host != nil else {
             return DesignSystem.short
         }
+        #if os(macOS)
+        return callback == AppConfig.Schwab.portedLoopbackCallbackURL ? DesignSystem.long : DesignSystem.amber
+        #else
         return callback == AppConfig.Schwab.appLinkCallbackURL ? DesignSystem.long : DesignSystem.amber
+        #endif
     }
 
     private var schwabAuthURLDiagnosticValue: String {
@@ -819,7 +841,7 @@ struct SettingsView: View {
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
         schwabCallbackInput = ""
-        schwabCallbackURLInput = AppConfig.Schwab.loopbackCallbackURL
+        schwabCallbackURLInput = AppConfig.Schwab.defaultCallbackURL
         AppConfig.Schwab.oauthCallbackURL = schwabCallbackURLInput
         isEditingSchwabCredentials = false
         schwabCredentialMessage = "Cleared Schwab credentials from this phone."

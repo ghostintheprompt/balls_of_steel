@@ -25,6 +25,9 @@ struct MainApp: App {
             #if os(macOS)
             MainView()
                 .frame(minWidth: 1180, minHeight: 720)
+                .task {
+                    await SignalNotification.shared.prepareForLaunch()
+                }
                 .onOpenURL { url in
                     SchwabOAuthCallbackHandler.handle(url)
                 }

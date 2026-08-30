@@ -81,7 +81,7 @@ Use that exact value:
 If the Schwab portal shows both callbacks in one field, for example:
 
 ```text
-https://127.0.0.1:8182,https://oauth.mdrn.app/schwab/callback
+https://127.0.0.1:8182,https://mdrn.app/apps/steeltradingdesk/schwab/oauth/callback
 ```
 
 that is a portal registration list, not the OAuth `redirect_uri` value. Steel Settings can accept the pasted list, but macOS will pick `https://127.0.0.1:8182` for the auth URL. The phone path should pick the controlled HTTPS app-link callback when that flow is wired and tested.

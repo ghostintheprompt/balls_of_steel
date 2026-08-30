@@ -10,9 +10,9 @@
     <true/>
     <key>com.apple.developer.associated-domains</key>
     <array>
-        <string>applinks:oauth.mdrn.app</string>
+		<string>applinks:mdrn.app</string>
         <string>applinks:mdrn.app</string>
-        <string>webcredentials:oauth.mdrn.app</string>
+		<string>webcredentials:mdrn.app</string>
         <string>webcredentials:mdrn.app</string>
     </array>
     <key>com.apple.security.personal-information.keychain</key>

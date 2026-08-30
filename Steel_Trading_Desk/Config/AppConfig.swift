@@ -20,11 +20,19 @@ struct AppConfig {
         static let plainLoopbackCallbackURL = "https://127.0.0.1"
         static let portedLoopbackCallbackURL = "https://127.0.0.1:8182"
         static let loopbackCallbackURL = portedLoopbackCallbackURL
-        static let appLinkCallbackURL = "https://oauth.mdrn.app/schwab/callback"
+        static let appLinkCallbackURL = "https://mdrn.app/apps/steeltradingdesk/schwab/oauth/callback"
 
         // Internal app return URL. Do not register this with Schwab; the portal
         // rejects non-HTTPS callbacks.
         static let nativeReturnURL = "steeltradingdesk://oauth/callback"
+
+        static var defaultCallbackURL: String {
+            #if os(macOS)
+            return portedLoopbackCallbackURL
+            #else
+            return appLinkCallbackURL
+            #endif
+        }
 
         // The Streamer URL and customer/correlation credentials are returned
         // by Schwab's userPreference endpoint for the authenticated user.
@@ -231,16 +239,10 @@ struct AppConfig {
             let candidates = callbackURLCandidates(from: value)
             guard !candidates.isEmpty else { return nil }
 
-            if candidates.contains(appLinkCallbackURL) {
-                return appLinkCallbackURL
-            }
-            if let appLinkCallback = candidates.first(where: { !isLoopbackCallbackURL($0) }) {
-                return appLinkCallback
-            }
+            #if os(macOS)
             if candidates.contains(portedLoopbackCallbackURL) {
                 return portedLoopbackCallbackURL
             }
-            #if os(macOS)
             if let loopbackWithPort = candidates.first(where: { candidate in
                 let port = callbackPort(candidate)
                 return isLoopbackCallbackURL(candidate) && port != nil && port != 443
@@ -248,6 +250,13 @@ struct AppConfig {
                 return loopbackWithPort
             }
             #endif
+
+            if candidates.contains(appLinkCallbackURL) {
+                return appLinkCallbackURL
+            }
+            if let appLinkCallback = candidates.first(where: { !isLoopbackCallbackURL($0) }) {
+                return appLinkCallback
+            }
 
             return candidates.first
         }
@@ -345,11 +354,11 @@ struct AppConfig {
                 let stored = UserDefaults.standard.string(forKey: oauthCallbackURLKey)?
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 let cleaned = sanitizedCallbackURL(stored)
-                return cleaned.isEmpty || isLoopbackCallbackURL(cleaned) ? appLinkCallbackURL : cleaned
+                return cleaned.isEmpty ? defaultCallbackURL : cleaned
             }
             set {
                 let trimmed = sanitizedCallbackURL(newValue)
-                if trimmed.isEmpty || isLoopbackCallbackURL(trimmed) {
+                if trimmed.isEmpty {
                     UserDefaults.standard.removeObject(forKey: oauthCallbackURLKey)
                 } else {
                     UserDefaults.standard.set(trimmed, forKey: oauthCallbackURLKey)
