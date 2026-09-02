@@ -41,12 +41,19 @@ struct SettingsView: View {
             #endif
         }
         .onReceive(NotificationCenter.default.publisher(for: .schwabConnectionComplete)) { _ in
+            AppConfig.Schwab.lastOAuthError = ""
             schwabCredentialMessage = "Schwab OAuth connected. Live tape is ready."
             isEditingSchwabCredentials = false
         }
         .onReceive(NotificationCenter.default.publisher(for: .schwabConnectionFailed)) { notification in
             let message = notification.userInfo?["message"] as? String ?? "Schwab OAuth failed."
+            AppConfig.Schwab.lastOAuthError = message
             schwabCredentialMessage = message
+        }
+        .onAppear {
+            if schwabCredentialMessage == nil, !AppConfig.Schwab.lastOAuthError.isEmpty {
+                schwabCredentialMessage = AppConfig.Schwab.lastOAuthError
+            }
         }
         .confirmationDialog(
             "Clear Schwab credentials?",
@@ -837,6 +844,7 @@ struct SettingsView: View {
         AppConfig.Schwab.developerCredentialsStored = false
         AppConfig.Schwab.oauthTokensStored = false
         AppConfig.Schwab.accessTokenExpiresAt = nil
+        AppConfig.Schwab.lastOAuthError = ""
         liveTape.isEnabled = false
         schwabAppKeyInput = ""
         schwabAppSecretInput = ""
@@ -861,6 +869,7 @@ struct SettingsView: View {
         }
 
         do {
+            AppConfig.Schwab.lastOAuthError = ""
             let normalizedCredentials = AppConfig.Schwab.normalizeStoredDeveloperCredentials()
             let callbackURL = AppConfig.Schwab.oauthCallbackURL
             let url = try SchwabService.shared.authorizationURL(redirectURI: callbackURL)
@@ -964,7 +973,9 @@ struct SettingsView: View {
             NotificationCenter.default.post(name: .schwabCredentialsChanged, object: nil)
             NotificationCenter.default.post(name: .schwabConnectionComplete, object: nil)
         } catch {
-            schwabCredentialMessage = schwabOAuthFailureMessage(error, stage: .token)
+            let message = SchwabService.tokenExchangeFailureMessage(error)
+            AppConfig.Schwab.lastOAuthError = message
+            schwabCredentialMessage = message
         }
     }
 

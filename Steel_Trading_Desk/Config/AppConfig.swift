@@ -50,6 +50,7 @@ struct AppConfig {
         static let oauthTokensStoredKey = "schwabOAuthTokensStored"
         static let accessTokenExpiresAtKey = "schwabAccessTokenExpiresAt"
         static let oauthCallbackURLKey = "schwabOAuthCallbackURL"
+        static let lastOAuthErrorKey = "schwabLastOAuthError"
 
         static var appKey: String {
             get { sanitizedAppKey(KeychainService.load(key: appKeyKeychainKey) ?? "") }
@@ -362,6 +363,20 @@ struct AppConfig {
                     UserDefaults.standard.removeObject(forKey: oauthCallbackURLKey)
                 } else {
                     UserDefaults.standard.set(trimmed, forKey: oauthCallbackURLKey)
+                }
+            }
+        }
+
+        // Keep only a user-facing diagnostic. Authorization codes, tokens, and
+        // developer credentials must never be written to UserDefaults.
+        static var lastOAuthError: String {
+            get { UserDefaults.standard.string(forKey: lastOAuthErrorKey) ?? "" }
+            set {
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    UserDefaults.standard.removeObject(forKey: lastOAuthErrorKey)
+                } else {
+                    UserDefaults.standard.set(String(trimmed.prefix(1_000)), forKey: lastOAuthErrorKey)
                 }
             }
         }

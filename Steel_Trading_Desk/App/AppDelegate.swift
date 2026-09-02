@@ -26,10 +26,12 @@ enum SchwabOAuthCallbackHandler {
         }
 
         Task {
+            AppConfig.Schwab.lastOAuthError = ""
             do {
                 let redirectURI = registeredRedirectURI(from: url) ?? AppConfig.Schwab.oauthCallbackURL
                 let token = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
                 AppConfig.apiKey = token
+                AppConfig.Schwab.lastOAuthError = ""
                 await MainActor.run {
                     MarketDataRegistry.shared.use(.schwab)
                     LiveTapeService.shared.isEnabled = true
@@ -43,15 +45,17 @@ enum SchwabOAuthCallbackHandler {
                     )
                 }
             } catch {
+                let message = SchwabService.tokenExchangeFailureMessage(error)
+                AppConfig.Schwab.lastOAuthError = message
                 await MainActor.run {
                     NotificationCenter.default.post(
                         name: .schwabConnectionFailed,
                         object: nil,
-                        userInfo: ["message": error.localizedDescription]
+                        userInfo: ["message": message]
                     )
                 }
                 #if DEBUG
-                print("Schwab auth error: \(error)")
+                print("Schwab auth error: \(message)")
                 #endif
             }
         }

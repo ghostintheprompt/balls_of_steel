@@ -385,7 +385,14 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
             guard let self else { return }
 
             if let error {
-                self.complete(.failure(error), onCallback: onCallback)
+                // Chrome opens an initial TLS connection to inspect the
+                // self-signed loopback certificate. Rejecting that certificate
+                // is a connection-level failure, not an OAuth failure. Keep the
+                // listener alive so the user's explicit retry can deliver the
+                // real callback request.
+                SchwabOAuthSessionCoordinator.debug(
+                    "action=loopback_connection_retry error=\(error.localizedDescription)"
+                )
                 connection.cancel()
                 return
             }
@@ -394,7 +401,7 @@ MIIJCQIBAzCCCM8GCSqGSIb3DQEHAaCCCMAEggi8MIIIuDCCA28GCSqGSIb3DQEHBqCCA2AwggNcAgEA
                   let requestText = String(data: data, encoding: .utf8),
                   let callbackURL = Self.callbackURL(fromHTTPRequest: requestText, registeredURL: registeredURL) else {
                 self.sendResponse(.error, on: connection)
-                self.complete(.failure(SchwabLocalOAuthServerError.invalidHTTPRequest), onCallback: onCallback)
+                SchwabOAuthSessionCoordinator.debug("action=loopback_ignored_invalid_request")
                 return
             }
 

@@ -2490,6 +2490,7 @@ private struct ChartCenterView: View {
 
 private struct SchwabChartLockedState: View {
     @ObservedObject private var liveTape = LiveTapeService.shared
+    @AppStorage(AppConfig.Schwab.lastOAuthErrorKey) private var lastOAuthError = ""
 
     var body: some View {
         VStack(spacing: 10) {
@@ -2521,6 +2522,9 @@ private struct SchwabChartLockedState: View {
     private var statusText: String {
         if let error = liveTape.lastError, !error.isEmpty {
             return error
+        }
+        if !lastOAuthError.isEmpty {
+            return lastOAuthError
         }
         if AppConfig.Schwab.hasOAuthTokens {
             return "OAuth is connected. Waiting for the first verified Schwab candle batch."

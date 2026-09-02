@@ -211,6 +211,27 @@ class SchwabService: ObservableObject {
         }
     }
 
+    static func tokenExchangeFailureMessage(
+        _ error: Error,
+        redirectURI: String = AppConfig.Schwab.oauthCallbackURL
+    ) -> String {
+        guard case let SchwabError.httpStatus(status, body) = error else {
+            return error.localizedDescription
+        }
+
+        let normalizedBody = body.lowercased()
+        if normalizedBody.contains("invalid_client") || normalizedBody.contains("unauthorized") {
+            return "Schwab rejected the App Key or App Secret (HTTP \(status)). Replace both with the exact values from the Schwab Developer Portal, save them, then start a fresh sign-in."
+        }
+        if normalizedBody.contains("invalid_grant") {
+            return "Schwab rejected the one-time authorization code (HTTP \(status)). Confirm \(redirectURI) is registered exactly, then start a fresh sign-in; callback codes cannot be reused."
+        }
+        if status == 401 {
+            return "Schwab rejected the token request (HTTP 401). Replace the saved App Key and App Secret with the exact portal values, confirm the app is Ready, then start a fresh sign-in."
+        }
+        return error.localizedDescription
+    }
+
     // MARK: - Live Schwab REST
 
     private struct TokenResponse: Decodable {
