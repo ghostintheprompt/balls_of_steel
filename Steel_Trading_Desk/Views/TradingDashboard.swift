@@ -3442,9 +3442,18 @@ private struct PhoneCandleChart: View {
         .chartXAxis {
             if showAxisLabels {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                    AxisValueLabel(format: .dateTime.hour().minute(), centered: true)
-                        .font(DesignSystem.Typography.labelFont)
-                        .foregroundStyle(DesignSystem.muted)
+                    // Every other timestamp in this app forces ET
+                    // explicitly -- this was the one spot that didn't,
+                    // rendering candle times in the device's local
+                    // timezone instead of market time.
+                    AxisValueLabel(
+                        format: Date.FormatStyle(timeZone: TimeZone(identifier: "America/New_York")!)
+                            .hour()
+                            .minute(),
+                        centered: true
+                    )
+                    .font(DesignSystem.Typography.labelFont)
+                    .foregroundStyle(DesignSystem.muted)
                     AxisGridLine().foregroundStyle(DesignSystem.hairline)
                 }
             } else {
