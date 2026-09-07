@@ -1,6 +1,85 @@
 # Schwab Trader API — Readiness Assessment
 
-Last updated: 2026-05-25
+Last updated: 2026-09-07
+
+## 2026-09-07 — First live Schwab connection (historic)
+
+After being stuck since the ~2025 prototype and every session since this doc's
+May 2026 audit, Steel Trading Desk successfully signed in to Schwab, exchanged
+a real OAuth token, and pulled a real, parsed VXX quote over the live Trader
+API today. Recorded here because it took a full year and the actual causes
+were never what they looked like at first glance. Three separate, unrelated
+bugs were stacked on top of each other:
+
+1. **OAuth was routing through a website instead of staying on-device.**
+   `AppConfig.Schwab.oauthCallbackURL` could resolve to the `mdrn.app`
+   universal-link callback on macOS depending on whatever was cached from a
+   prior Settings edit or a pasted portal callback list — even though the Mac
+   build has its own local HTTPS loopback listener (`127.0.0.1:8182`) built
+   specifically so sign-in never has to leave the machine. Fixed by hard-
+   locking the macOS getter/setter to always return the loopback URL,
+   unconditionally, regardless of anything stored or pasted. See
+   `SchwabOAuthSessionCoordinator.swift` and `AppConfig.swift`'s
+   `oauthCallbackURL`.
+
+2. **Errors were being silently paraphrased instead of shown.**
+   `SchwabService.tokenExchangeFailureMessage` pattern-matched Schwab's raw
+   HTTP response body into one of a few canned category guesses and then
+   **discarded the actual response text** before it ever reached a screen.
+   Every failed sign-in across every session (this one included, at first)
+   was being debugged from a guess, never Schwab's literal answer. Fixed to
+   always append `Schwab said: <literal response body>` to every error
+   message, for both the OAuth token exchange and the market-data quote
+   parser. This is what actually broke the loop — once the real text was
+   visible, both root causes below were found within minutes instead of
+   months.
+
+3. **`$VIX.X` was never a valid Schwab symbol.** This doc's own May 2026
+   entry flagged the VIX symbol as an unverified guess ("Confirm at
+   implementation") and it was never actually confirmed. Once real HTTP
+   traffic was visible, Schwab's quote endpoint responded with
+   `{"invalidSymbols":["$VIX.X"]}` — a direct, unambiguous answer. Schwab's
+   Trader API wants `$VIX` (no `.X` suffix; that suffix was a legacy
+   thinkorswim-desktop convention, not this REST API's). Fixed in
+   `SchwabService.schwabSymbol(for:)`.
+
+**A fourth, non-code lesson worth keeping:** partway through this session,
+pasted Schwab App Key/Secret values came out corrupted with Cyrillic
+lookalike characters (В/Т/С/А/Р/Х/Е substituted for visually identical Latin
+letters) because they'd been copied via OCR off a screenshot of the portal
+page rather than as real selectable text. The symptom looked exactly like a
+bad/stale credential and briefly re-triggered the whole "invalid_client"
+misdiagnosis. **Always copy Schwab App Key/Secret using the portal's own
+copy-to-clipboard icon, never via screenshot or OCR.**
+
+**Workflow added as part of this fix:** `.env` (gitignored) + `.env.example`
++ `scripts/run_local.sh`. Xcode's Run button does not read `.env`, and
+`open Steel_Trading_Desk.app` does not forward shell environment variables to
+the launched process (a macOS LaunchServices quirk) — `run_local.sh` builds
+and then execs the binary directly from a shell that has sourced `.env`, so
+`EnvSeeder` actually sees `SCHWAB_APP_KEY`/`SCHWAB_APP_SECRET` for that
+session without needing to hand-edit Settings or touch the permanent Keychain
+value.
+
+**Also cleaned up as real dead code while auditing the surrounding paths**
+(not part of the fix, but found in the process): `AppConfig.apiKey` (written
+in 3 places, read in zero — a phantom Keychain write on every token event),
+the `AppConfig.baseURL`/`.streamURL`/`.clientId` legacy aliases (waiting on a
+rewrite that had already happened), and `.env.example`'s unused
+`FINNHUB_API_KEY`/`POLYGON_API_KEY` lines (zero references anywhere in the
+app). Also collapsed the Settings → Schwab card's always-visible manual
+fallback controls (Copy OAuth URL / paste-callback / Connect — only needed
+when automatic capture fails) behind a closed-by-default disclosure, and
+removed a fully redundant "DATA" card whose four rows duplicated facts
+already shown in the header status pill and the SCHWAB card itself.
+
+**State as of today:** OAuth connects, tokens persist, live VXX/VIX quotes
+parse correctly, and the poll loop writes real market data every ~30 seconds
+during market hours. The five-condition alert gate (volume/window/ratio/
+VWAP/pattern) has not yet been verified end-to-end against real live data —
+that's the next real milestone, not this one.
+
+---
 
 ## Why this doc exists
 

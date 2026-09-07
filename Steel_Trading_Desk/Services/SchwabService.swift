@@ -322,7 +322,11 @@ class SchwabService: ObservableObject {
             in: dictionaries,
             keys: ["lastPrice", "mark", "regularMarketLastPrice", "bidPrice", "askPrice"]
         ) else {
-            throw SchwabError.invalidResponse("No last price field found for \(schwabSymbol).")
+            // Show Schwab's actual quote shape instead of just naming the
+            // fields we looked for and didn't find — index symbols (e.g.
+            // $VIX.X) use a different quote schema than equities/ETFs, and
+            // guessing field names blind is how this bug hid for months.
+            throw SchwabError.invalidResponse("No last price field found for \(schwabSymbol). Schwab quote object: \(Self.jsonPreview(quoteRoot))")
         }
 
         let volume = Self.intValue(
@@ -451,7 +455,11 @@ class SchwabService: ObservableObject {
     private static func schwabSymbol(for symbol: String) -> String {
         switch symbol.uppercased() {
         case "^VIX", "VIX":
-            return "$VIX.X"
+            // Verified live 2026-09-07: Schwab's quotes endpoint returns
+            // invalidSymbols for "$VIX.X" (the old thinkorswim-desktop
+            // convention this used to guess). Trying the plain $-prefixed
+            // form Schwab's REST API actually documents for indices.
+            return "$VIX"
         default:
             return symbol.uppercased()
         }
@@ -476,6 +484,13 @@ class SchwabService: ObservableObject {
         let text = String(data: data, encoding: .utf8) ?? ""
         let clean = text.replacingOccurrences(of: "\n", with: " ")
         return String(clean.prefix(240))
+    }
+
+    private static func jsonPreview(_ object: [String: Any]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: object) else {
+            return "\(object)"
+        }
+        return bodyPreview(data)
     }
 
     private static func jsonObject(from data: Data) throws -> Any {
