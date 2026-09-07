@@ -73,12 +73,14 @@ written down:
 
 ## Punch list
 
-- [ ] **Second Read / Prompt Desk redesign** — raised 3x by Michael. Only
-  way to get a copyable "current tape" prompt is during ~4 narrow scheduled
-  windows/day (`PromptLibrary.getScheduledPrompt()`); outside those, OPEN
-  just shows a schedule list with nothing to copy, even though live data is
-  available the whole time. Needs an always-available "current tape, right
-  now" prompt option. Not started.
+- [x] **Second Read / Prompt Desk redesign** — raised 3x by Michael. Fixed
+  in two passes: (1) visual rebuild to match SystemsPanel's flat
+  hairline-bordered look instead of the old generic-iOS styling, plus a
+  NavigationView bug that made the sheet render as a tiny cramped box on
+  macOS; (2) the real gap underneath the styling — a "CURRENT TAPE" panel
+  now always shows a real, copyable prompt built from live data, not gated
+  to the ~4 narrow scheduled windows/day like everything else in the
+  schedule list.
 - [ ] Verify chart interactivity actually works on screen: real timeframe
   switching (1m/5m/15m/1H), VWAP/SMA20/SMA50/VOL toggles, 1D correctly shown
   disabled (no daily-candle data source exists — would need

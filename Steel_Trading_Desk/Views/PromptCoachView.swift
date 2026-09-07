@@ -31,6 +31,18 @@ struct PromptCoachView: View {
                         .foregroundColor(DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    // The schedule below only has something to copy during ~4
+                    // narrow windows a day -- outside those it was pure
+                    // countdown noise ("IN 171M", "PAST", nothing readable).
+                    // This is always live, built from the same real tape data
+                    // the dashboard shows, whatever time it is.
+                    promptPanel(
+                        title: "CURRENT TAPE",
+                        accent: DesignSystem.amber,
+                        body: viewModel.currentTapePrompt,
+                        onCopy: { copyToPasteboard(viewModel.currentTapePrompt) }
+                    )
+
                     if let postTradePrompt = viewModel.postTradeAnalysisPrompt {
                         promptPanel(
                             title: "POST-TRADE REVIEW",
@@ -390,6 +402,34 @@ class PromptCoachViewModel: ObservableObject {
 
     func isActive(_ prompt: TradingPrompt) -> Bool {
         activePrompt?.id == prompt.id
+    }
+
+    /// Always available, whatever the clock says -- built from the same
+    /// live tape data the dashboard shows, not tied to a scheduled window.
+    var currentTapePrompt: String {
+        guard let entry = manualDataEntry else {
+            return "No tape yet. Enter a manual read or wait for a live tick, then check back here."
+        }
+
+        var lines: [String] = [
+            "Checking the desk right now (\(dataFreshness(entry.timestamp))).",
+            "",
+            "LIVE READ:",
+            "- \(entry.instrument.displayName) price: $\(String(format: "%.2f", entry.price))",
+            "- VIX: \(String(format: "%.2f", entry.vixLevel))"
+        ]
+        if entry.instrument == .vxx {
+            lines.append("- VXX/VIX ratio: \(String(format: "%.3f", entry.ratio)) (\(entry.ratioTier.uppercased()))")
+        }
+        lines.append(contentsOf: [
+            "- Volume: \(volumeClassification(entry.volumePercent))",
+            "- VWAP position: \(entry.vwapPosition.shortName)",
+            "- Window: \(entry.timeWindow.displayName)",
+            "- Key level: \(entry.keyLevelConfirmed ? "confirmed" : "not confirmed")",
+            "",
+            "Is this actually a clean setup right now, or am I forcing it? Rate volume, timing, ratio, and VWAP/level against the rules -- don't just tell me what I want to hear."
+        ])
+        return lines.joined(separator: "\n")
     }
 
     func generatePromptWithLiveData(_ prompt: TradingPrompt) -> String {
