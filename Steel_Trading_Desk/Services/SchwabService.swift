@@ -184,6 +184,109 @@ class SchwabService: ObservableObject {
         return Double(today.volume) / averageVolume
     }
 
+    /// Real Schwab options chain, scoped to roughly the DTE window
+    /// OptionSelector actually wants (its own dteMin/dteMax bounds), not the
+    /// full chain. UNVERIFIED against live Schwab traffic as of writing --
+    /// the callExpDateMap/putExpDateMap shape is the well-documented
+    /// TD Ameritrade-heritage chains format Schwab inherited, but per this
+    /// project's own hard-earned rule (never trust a Schwab shape without
+    /// seeing the real response), the parser below fails loudly with the
+    /// raw JSON attached rather than silently guessing wrong on a real
+    /// trade suggestion -- exactly the $VIX.X mistake, but for something
+    /// that would put a specific contract in front of the user.
+    func fetchOptionsChain(_ symbol: String) async throws -> OptionsChain {
+        let schwabSymbol = Self.schwabSymbol(for: symbol)
+        let calendar = Calendar(identifier: .gregorian)
+        let today = Date()
+        let fromDate = calendar.date(byAdding: .day, value: max(OptionSelector.dteMin - 1, 0), to: today) ?? today
+        let toDate = calendar.date(byAdding: .day, value: OptionSelector.dteMax + 2, to: today) ?? today
+        let formatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            f.timeZone = TimeZone(identifier: "America/New_York")
+            return f
+        }()
+
+        let data = try await authorizedMarketData(
+            path: "chains",
+            queryItems: [
+                URLQueryItem(name: "symbol", value: schwabSymbol),
+                URLQueryItem(name: "contractType", value: "ALL"),
+                URLQueryItem(name: "strikeCount", value: "20"),
+                URLQueryItem(name: "range", value: "ALL"),
+                URLQueryItem(name: "fromDate", value: formatter.string(from: fromDate)),
+                URLQueryItem(name: "toDate", value: formatter.string(from: toDate))
+            ]
+        )
+
+        let object = try Self.jsonObject(from: data)
+        guard let root = object as? [String: Any] else {
+            throw SchwabError.invalidResponse("Chain response was not a JSON object.")
+        }
+        guard let callMap = root["callExpDateMap"] as? [String: Any],
+              let putMap = root["putExpDateMap"] as? [String: Any] else {
+            throw SchwabError.invalidResponse("Chain response did not have the expected shape. Schwab response: \(Self.jsonPreview(root))")
+        }
+
+        let underlyingPrice = Self.doubleValue(in: [root], keys: ["underlyingPrice", "last", "mark"]) ?? 0
+        let calls = Self.parseExpDateMap(callMap, symbol: schwabSymbol, type: .call)
+        let puts = Self.parseExpDateMap(putMap, symbol: schwabSymbol, type: .put)
+
+        guard !calls.isEmpty || !puts.isEmpty else {
+            throw SchwabError.invalidResponse("Chain parsed but contained zero contracts. Schwab response: \(Self.jsonPreview(root))")
+        }
+
+        return OptionsChain(symbol: symbol, calls: calls, puts: puts, underlyingPrice: underlyingPrice)
+    }
+
+    private static func parseExpDateMap(_ map: [String: Any], symbol: String, type: OptionType) -> [OptionContract] {
+        var contracts: [OptionContract] = []
+        for (expKey, strikesValue) in map {
+            // Schwab keys this "yyyy-MM-dd:DTE" -- take the date portion.
+            let dateString = expKey.split(separator: ":").first.map(String.init) ?? expKey
+            let expFormatter = DateFormatter()
+            expFormatter.dateFormat = "yyyy-MM-dd"
+            expFormatter.timeZone = TimeZone(identifier: "America/New_York")
+            guard let expiration = expFormatter.date(from: dateString),
+                  let strikesMap = strikesValue as? [String: Any] else { continue }
+
+            for (_, contractsValue) in strikesMap {
+                guard let contractArray = contractsValue as? [[String: Any]] else { continue }
+                for raw in contractArray {
+                    guard let strike = doubleValue(raw["strikePrice"]) else { continue }
+                    let bid = doubleValue(raw["bid"]) ?? 0
+                    let ask = doubleValue(raw["ask"]) ?? 0
+                    let last = doubleValue(raw["last"]) ?? 0
+                    let volume = intValue(raw["totalVolume"]) ?? 0
+                    let openInterest = intValue(raw["openInterest"]) ?? 0
+                    let delta = doubleValue(raw["delta"]) ?? 0
+                    let gamma = doubleValue(raw["gamma"]) ?? 0
+                    let theta = doubleValue(raw["theta"]) ?? 0
+                    let vega = doubleValue(raw["vega"]) ?? 0
+                    let iv = doubleValue(raw["volatility"]) ?? 0
+
+                    contracts.append(OptionContract(
+                        symbol: symbol,
+                        strike: strike,
+                        expiration: expiration,
+                        type: type,
+                        bid: bid,
+                        ask: ask,
+                        last: last,
+                        volume: volume,
+                        openInterest: openInterest,
+                        delta: delta,
+                        gamma: gamma,
+                        theta: theta,
+                        vega: vega,
+                        impliedVolatility: iv
+                    ))
+                }
+            }
+        }
+        return contracts
+    }
+
     // MARK: - Error Handling
     enum SchwabError: LocalizedError {
         case marketDataOnly
