@@ -6,7 +6,13 @@ import UIKit
 #endif
 
 // MARK: - Prompt Coach View
-// Delivers the right analysis prompt for the active trading window.
+//
+// Delivers the right analysis prompt for the active trading window. Visual
+// language matches SystemsPanel (Settings) / TradeJournalView: flat,
+// hairline-bordered panels, monospace label/value rows, amber accents --
+// this file used to be built against an older, generic-iOS visual language
+// (system fonts, colored circle icon badges, rounded pill buttons) that
+// never matched the rest of the app.
 
 struct PromptCoachView: View {
     @Environment(\.dismiss) private var dismiss
@@ -14,468 +20,305 @@ struct PromptCoachView: View {
     @StateObject private var notifications = SignalNotification.shared
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                TradingBackdrop()
+        VStack(spacing: 0) {
+            header
+            Rectangle().fill(DesignSystem.hairline).frame(height: 1)
 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        promptCoachHeader
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Copy the right question for the current window. Use your tape values. No magic, no autopilot.")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        if let postTradePrompt = viewModel.postTradeAnalysisPrompt {
-                            postTradeAnalysisCard(postTradePrompt)
-                        }
-
-                        if let activePrompt = viewModel.activePrompt {
-                            activePromptCard(activePrompt)
-                        }
-
-                        todayScheduleSection
-
-                        if !viewModel.conditionalPrompts.isEmpty {
-                            conditionalAlertsSection
-                        }
-
-                        promptHistorySection
+                    if let postTradePrompt = viewModel.postTradeAnalysisPrompt {
+                        promptPanel(
+                            title: "POST-TRADE REVIEW",
+                            accent: DesignSystem.text2,
+                            body: postTradePrompt,
+                            onCopy: { copyToPasteboard(postTradePrompt) }
+                        )
                     }
-                    .padding()
-                }
 
-            }
-            .navigationTitle("Prompt Desk")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: { viewModel.refreshPrompts() }) {
-                            Label("Refresh", systemImage: "arrow.clockwise")
-                        }
-                        Button {
-                            Task {
-                                if notifications.isPermissionGranted {
-                                    notifications.sendTestNotification()
-                                } else {
-                                    await notifications.handlePermissionAction()
-                                }
-                            }
-                        } label: {
-                            Label(notifications.isPermissionGranted ? "Test Notification" : notifications.permissionActionTitle, systemImage: "bell")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
+                    if let activePrompt = viewModel.activePrompt {
+                        promptPanel(
+                            title: "WINDOW PROMPT · \(activePrompt.type.displayName.uppercased())",
+                            accent: DesignSystem.long,
+                            body: viewModel.generatePromptWithLiveData(activePrompt),
+                            onCopy: { viewModel.copyPrompt(activePrompt) },
+                            onMarkUsed: { viewModel.markAsUsed(activePrompt) }
+                        )
                     }
+
+                    schedulePanel
+
+                    if !viewModel.conditionalPrompts.isEmpty {
+                        conditionalPanel
+                    }
+
+                    historyPanel
                 }
+                .padding(16)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.bg.ignoresSafeArea())
         .task {
             await viewModel.startMonitoring()
         }
     }
 
-    // MARK: - Header
-    private var promptCoachHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "doc.on.clipboard")
-                    .font(.title)
-                    .foregroundColor(DesignSystem.primaryColor)
-                Text("Prompt Desk")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.primaryText)
-            }
+    // MARK: Header
 
-            Text("Copy the right question for the current window. Use your tape values. No magic, no autopilot.")
-                .font(.subheadline)
-                .foregroundColor(DesignSystem.mutedText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 16) {
-                FeatureBadge(icon: "clock.fill", text: "Window", color: DesignSystem.primaryColor)
-                FeatureBadge(icon: "chart.line.uptrend.xyaxis", text: "Tape", color: DesignSystem.bullishColor)
-                FeatureBadge(icon: "doc.on.clipboard", text: "Copy", color: DesignSystem.secondaryColor)
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.panelTop)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(DesignSystem.panelStroke, lineWidth: 1)
-                )
-        )
-    }
-
-    // MARK: - Post-Trade Analysis Card
-    private func postTradeAnalysisCard(_ prompt: String) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "chart.bar.doc.horizontal.fill")
-                    .font(.title2)
-                    .foregroundColor(DesignSystem.secondaryColor)
-                    .padding(12)
-                    .background(Circle().fill(DesignSystem.secondaryColor.opacity(0.12)))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("POST-TRADE REVIEW")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.secondaryColor)
-                    Text("Last Trade Analysis")
-                        .font(.headline)
-                }
-
-                Spacer()
-
-                Button(action: {
-                    #if os(macOS)
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(prompt, forType: .string)
-                    #else
-                    UIPasteboard.general.string = prompt
-                    #endif
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "doc.on.clipboard")
-                            .font(.title3)
-                        Text("Copy")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(DesignSystem.secondaryColor)
-                    .cornerRadius(2)
-                }
-            }
-
-            Divider()
-
-            ScrollView {
-                Text(prompt)
-                    .font(.system(.caption, design: .monospaced))
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(DesignSystem.faint.opacity(0.40))
-                    .cornerRadius(2)
-            }
-            .frame(maxHeight: 160)
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.panelTop)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(DesignSystem.secondaryColor.opacity(0.35), lineWidth: 1)
-                )
-        )
-    }
-
-    // MARK: - Active Prompt Card
-    private func activePromptCard(_ prompt: TradingPrompt) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
-            HStack {
-                Image(systemName: prompt.type.icon)
-                    .font(.title2)
-                    .foregroundColor(DesignSystem.long)
-                    .padding(12)
-                    .background(Circle().fill(DesignSystem.long.opacity(0.10)))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("WINDOW PROMPT")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.long)
-                    Text(prompt.type.displayName)
-                        .font(.headline)
-                }
-
-                Spacer()
-
-                // Copy button
-                Button(action: { viewModel.copyPrompt(prompt) }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "doc.on.clipboard")
-                            .font(.title3)
-                        Text("Copy")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(DesignSystem.amber)
-                    .cornerRadius(2)
-                }
-            }
-
-            Divider()
-
-            // Preview
-            Text("Prompt Preview (with live data):")
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            ScrollView {
-                Text(viewModel.generatePromptWithLiveData(prompt))
-                    .font(.system(.caption, design: .monospaced))
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(DesignSystem.faint.opacity(0.40))
-                    .cornerRadius(2)
-            }
-            .frame(maxHeight: 200)
-
-            // Action buttons
-            HStack(spacing: 12) {
-                Button(action: { viewModel.copyPrompt(prompt) }) {
-                    Label("Copy to Clipboard", systemImage: "doc.on.clipboard")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-
-                Button(action: { viewModel.markAsUsed(prompt) }) {
-                    Label("Mark Used", systemImage: "checkmark")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.long.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(DesignSystem.long, lineWidth: 1)
-                )
-        )
-    }
-
-    // MARK: - Today's Schedule
-    private var todayScheduleSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Today's Prompt Schedule")
-                .font(.headline)
-
-            ForEach(viewModel.todayPrompts, id: \.id) { prompt in
-                PromptScheduleRow(
-                    prompt: prompt,
-                    isActive: viewModel.isActive(prompt),
-                    onCopy: { viewModel.copyPrompt(prompt) }
-                )
-            }
-        }
-    }
-
-    // MARK: - Conditional Alerts
-    private var conditionalAlertsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(DesignSystem.short)
-                Text("Conditional Alerts")
-                    .font(.headline)
-            }
-
-            ForEach(viewModel.conditionalPrompts, id: \.id) { prompt in
-                ConditionalAlertRow(
-                    prompt: prompt,
-                    onCopy: { viewModel.copyPrompt(prompt) }
-                )
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.short.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(DesignSystem.short.opacity(0.30), lineWidth: 1)
-                )
-        )
-    }
-
-    // MARK: - History
-    private var promptHistorySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Prompts")
-                .font(.headline)
-
-            ForEach(viewModel.promptHistory.prefix(5), id: \.id) { record in
-                PromptHistoryRow(record: record)
-            }
-        }
-    }
-}
-
-// MARK: - Supporting Views
-
-struct FeatureBadge: View {
-    let icon: String
-    let text: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption2)
-            Text(text)
-                .font(.caption2)
-        }
-        .foregroundColor(color)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(color.opacity(0.1))
-        .cornerRadius(2)
-    }
-}
-
-struct PromptScheduleRow: View {
-    let prompt: TradingPrompt
-    let isActive: Bool
-    let onCopy: () -> Void
-
-    var body: some View {
-        HStack {
-            Image(systemName: prompt.type.icon)
-                .foregroundColor(isActive ? DesignSystem.long : DesignSystem.muted)
-                .frame(width: 30)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(prompt.type.displayName)
-                    .font(.subheadline)
-                    .fontWeight(isActive ? .semibold : .regular)
-
-                Text(scheduleTime)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+    private var header: some View {
+        HStack(spacing: 10) {
+            Text("PROMPT DESK")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.6)
+                .foregroundColor(DesignSystem.amber)
 
             Spacer()
 
-            if isActive {
-                Button(action: onCopy) {
-                    Text("Copy")
-                        .font(.caption)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(DesignSystem.amber)
-                        .foregroundColor(.white)
-                        .cornerRadius(2)
+            headerIconButton("arrow.clockwise", help: "Refresh") {
+                viewModel.refreshPrompts()
+            }
+            headerIconButton("bell", help: notifications.isPermissionGranted ? "Test Notification" : notifications.permissionActionTitle) {
+                Task {
+                    if notifications.isPermissionGranted {
+                        notifications.sendTestNotification()
+                    } else {
+                        await notifications.handlePermissionAction()
+                    }
                 }
+            }
+            #if os(macOS)
+            headerIconButton("xmark", help: "Close") {
+                dismiss()
+            }
+            .keyboardShortcut(.cancelAction)
+            #endif
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(DesignSystem.bg)
+    }
+
+    private func headerIconButton(_ systemImage: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(DesignSystem.primaryText)
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(DesignSystem.bg1)
+        .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.hairline, lineWidth: 1))
+        .help(help)
+    }
+
+    // MARK: Prompt panel (post-trade review / active window prompt)
+
+    private func promptPanel(
+        title: String,
+        accent: Color,
+        body: String,
+        onCopy: @escaping () -> Void,
+        onMarkUsed: (() -> Void)? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(title)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.4)
+                    .foregroundColor(accent)
+                Spacer()
+                Button(action: onCopy) {
+                    Label("Copy", systemImage: "doc.on.clipboard")
+                        .font(DesignSystem.Typography.captionFont)
+                }
+                .buttonStyle(.bordered)
+                .tint(DesignSystem.amber)
+                if let onMarkUsed {
+                    Button(action: onMarkUsed) {
+                        Label("Used", systemImage: "checkmark")
+                            .font(DesignSystem.Typography.captionFont)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(DesignSystem.muted)
+                }
+            }
+
+            ScrollView {
+                Text(body)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+            }
+            .frame(maxHeight: 160)
+            .background(DesignSystem.bg1)
+            .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.hairline, lineWidth: 1))
+        }
+        .padding(14)
+        .background(DesignSystem.panel)
+        .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(accent.opacity(0.5), lineWidth: 1))
+    }
+
+    // MARK: Today's schedule
+
+    private var schedulePanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("TODAY'S SCHEDULE")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.6)
+                .foregroundColor(DesignSystem.amber)
+
+            VStack(spacing: 0) {
+                ForEach(Array(viewModel.todayPrompts.enumerated()), id: \.element.id) { index, prompt in
+                    scheduleRow(prompt)
+                    if index < viewModel.todayPrompts.count - 1 {
+                        Rectangle().fill(DesignSystem.hairline).frame(height: 1)
+                    }
+                }
+            }
+            .background(DesignSystem.bg1)
+            .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.hairline, lineWidth: 1))
+        }
+        .padding(14)
+        .background(DesignSystem.panel)
+        .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.hairline, lineWidth: 1))
+    }
+
+    private func scheduleRow(_ prompt: TradingPrompt) -> some View {
+        let isActive = viewModel.isActive(prompt)
+        return HStack {
+            Text(prompt.type.displayName.uppercased())
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(isActive ? DesignSystem.long : DesignSystem.text2)
+            Spacer()
+            if isActive {
+                Button {
+                    viewModel.copyPrompt(prompt)
+                } label: {
+                    Text("COPY")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                }
+                .buttonStyle(.bordered)
+                .tint(DesignSystem.amber)
             } else {
-                Text(timeUntil)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text(scheduleTimeText(prompt))
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.faint)
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(isActive ? DesignSystem.long.opacity(0.10) : DesignSystem.faint.opacity(0.30))
-        )
+        .padding(12)
     }
 
-    private var scheduleTime: String {
-        switch prompt.scheduledTime {
-        case .time(let hour, let minute):
-            let formatter = DateFormatter()
-            formatter.dateFormat = "h:mm a"
-            let date = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date())!
-            return formatter.string(from: date)
-        default:
-            return "Conditional"
-        }
-    }
-
-    private var timeUntil: String {
+    private func scheduleTimeText(_ prompt: TradingPrompt) -> String {
         switch prompt.scheduledTime {
         case .time(let hour, let minute):
             let now = Date()
             let calendar = Calendar.current
-            let target = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now)!
-
+            guard let target = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now) else { return "" }
             let minutes = calendar.dateComponents([.minute], from: now, to: target).minute ?? 0
-            if minutes < 0 {
-                return "Past"
-            } else if minutes == 0 {
-                return "Now"
-            } else {
-                return "in \(minutes)m"
-            }
+            if minutes < 0 { return "PAST" }
+            if minutes == 0 { return "NOW" }
+            return "IN \(minutes)M"
         default:
-            return ""
+            return "CONDITIONAL"
         }
     }
-}
 
-struct ConditionalAlertRow: View {
-    let prompt: TradingPrompt
-    let onCopy: () -> Void
+    // MARK: Conditional alerts
 
-    var body: some View {
-        HStack {
-            Image(systemName: prompt.type.icon)
+    private var conditionalPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("CONDITIONAL ALERTS")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.6)
                 .foregroundColor(DesignSystem.short)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(prompt.type.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Text("Triggered by market conditions")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            VStack(spacing: 0) {
+                ForEach(Array(viewModel.conditionalPrompts.enumerated()), id: \.element.id) { index, prompt in
+                    HStack {
+                        Text(prompt.type.displayName.uppercased())
+                            .font(DesignSystem.Typography.captionFont)
+                            .foregroundColor(DesignSystem.text2)
+                        Spacer()
+                        Button {
+                            viewModel.copyPrompt(prompt)
+                        } label: {
+                            Text("COPY")
+                                .font(DesignSystem.Typography.labelFont)
+                                .tracking(1.2)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(DesignSystem.short)
+                    }
+                    .padding(12)
+                    if index < viewModel.conditionalPrompts.count - 1 {
+                        Rectangle().fill(DesignSystem.hairline).frame(height: 1)
+                    }
+                }
             }
-
-            Spacer()
-
-            Button(action: onCopy) {
-                Label("Copy", systemImage: "doc.on.clipboard")
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(DesignSystem.short)
-                    .foregroundColor(.white)
-                    .cornerRadius(2)
-            }
+            .background(DesignSystem.bg1)
+            .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.short.opacity(0.3), lineWidth: 1))
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.short.opacity(0.10))
-        )
+        .padding(14)
+        .background(DesignSystem.panel)
+        .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.short.opacity(0.3), lineWidth: 1))
     }
-}
 
-struct PromptHistoryRow: View {
-    let record: PromptHistoryRecord
+    // MARK: History
 
-    var body: some View {
-        HStack {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(DesignSystem.long)
+    private var historyPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("RECENT")
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.6)
+                .foregroundColor(DesignSystem.amber)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(record.promptType.displayName)
-                    .font(.subheadline)
-                Text(record.timestamp, style: .relative) + Text(" ago")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            if viewModel.promptHistory.isEmpty {
+                Text("Nothing marked used yet.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.faint)
+            } else {
+                let recent = Array(viewModel.promptHistory.prefix(5))
+                VStack(spacing: 0) {
+                    ForEach(Array(recent.enumerated()), id: \.element.id) { index, record in
+                        HStack {
+                            Text(record.promptType.displayName.uppercased())
+                                .font(DesignSystem.Typography.captionFont)
+                                .foregroundColor(DesignSystem.text2)
+                            Spacer()
+                            Text(record.timestamp, style: .relative)
+                                .font(DesignSystem.Typography.captionFont)
+                                .foregroundColor(DesignSystem.faint)
+                        }
+                        .padding(12)
+                        if index < recent.count - 1 {
+                            Rectangle().fill(DesignSystem.hairline).frame(height: 1)
+                        }
+                    }
+                }
+                .background(DesignSystem.bg1)
+                .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.hairline, lineWidth: 1))
             }
-
-            Spacer()
-
-            Text("Used")
-                .font(.caption)
-                .foregroundColor(DesignSystem.long)
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.faint.opacity(0.30))
-        )
+        .padding(14)
+        .background(DesignSystem.panel)
+        .overlay(RoundedRectangle(cornerRadius: DesignSystem.cornerRadius).stroke(DesignSystem.hairline, lineWidth: 1))
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #else
+        UIPasteboard.general.string = text
+        #endif
     }
 }
 
@@ -554,7 +397,7 @@ class PromptCoachViewModel: ObservableObject {
         guard let entry = manualDataEntry else {
             return prompt.template + "\n\nWARNING: No manual data entered. Go to Manual Data Entry to input current market conditions."
         }
-        
+
         // Convert MarketDataEntry to MarketData for the prompt system
         // This leverages the centralized logic in PromptSystem
         let marketData = MarketData(

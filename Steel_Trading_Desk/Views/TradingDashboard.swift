@@ -1138,7 +1138,7 @@ struct TradeRowView: View {
                             .tracking(1.2)
                             .foregroundColor(DesignSystem.mutedText)
                     }
-                    Text(String(format: "$%.2f", trade.unrealizedPnL / 100))
+                    Text(String(format: "$%.2f", trade.unrealizedPnL))
                         .font(DesignSystem.Typography.monospacedFont)
                         .foregroundColor(pnlColor)
                     
@@ -2704,7 +2704,7 @@ private struct RightRailView: View {
     }
 
     private var netPnL: Double {
-        signalMonitor.activeTrades.reduce(0) { $0 + ($1.unrealizedPnL / 100) }
+        signalMonitor.activeTrades.reduce(0) { $0 + $1.unrealizedPnL }
     }
 
     private var formattedNetPnL: String {
@@ -4251,7 +4251,7 @@ private struct PhoneHardExitTakeover: View {
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(DesignSystem.text)
                     Spacer()
-                    Text(String(format: "$%+.2f", trade.unrealizedPnL / 100))
+                    Text(String(format: "$%+.2f", trade.unrealizedPnL))
                         .font(DesignSystem.Typography.captionFont)
                         .foregroundColor(trade.unrealizedPnL >= 0 ? DesignSystem.long : DesignSystem.short)
                 }
@@ -4276,7 +4276,7 @@ private struct PhoneHardExitTakeover: View {
     }
 
     private var netPnL: Double {
-        signalMonitor.activeTrades.reduce(0) { $0 + ($1.unrealizedPnL / 100) }
+        signalMonitor.activeTrades.reduce(0) { $0 + $1.unrealizedPnL }
     }
 
     private var formattedNetPnL: String {
