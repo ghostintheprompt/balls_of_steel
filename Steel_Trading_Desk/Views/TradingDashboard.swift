@@ -2635,6 +2635,9 @@ private struct RightRailView: View {
     let onOpenJournal: () -> Void
 
     @ObservedObject private var liveTape = LiveTapeService.shared
+    @State private var suggestion: ContractSuggestion?
+    @State private var suggestionError: String?
+    @State private var isFetchingSuggestion = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2676,11 +2679,28 @@ private struct RightRailView: View {
                 .foregroundColor(DesignSystem.text)
                 .fixedSize(horizontal: false, vertical: true)
 
+            if state.ready {
+                contractSuggestionView
+            }
+
             if !signalMonitor.activeTrades.isEmpty {
                 openPositionStrip
             }
         }
         .padding(16)
+        .onChange(of: state.ready) { _, isReady in
+            if isReady {
+                fetchSuggestion()
+            } else {
+                suggestion = nil
+                suggestionError = nil
+            }
+        }
+        .task(id: state.ready) {
+            if state.ready, suggestion == nil, suggestionError == nil {
+                fetchSuggestion()
+            }
+        }
     }
 
     private var openPositionStrip: some View {
@@ -2701,6 +2721,91 @@ private struct RightRailView: View {
         .overlay(
             Rectangle().stroke(DesignSystem.amber.opacity(0.4), lineWidth: 1)
         )
+    }
+
+    // MARK: Contract suggestion
+    //
+    // This is a fade-only setup (always puts -- betting VXX reverts off the
+    // spike), so side is fixed. Budget comes straight from StrategySpec's
+    // own audited tier table, not a guessed number. Fetched once per
+    // "ready" episode, not on every 30s poll tick -- chain fetches are
+    // heavier than quote fetches and the suggestion doesn't need to be
+    // that fresh.
+
+    @ViewBuilder
+    private var contractSuggestionView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if isFetchingSuggestion {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Checking the chain...")
+                        .font(DesignSystem.Typography.captionFont)
+                        .foregroundColor(DesignSystem.muted)
+                }
+            } else if let suggestion {
+                contractRow("CONTRACT", "$\(String(format: "%.0f", suggestion.contract.strike)) PUT")
+                contractRow("EXPIRATION", "\(Self.expirationFormatter.string(from: suggestion.contract.expiration)) (\(suggestion.daysToExpiration)d)")
+                contractRow("DELTA", String(format: "%.2f", suggestion.contract.delta))
+                contractRow("ASK", "$\(String(format: "%.2f", suggestion.contract.ask)) × \(suggestion.contractCount)")
+                contractRow("COST", "$\(String(format: "%.0f", suggestion.estimatedCost))", accent: DesignSystem.amber)
+            } else if let suggestionError {
+                Text(suggestionError)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(DesignSystem.bg1)
+        .overlay(Rectangle().stroke(DesignSystem.hairline, lineWidth: 1))
+    }
+
+    private func contractRow(_ label: String, _ value: String, accent: Color = DesignSystem.text2) -> some View {
+        HStack {
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.mutedText)
+            Spacer()
+            Text(value)
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(accent)
+        }
+    }
+
+    private static let expirationFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+
+    private func fetchSuggestion() {
+        guard let entry = state.entry, entry.instrument == .vxx else { return }
+        isFetchingSuggestion = true
+        suggestion = nil
+        suggestionError = nil
+
+        Task {
+            do {
+                let chain = try await SchwabService.shared.fetchOptionsChain("VXX")
+                let tier = StrategySpec.tier(forRatio: entry.ratio)
+                let budget = Double(tier.maxPositionDollars)
+                guard budget > 0 else {
+                    suggestionError = "No position size configured for the \(tier.label) tier."
+                    isFetchingSuggestion = false
+                    return
+                }
+                if let result = OptionSelector.suggest(side: .put, chain: chain, budget: budget) {
+                    suggestion = result
+                } else {
+                    suggestionError = "No contract in the delta/DTE band right now. Check the chain manually."
+                }
+            } catch {
+                suggestionError = error.localizedDescription
+            }
+            isFetchingSuggestion = false
+        }
     }
 
     private var netPnL: Double {
