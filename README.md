@@ -22,7 +22,8 @@ Steel Trading Desk is a local-first, accuracy-first desk for a personal VXX/VIX/
 | **Feed suitability checks** | Live data has to prove it is suitable for this system: correct symbols, source timestamps, freshness, heartbeats, complete VXX/VIX/VWAP inputs, and fail-closed alert behavior. |
 | **Schwab-gated chart** | Native chart surface uses verified Schwab live candles only. Without Schwab OAuth it shows a locked source state, not public delayed data. |
 | **Session-close takeover** | From 16:10 to the 16:15 ET extended close, the phone prioritizes close-management rules, open risk, and the alert-session countdown. |
-| **Second Read** | Copy a structured prompt for outside-model sanity checks. Never the green light. |
+| **Second Read** | A structured prompt for outside-model sanity checks, always available from live tape data — not just during scheduled windows. Never the green light. |
+| **Trade Journal** | Every trade you take is logged automatically the moment you take it: entry price, VWAP, ratio, VIX, trading window, and a screenshot of the desk at that exact moment — a real record to check against later, not a memory of what you thought you saw. |
 | **Boiler-room visual system** | CRT amber on near-black, IBM Plex everything, hairline borders, sharp corners. |
 | **Local-first privacy** | Zero telemetry. Zero analytics. All data stays on your hardware. |
 

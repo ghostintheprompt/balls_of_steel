@@ -76,8 +76,30 @@ already shown in the header status pill and the SCHWAB card itself.
 **State as of today:** OAuth connects, tokens persist, live VXX/VIX quotes
 parse correctly, and the poll loop writes real market data every ~30 seconds
 during market hours. The five-condition alert gate (volume/window/ratio/
-VWAP/pattern) has not yet been verified end-to-end against real live data —
-that's the next real milestone, not this one.
+VWAP/pattern) has been verified end-to-end against real live data — watched
+it correctly show "NO TRADE" with the real reason (volume below threshold,
+outside an alert window) rather than firing on a setup that didn't qualify.
+
+**Also shipped the same day, once the connection itself was solid:** a real
+Schwab options-chain fetch (`SchwabService.fetchOptionsChain(_:)`, hits
+`/marketdata/v1/chains`) feeding the already-audited `OptionSelector.suggest`
+logic, wired to fire the instant all five gates clear — NEXT MOVE now shows
+an actual contract (strike/expiration/delta/ask/count/cost), not just a
+price level, sized off `StrategySpec`'s own tier table. **This one specific
+piece is unverified against live Schwab traffic as of writing** — same
+category of risk `$VIX.X` was. It fails loudly with Schwab's raw response
+attached if the assumed chain shape is wrong, rather than silently
+suggesting a bad contract; the first real "CLEARED" moment during market
+hours is the actual test. See `CLAUDE.md`'s punch list for current status.
+
+Also added since: a real Trade Journal (auto-records entry + a screenshot
+of the desk at that moment, tracks win/loss/P&L on close — both were
+previously dead code that nothing called), hardened live-feed alerting
+(debounced disconnect/reconnect notifications, sleep prevention while Live
+Tape is on), and a full visual/functional redesign of Prompt Desk (was
+built against an older, mismatched visual language and only had a copyable
+prompt during ~4 narrow scheduled windows/day — now always has one, built
+from live data).
 
 ---
 
