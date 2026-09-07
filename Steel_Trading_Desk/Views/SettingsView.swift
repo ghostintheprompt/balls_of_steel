@@ -31,6 +31,7 @@ struct SettingsView: View {
     @State private var isConnectingSchwab: Bool = false
     @State private var isTestingSchwabFeed: Bool = false
     @State private var isConfirmingSchwabCredentialClear: Bool = false
+    @State private var isShowingSchwabManualEntry: Bool = false
 
     var body: some View {
         Group {
@@ -106,7 +107,6 @@ struct SettingsView: View {
             }
 
             VStack(spacing: 16) {
-                systemDataCard
                 compactSchwabCredentialsCard
                 compactAlertsCard
                 compactCloseCard
@@ -118,7 +118,6 @@ struct SettingsView: View {
 
     private var desktopDataColumn: some View {
         VStack(spacing: 16) {
-            systemDataCard
             compactSchwabCredentialsCard
         }
         .frame(minWidth: 520, maxWidth: .infinity, alignment: .top)
@@ -141,7 +140,6 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     mobileSystemsHeader
-                    systemDataCard
                     compactSchwabCredentialsCard
                     compactAlertsCard
                     compactCloseCard
@@ -162,7 +160,7 @@ struct SettingsView: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("SYSTEMS")
-                    .font(DesignSystem.Typography.labelFont)
+                    .font(DesignSystem.Typography.settingsLabelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
                 Text("Quote Feed")
@@ -215,7 +213,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("SYSTEMS")
-                    .font(DesignSystem.Typography.labelFont)
+                    .font(DesignSystem.Typography.settingsLabelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
                 Text("Quote Feed")
@@ -247,24 +245,13 @@ struct SettingsView: View {
         .background(DesignSystem.bg)
     }
 
-    private var systemDataCard: some View {
-        SystemsPanel(title: "DATA") {
-            VStack(spacing: 9) {
-                SystemsReadoutRow(label: "Mode", value: dataModeValue, accent: dataModeAccent)
-                SystemsReadoutRow(label: "Schwab keys", value: AppConfig.Schwab.hasDeveloperCredentials ? "Stored" : "Missing", accent: AppConfig.Schwab.hasDeveloperCredentials ? DesignSystem.long : DesignSystem.short)
-                SystemsReadoutRow(label: "Live feed", value: liveFeedValue, accent: liveFeedAccent)
-                SystemsReadoutRow(label: "Orders", value: "Manual only", accent: DesignSystem.mutedText)
-            }
-        }
-    }
-
     private var compactSchwabCredentialsCard: some View {
         SystemsPanel(title: "SCHWAB") {
             VStack(alignment: .leading, spacing: 10) {
                 if AppConfig.Schwab.hasDeveloperCredentials && !isEditingSchwabCredentials {
                     SystemsReadoutRow(label: "Status", value: compactSchwabStatus, accent: schwabStatusAccent)
                     Text(schwabCredentialStatusCopy)
-                        .font(DesignSystem.Typography.captionFont)
+                        .font(DesignSystem.Typography.settingsValueFont)
                         .foregroundColor(DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -352,7 +339,7 @@ struct SettingsView: View {
 
                 if let schwabCredentialMessage {
                     Text(schwabCredentialMessage)
-                        .font(DesignSystem.Typography.captionFont)
+                        .font(DesignSystem.Typography.settingsValueFont)
                         .foregroundColor(DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -368,7 +355,7 @@ struct SettingsView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(label.uppercased())
-                .font(DesignSystem.Typography.labelFont)
+                .font(DesignSystem.Typography.settingsLabelFont)
                 .tracking(1.0)
                 .foregroundColor(DesignSystem.mutedText)
 
@@ -419,18 +406,28 @@ struct SettingsView: View {
                     .disabled(isTestingSchwabFeed)
                 }
             } else {
+                #if os(macOS)
                 VStack(alignment: .leading, spacing: 5) {
                     Text("CALLBACK URL")
-                        .font(DesignSystem.Typography.labelFont)
+                        .font(DesignSystem.Typography.settingsLabelFont)
+                        .tracking(1.0)
+                        .foregroundColor(DesignSystem.mutedText)
+
+                    Text(AppConfig.Schwab.oauthCallbackURL)
+                        .font(DesignSystem.Typography.settingsValueFont)
+                        .foregroundColor(DesignSystem.mutedText)
+                }
+                #else
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("CALLBACK URL")
+                        .font(DesignSystem.Typography.settingsLabelFont)
                         .tracking(1.0)
                         .foregroundColor(DesignSystem.mutedText)
 
                     TextField(AppConfig.Schwab.appLinkCallbackURL, text: $schwabCallbackURLInput)
                         .textFieldStyle(.roundedBorder)
-                        #if os(iOS)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
-                        #endif
                         .onChange(of: schwabCallbackURLInput) { _, newValue in
                             AppConfig.Schwab.oauthCallbackURL = newValue
                             if AppConfig.Schwab.callbackURLCandidates(from: newValue).count > 1 {
@@ -440,17 +437,6 @@ struct SettingsView: View {
                 }
 
                 AdaptiveControlRow {
-                    #if os(macOS)
-                    Button {
-                        setSchwabCallbackPreset(AppConfig.Schwab.portedLoopbackCallbackURL)
-                    } label: {
-                        Label("This Mac", systemImage: "desktopcomputer")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(DesignSystem.amber)
-                    #endif
-
                     Button {
                         setSchwabCallbackPreset(AppConfig.Schwab.appLinkCallbackURL)
                     } label: {
@@ -460,9 +446,10 @@ struct SettingsView: View {
                     .buttonStyle(.bordered)
                     .tint(DesignSystem.amber)
                 }
+                #endif
 
                 Text(schwabPortalCallbackCopy)
-                    .font(DesignSystem.Typography.captionFont)
+                    .font(DesignSystem.Typography.settingsValueFont)
                     .foregroundColor(DesignSystem.mutedText)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -480,44 +467,55 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isConnectingSchwab)
 
-                schwabOAuthDiagnostics
+                // Sign-in normally completes on its own (Mac: local loopback
+                // listener; iOS: system auth session). This fallback is only
+                // for when that automatic capture fails, so it stays closed
+                // by default instead of presenting 6 more controls up front.
+                DisclosureGroup("Didn't connect automatically?", isExpanded: $isShowingSchwabManualEntry) {
+                    VStack(alignment: .leading, spacing: 9) {
+                        schwabOAuthDiagnostics
 
-                Button {
-                    copySchwabAuthorizationURL()
-                } label: {
-                    Label("Copy OAuth URL", systemImage: "doc.on.doc")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .tint(DesignSystem.amber)
-                .disabled(isConnectingSchwab)
+                        Button {
+                            copySchwabAuthorizationURL()
+                        } label: {
+                            Label("Copy OAuth URL", systemImage: "doc.on.doc")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(DesignSystem.amber)
+                        .disabled(isConnectingSchwab)
 
-                TextField("Paste callback URL or code", text: $schwabCallbackInput)
-                    .textFieldStyle(.roundedBorder)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    #endif
+                        TextField("Paste callback URL or code", text: $schwabCallbackInput)
+                            .textFieldStyle(.roundedBorder)
+                            #if os(iOS)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            #endif
 
-                AdaptiveControlRow {
-                    Button {
-                        pasteSchwabCallback()
-                    } label: {
-                        Label("Paste", systemImage: "doc.on.clipboard")
-                            .frame(maxWidth: .infinity)
+                        AdaptiveControlRow {
+                            Button {
+                                pasteSchwabCallback()
+                            } label: {
+                                Label("Paste", systemImage: "doc.on.clipboard")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(DesignSystem.amber)
+
+                            Button {
+                                Task { await connectSchwabFromCallback() }
+                            } label: {
+                                Label(isConnectingSchwab ? "Connecting" : "Connect", systemImage: "link")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(isConnectingSchwab || schwabCallbackInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
                     }
-                    .buttonStyle(.bordered)
-                    .tint(DesignSystem.amber)
-
-                    Button {
-                        Task { await connectSchwabFromCallback() }
-                    } label: {
-                        Label(isConnectingSchwab ? "Connecting" : "Connect", systemImage: "link")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isConnectingSchwab || schwabCallbackInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .padding(.top, 8)
                 }
+                .font(DesignSystem.Typography.settingsValueFont)
+                .tint(DesignSystem.mutedText)
             }
         }
     }
@@ -563,19 +561,19 @@ struct SettingsView: View {
 
                 if !notifications.isPermissionGranted {
                     Text(alertPermissionCopy)
-                        .font(DesignSystem.Typography.captionFont)
+                        .font(DesignSystem.Typography.settingsValueFont)
                         .foregroundColor(notifications.isPermissionDenied ? DesignSystem.short : DesignSystem.mutedText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: 10) {
                     Text("Volume")
-                        .font(DesignSystem.Typography.captionFont)
+                        .font(DesignSystem.Typography.settingsValueFont)
                         .foregroundColor(DesignSystem.mutedText)
                         .frame(width: 58, alignment: .leading)
                     Slider(value: $alertVolume)
                     Text("\(Int(alertVolume * 100))%")
-                        .font(DesignSystem.Typography.captionFont)
+                        .font(DesignSystem.Typography.settingsValueFont)
                         .foregroundColor(DesignSystem.primaryText)
                         .frame(width: 42, alignment: .trailing)
                 }
@@ -601,7 +599,7 @@ struct SettingsView: View {
                 Divider().background(DesignSystem.hairline)
 
                 Toggle("Exit timer", isOn: $isBackgroundMonitoringEnabled)
-                    .font(DesignSystem.Typography.captionFont)
+                    .font(DesignSystem.Typography.settingsValueFont)
                     .foregroundColor(DesignSystem.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -613,7 +611,7 @@ struct SettingsView: View {
     private func compactTimeRow(_ label: String, binding: Binding<Date>) -> some View {
         HStack(spacing: 10) {
             Text(label)
-                .font(DesignSystem.Typography.captionFont)
+                .font(DesignSystem.Typography.settingsValueFont)
                 .foregroundColor(DesignSystem.mutedText)
                 .frame(width: 100, alignment: .leading)
 
@@ -659,40 +657,6 @@ struct SettingsView: View {
         return DesignSystem.amber
     }
 
-    private var dataModeValue: String {
-        if liveTape.isLive { return "Schwab live" }
-        if AppConfig.Schwab.hasOAuthTokens { return "Schwab token" }
-        if AppConfig.Schwab.hasDeveloperCredentials { return "Schwab setup" }
-        return "Manual tape"
-    }
-
-    private var dataModeAccent: Color {
-        if liveTape.isLive { return DesignSystem.long }
-        if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
-        if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
-        return DesignSystem.amber
-    }
-
-    private var liveFeedValue: String {
-        if liveTape.isLive, let last = liveTape.lastTickAt {
-            let delta = Int(Date().timeIntervalSince(last))
-            return "\(delta)s ago"
-        }
-        if liveTape.isLive { return "Live" }
-        if liveTape.isEnabled, liveTape.lastError != nil { return "Error" }
-        if AppConfig.Schwab.hasOAuthTokens { return "Ready" }
-        if AppConfig.Schwab.hasDeveloperCredentials { return "OAuth needed" }
-        return "Off"
-    }
-
-    private var liveFeedAccent: Color {
-        if liveTape.isLive { return DesignSystem.long }
-        if liveTape.isEnabled, liveTape.lastError != nil { return DesignSystem.short }
-        if AppConfig.Schwab.hasOAuthTokens { return DesignSystem.long }
-        if AppConfig.Schwab.hasDeveloperCredentials { return DesignSystem.amber }
-        return DesignSystem.mutedText
-    }
-
     private var schwabCredentialStatusCopy: String {
         if liveTape.isLive {
             return "Schwab is feeding the live tape on this device."
@@ -721,7 +685,7 @@ struct SettingsView: View {
 
     private var schwabPortalCallbackCopy: String {
         #if os(macOS)
-        return "Register exactly https://127.0.0.1:8182 in the Schwab Developer Portal, then use This Mac. App Link is only for a deployed, associated callback domain."
+        return "Register exactly https://127.0.0.1:8182 in the Schwab Developer Portal. Steel always signs in through this Mac's local listener — it never redirects through a website."
         #else
         return "Register exactly https://mdrn.app/apps/steeltradingdesk/schwab/oauth/callback in the Schwab Developer Portal."
         #endif
@@ -1283,14 +1247,14 @@ private struct SystemsPanel<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(DesignSystem.Typography.labelFont)
+                .font(DesignSystem.Typography.settingsLabelFont)
                 .tracking(1.6)
                 .foregroundColor(DesignSystem.amber)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             content
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(DesignSystem.panel)
         .overlay(
@@ -1355,7 +1319,7 @@ private struct SystemsReadoutRow: View {
 
     private var labelText: some View {
         Text(label.uppercased())
-            .font(DesignSystem.Typography.labelFont)
+            .font(DesignSystem.Typography.settingsLabelFont)
             .tracking(1.0)
             .foregroundColor(DesignSystem.mutedText)
             .lineLimit(2)
@@ -1364,7 +1328,7 @@ private struct SystemsReadoutRow: View {
 
     private var valueText: some View {
         Text(value)
-            .font(DesignSystem.Typography.captionFont)
+            .font(DesignSystem.Typography.settingsValueFont)
             .foregroundColor(accent)
             .lineLimit(4)
             .minimumScaleFactor(0.80)
@@ -1382,12 +1346,12 @@ private struct SystemsStatusPill: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(title)
-                .font(DesignSystem.Typography.labelFont)
+                .font(DesignSystem.Typography.settingsLabelFont)
                 .tracking(1.0)
                 .foregroundColor(DesignSystem.mutedText)
 
             Text(value)
-                .font(DesignSystem.Typography.labelFont)
+                .font(DesignSystem.Typography.settingsLabelFont)
                 .tracking(1.0)
                 .foregroundColor(accent)
                 .lineLimit(1)

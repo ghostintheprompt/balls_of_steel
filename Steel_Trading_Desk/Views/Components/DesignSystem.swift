@@ -108,6 +108,11 @@ struct DesignSystem {
         static let captionFont = mono(12, weight: .semibold)
         // Tiny uppercase labels — apply .tracking(1.4) at the call site
         static let labelFont = mono(10, weight: .semibold)
+        // Settings screen only: labelFont/captionFont read too small on a
+        // dense, text-heavy settings page (especially on a high-res external
+        // display). A couple points larger, same family/weight.
+        static let settingsLabelFont = mono(12, weight: .semibold)
+        static let settingsValueFont = mono(14, weight: .semibold)
         // Primary number readouts (price, ratio)
         static let monospacedFont = mono(15, weight: .semibold)
     }

@@ -29,8 +29,7 @@ enum SchwabOAuthCallbackHandler {
             AppConfig.Schwab.lastOAuthError = ""
             do {
                 let redirectURI = registeredRedirectURI(from: url) ?? AppConfig.Schwab.oauthCallbackURL
-                let token = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
-                AppConfig.apiKey = token
+                _ = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
                 AppConfig.Schwab.lastOAuthError = ""
                 await MainActor.run {
                     MarketDataRegistry.shared.use(.schwab)
@@ -195,8 +194,7 @@ private enum SchwabOAuthDebugHooks {
             }
 
             do {
-                let token = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
-                AppConfig.apiKey = token
+                _ = try await SchwabService.shared.exchangeCodeForToken(code, redirectURI: redirectURI)
                 MarketDataRegistry.shared.use(.schwab)
                 LiveTapeService.shared.isEnabled = true
                 await LiveTapeService.shared.tickNow()

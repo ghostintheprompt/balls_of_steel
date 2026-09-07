@@ -153,7 +153,11 @@ final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCe
         let content = UNMutableNotificationContent()
         content.title = "STEEL DESK · TEST ALERT"
         content.subtitle = "ALERT PATH READY"
+        #if os(macOS)
+        content.body = "If you see this, desktop alerts are live."
+        #else
         content.body = "If you see this, phone alerts are live."
+        #endif
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
 

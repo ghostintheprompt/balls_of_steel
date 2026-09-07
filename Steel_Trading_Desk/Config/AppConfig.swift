@@ -352,18 +352,31 @@ struct AppConfig {
 
         static var oauthCallbackURL: String {
             get {
+                #if os(macOS)
+                // Mac OAuth always stays on-device via the local loopback listener.
+                // No stored/pasted value (portal callback lists, an App Link URL,
+                // stray website links) may ever redirect the flow through
+                // mdrn.app — that dependency is a second system to troubleshoot
+                // for no benefit when the loopback listener already works.
+                return portedLoopbackCallbackURL
+                #else
                 let stored = UserDefaults.standard.string(forKey: oauthCallbackURLKey)?
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 let cleaned = sanitizedCallbackURL(stored)
                 return cleaned.isEmpty ? defaultCallbackURL : cleaned
+                #endif
             }
             set {
+                #if os(macOS)
+                return
+                #else
                 let trimmed = sanitizedCallbackURL(newValue)
                 if trimmed.isEmpty {
                     UserDefaults.standard.removeObject(forKey: oauthCallbackURLKey)
                 } else {
                     UserDefaults.standard.set(trimmed, forKey: oauthCallbackURLKey)
                 }
+                #endif
             }
         }
 
@@ -382,12 +395,6 @@ struct AppConfig {
         }
     }
 
-    // Legacy aliases kept until the Schwab service rewrite removes the old API
-    // key shape. New Schwab work should use AppConfig.Schwab.
-    static let baseURL = Schwab.apiBaseURL
-    static let streamURL = ""
-    static let clientId = ""
-    
     // Strategy Parameters
     struct Thresholds {
         // New refined strategies from trading document
@@ -578,16 +585,6 @@ struct AppConfig {
         }
     }
     
-    // API key stored in Keychain, not UserDefaults
-    private static let apiKeyKeychainKey = "app.mdrn.steel.schwabApiKey"
-
-    static var apiKey: String {
-        get { KeychainService.load(key: apiKeyKeychainKey) ?? "" }
-        set {
-            storeKeychainValue(newValue, key: apiKeyKeychainKey)
-        }
-    }
-
     private static func storeKeychainValue(_ value: String, key: String) {
         if value.isEmpty {
             KeychainService.delete(key: key)

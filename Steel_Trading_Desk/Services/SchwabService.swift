@@ -220,16 +220,23 @@ class SchwabService: ObservableObject {
         }
 
         let normalizedBody = body.lowercased()
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Schwab's literal response body is the only thing that actually
+        // tells you which of several similar-looking causes this is — always
+        // show it verbatim instead of guessing a category and hiding the
+        // real text behind a canned explanation.
+        let rawSuffix = trimmedBody.isEmpty ? "" : " Schwab said: \(trimmedBody)"
+
         if normalizedBody.contains("invalid_client") || normalizedBody.contains("unauthorized") {
-            return "Schwab rejected the App Key or App Secret (HTTP \(status)). Replace both with the exact values from the Schwab Developer Portal, save them, then start a fresh sign-in."
+            return "Schwab rejected the App Key or App Secret (HTTP \(status)). Replace both with the exact values from the Schwab Developer Portal, save them, then start a fresh sign-in.\(rawSuffix)"
         }
         if normalizedBody.contains("invalid_grant") {
-            return "Schwab rejected the one-time authorization code (HTTP \(status)). Confirm \(redirectURI) is registered exactly, then start a fresh sign-in; callback codes cannot be reused."
+            return "Schwab rejected the one-time authorization code (HTTP \(status)). Confirm \(redirectURI) is registered exactly, then start a fresh sign-in; callback codes cannot be reused.\(rawSuffix)"
         }
         if status == 401 {
-            return "Schwab rejected the token request (HTTP 401). Replace the saved App Key and App Secret with the exact portal values, confirm the app is Ready, then start a fresh sign-in."
+            return "Schwab rejected the token request (HTTP 401). Replace the saved App Key and App Secret with the exact portal values, confirm the app is Ready, then start a fresh sign-in.\(rawSuffix)"
         }
-        return error.localizedDescription
+        return "\(error.localizedDescription)\(rawSuffix)"
     }
 
     // MARK: - Live Schwab REST
@@ -290,7 +297,6 @@ class SchwabService: ObservableObject {
         }
         AppConfig.Schwab.accessTokenExpiresAt = Date().addingTimeInterval(tokenResponse.expiresIn ?? 1_800)
         AppConfig.Schwab.oauthTokensStored = AppConfig.Schwab.accessTokenStored && AppConfig.Schwab.refreshTokenStored
-        AppConfig.apiKey = tokenResponse.accessToken
     }
 
     private func fetchQuotePayload(schwabSymbol: String) async throws -> QuotePayload {
