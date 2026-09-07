@@ -99,18 +99,16 @@ written down:
   auto-capture; not yet built.
 - [ ] macOS widget next to Weather — scoped in `docs/WIDGET_SCOPE.md`, needs
   an App Group + new Widget Extension target, not started.
-- [ ] **Wire the real options-chain fetch into the live UI.**
-  `SchwabService.fetchOptionsChain(_:)` is real and built (hits
-  `/marketdata/v1/chains`), but nothing calls it yet. Next: call it +
-  `OptionSelector.suggest(side: .put, chain:, budget:)` when
-  `VXXStrategyState.ready` flips true (this is a fade-only setup, always
-  puts), using `StrategySpec`'s audited tier sizing table
-  (`RatioTier.maxPositionDollars` — $250/$400/$500/$500) as the budget, and
-  show the resulting contract right in NEXT MOVE. **Unverified against live
-  Schwab traffic** — the chain JSON parsing follows the documented TD
-  Ameritrade-heritage shape Schwab inherited, but exactly like `$VIX.X`,
-  don't trust it until a real live call confirms the field names. It fails
-  loudly with the raw response attached if wrong, on purpose.
+- [x] Real options-chain fetch + contract suggestion wired into NEXT MOVE.
+  The instant all five gates clear, the desk fetches a real Schwab chain and
+  shows the actual contract (strike/expiration/delta/ask/count/cost) using
+  `OptionSelector.suggest(side: .put, ...)` (fade-only, always puts) sized
+  off `StrategySpec`'s own audited tier table. **Still unverified against
+  live Schwab traffic as of writing** — first real "CLEARED" moment during
+  market hours is the actual test. If the chain JSON doesn't match the
+  assumed shape, it'll show the raw Schwab response as the error text
+  (same pattern as every other Schwab error here) rather than a wrong
+  contract — watch for that the first time this actually fires live.
 - [ ] Confirm whether Schwab actually rotates the refresh token with a fresh
   7-day window on each silent refresh, or hard-expires 7 days after original
   auth regardless. Unconfirmed — only observable by watching real usage over
