@@ -48,10 +48,16 @@ final class LiveTapeService: ObservableObject {
     private static let entryKey = "lastMarketDataEntry"
     private static let pollInterval: TimeInterval = 30
     private static let liveAlertCooldown: TimeInterval = 15 * 60
+    // One bad tick is noise (a dropped packet, a momentary Schwab hiccup);
+    // two in a row (~60s) is a real outage worth waking someone up for.
+    private static let disconnectFailureThreshold = 2
 
     private var pollTask: Task<Void, Never>?
     private var lastLiveAlertSignature: String?
     private var lastLiveAlertAt: Date?
+    private var consecutiveFailureCount = 0
+    private var isDisconnectAlertActive = false
+    private var sleepPreventionActivity: NSObjectProtocol?
 
     var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: Self.enabledKey) }
@@ -69,6 +75,14 @@ final class LiveTapeService: ObservableObject {
 
     func start() {
         stop()
+        // Hold the Mac awake for as long as live tape is on. Without this,
+        // a screen lock or idle sleep during market hours silently pauses
+        // the poll loop -- exactly the failure mode alerts exist to catch --
+        // with no error, no disconnect notification, nothing.
+        sleepPreventionActivity = ProcessInfo.processInfo.beginActivity(
+            options: [.idleSystemSleepDisabled, .userInitiated],
+            reason: "Steel Trading Desk: live Schwab quote feed"
+        )
         pollTask = Task { [weak self] in
             await self?.pollLoop()
         }
@@ -78,6 +92,12 @@ final class LiveTapeService: ObservableObject {
         pollTask?.cancel()
         pollTask = nil
         isLive = false
+        consecutiveFailureCount = 0
+        isDisconnectAlertActive = false
+        if let sleepPreventionActivity {
+            ProcessInfo.processInfo.endActivity(sleepPreventionActivity)
+        }
+        sleepPreventionActivity = nil
     }
 
     /// Force a single tick; useful for the "Refresh now" button in Settings.
@@ -121,10 +141,20 @@ final class LiveTapeService: ObservableObject {
             lastTickAt = Date()
             lastError = nil
             isLive = true
+            consecutiveFailureCount = 0
+            if isDisconnectAlertActive {
+                isDisconnectAlertActive = false
+                SignalNotification.shared.feedRestored()
+            }
             handleClearedAlertIfNeeded(entry)
         } catch {
             lastError = error.localizedDescription
             isLive = false
+            consecutiveFailureCount += 1
+            if consecutiveFailureCount >= Self.disconnectFailureThreshold, !isDisconnectAlertActive {
+                isDisconnectAlertActive = true
+                SignalNotification.shared.feedDisconnected(reason: error.localizedDescription)
+            }
         }
     }
 

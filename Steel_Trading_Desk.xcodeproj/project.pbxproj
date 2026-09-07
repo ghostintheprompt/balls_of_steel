@@ -58,8 +58,9 @@
 		1A00004D000000000000001A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00004E000000000000001A /* SettingsView.swift */; };
 		1A00004F000000000000001A /* TradingDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000050000000000000001A /* TradingDashboard.swift */; };
 		1A000051000000000000001A /* StrategyBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000052000000000000001A /* StrategyBadge.swift */; };
-		1A000053000000000000001A /* (null) in Resources */ = {isa = PBXBuildFile; };
+		1A000053000000000000001A /* BuildFile in Resources */ = {isa = PBXBuildFile; };
 		1A000200000000000000001A /* OptionSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000201000000000000001A /* OptionSelector.swift */; };
+		1A0A07000000000000000001 /* SchwabOAuthSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */; };
 		1ADS01000000000000000001 /* DeskState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADS01000000000000000002 /* DeskState.swift */; };
 		1AEN01000000000000000001 /* EnvSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AEN01000000000000000002 /* EnvSeeder.swift */; };
 		1AES0002000000000000001A /* ExitSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AES0001000000000000001A /* ExitSignal.swift */; };
@@ -73,12 +74,13 @@
 		1AOR0002000000000000001A /* Order.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AOR0001000000000000001A /* Order.swift */; };
 		1ASA01000000000000000001 /* StrategyAuditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASA01000000000000000002 /* StrategyAuditor.swift */; };
 		1ASS01000000000000000001 /* StrategySpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASS01000000000000000002 /* StrategySpec.swift */; };
+		69C75E4A6759E329143F4244 /* TradeEvidenceCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B95D30D61295D1F8035A3677 /* TradeEvidenceCapture.swift */; };
 		B000000000000001A000002 /* DailyRiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000001 /* DailyRiskManager.swift */; };
 		B000000000000001A000004 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000003 /* KeychainService.swift */; };
 		B000000000000001A000006 /* TradeJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000005 /* TradeJournal.swift */; };
 		B000000000000001A000008 /* VXXTradingWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000007 /* VXXTradingWindow.swift */; };
 		B000000000000001A00000A /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000009 /* UpdateChecker.swift */; };
-		1A0A07000000000000000001 /* SchwabOAuthSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */; };
+		BCDB3472769C592DDECC8F66 /* TradeJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8768192E3A4D80EFE6226B0D /* TradeJournalView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -137,6 +139,7 @@
 		1A000055000000000000001A /* Steel_Trading_Desk.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steel_Trading_Desk.entitlements; sourceTree = "<group>"; };
 		1A000056000000000000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A000201000000000000001A /* OptionSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionSelector.swift; sourceTree = "<group>"; };
+		1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchwabOAuthSessionCoordinator.swift; sourceTree = "<group>"; };
 		1ADS01000000000000000002 /* DeskState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskState.swift; sourceTree = "<group>"; };
 		1AEN01000000000000000002 /* EnvSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvSeeder.swift; sourceTree = "<group>"; };
 		1AES0001000000000000001A /* ExitSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitSignal.swift; sourceTree = "<group>"; };
@@ -150,12 +153,13 @@
 		1AOR0001000000000000001A /* Order.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Order.swift; sourceTree = "<group>"; };
 		1ASA01000000000000000002 /* StrategyAuditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyAuditor.swift; sourceTree = "<group>"; };
 		1ASS01000000000000000002 /* StrategySpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategySpec.swift; sourceTree = "<group>"; };
+		8768192E3A4D80EFE6226B0D /* TradeJournalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TradeJournalView.swift; sourceTree = "<group>"; };
 		B000000000000001A000001 /* DailyRiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRiskManager.swift; sourceTree = "<group>"; };
 		B000000000000001A000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		B000000000000001A000005 /* TradeJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeJournal.swift; sourceTree = "<group>"; };
 		B000000000000001A000007 /* VXXTradingWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VXXTradingWindow.swift; sourceTree = "<group>"; };
 		B000000000000001A000009 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
-		1A0A07000000000000000002 /* SchwabOAuthSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchwabOAuthSessionCoordinator.swift; sourceTree = "<group>"; };
+		B95D30D61295D1F8035A3677 /* TradeEvidenceCapture.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TradeEvidenceCapture.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -285,8 +289,9 @@
 				B000000000000001A000009 /* UpdateChecker.swift */,
 				00000000000000001A00007E /* ArcadeEnergyService.swift */,
 				1AMD01000000000000000002 /* MarketDataProvider.swift */,
-										1ALT01000000000000000002 /* LiveTapeService.swift */,
+				1ALT01000000000000000002 /* LiveTapeService.swift */,
 				1AEN01000000000000000002 /* EnvSeeder.swift */,
+				B95D30D61295D1F8035A3677 /* TradeEvidenceCapture.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -304,6 +309,7 @@
 				00000000000000001A000084 /* OnboardingView.swift */,
 				00000000000000001A000086 /* PromptCoachView.swift */,
 				1A000062000000000000001A /* Components */,
+				8768192E3A4D80EFE6226B0D /* TradeJournalView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -322,7 +328,7 @@
 				1A000052000000000000001A /* StrategyBadge.swift */,
 				00000000000000001A00008E /* SharedSignalRowView.swift */,
 				00000000000000001A000094 /* DesignSystem.swift */,
-					);
+			);
 			path = Components;
 			sourceTree = "<group>";
 		};
@@ -411,7 +417,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A000053000000000000001A /* (null) in Resources */,
+				1A000053000000000000001A /* BuildFile in Resources */,
 				00000000000000001A000056 /* PrivacyInfo.xcprivacy in Resources */,
 				1A000005000000000000001A /* Assets.xcassets in Resources */,
 				1AFT01000000000000000001 /* IBMPlexSans-Regular.ttf in Resources */,
@@ -493,6 +499,8 @@
 				1AMD01000000000000000001 /* MarketDataProvider.swift in Sources */,
 				1ALT01000000000000000001 /* LiveTapeService.swift in Sources */,
 				1AEN01000000000000000001 /* EnvSeeder.swift in Sources */,
+				69C75E4A6759E329143F4244 /* TradeEvidenceCapture.swift in Sources */,
+				BCDB3472769C592DDECC8F66 /* TradeJournalView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

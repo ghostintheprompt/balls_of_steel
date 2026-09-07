@@ -128,10 +128,33 @@ class SignalMonitor: ObservableObject {
         )
         activeTrades.append(trade)
         exitService.monitorPosition(trade: trade)
+
+        // Real record of what the desk showed at entry, so there's something
+        // to check against later if a trade goes wrong. TradeJournal.record
+        // existed but nothing ever called it -- this is the actual "entered
+        // a trade" moment, the correct place for it.
+        let idempotencyKey = trade.id.uuidString
+        TradeJournal.shared.record(signal: signal, idempotencyKey: idempotencyKey)
+        #if os(macOS)
+        TradeEvidenceCapture.captureAndSave(idempotencyKey: idempotencyKey)
+        #endif
     }
 
     private func handleExitSignal(_ exitSignal: ExitSignal) {
         if exitSignal.action == .exit {
+            let closingTrades = activeTrades.filter {
+                $0.symbol == exitSignal.symbol && $0.strategy == exitSignal.strategy
+            }
+            for trade in closingTrades {
+                let delta = trade.direction == .bullish
+                    ? (exitSignal.exitPrice - trade.entry)
+                    : (trade.entry - exitSignal.exitPrice)
+                TradeJournal.shared.close(
+                    idempotencyKey: trade.id.uuidString,
+                    exitPrice: exitSignal.exitPrice,
+                    pnL: delta * 100
+                )
+            }
             activeTrades.removeAll { $0.symbol == exitSignal.symbol && $0.strategy == exitSignal.strategy }
         }
         SignalNotification.shared.exitDetected(exitSignal)

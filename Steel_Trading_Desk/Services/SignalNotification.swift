@@ -137,6 +137,43 @@ final class SignalNotification: NSObject, ObservableObject, UNUserNotificationCe
         scheduleNotification(content)
     }
 
+    private static let feedTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm:ss a"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+
+    /// Fired the moment the live feed transitions from working to failing.
+    /// A silent disconnect during a real trading window is the one failure
+    /// mode this whole tool exists to prevent -- this must never depend on
+    /// someone actively watching the screen.
+    func feedDisconnected(reason: String) {
+        guard isPermissionGranted else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "STEEL DESK · LIVE FEED DOWN"
+        content.subtitle = "\(Self.feedTimeFormatter.string(from: Date())) ET"
+        content.body = reason
+        content.sound = .default
+        content.categoryIdentifier = Self.categoryIdentifier
+        scheduleNotification(content)
+    }
+
+    /// Fired once the feed recovers after a disconnect, so you know whether
+    /// you missed anything and for how long.
+    func feedRestored() {
+        guard isPermissionGranted else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "STEEL DESK · LIVE FEED BACK"
+        content.subtitle = "\(Self.feedTimeFormatter.string(from: Date())) ET"
+        content.body = "Schwab quotes are flowing again."
+        content.sound = .default
+        content.categoryIdentifier = Self.categoryIdentifier
+        scheduleNotification(content)
+    }
+
     private func createNotificationContent(for signal: Signal) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = "\(signal.symbol) · \(directiveTitle(for: signal))"

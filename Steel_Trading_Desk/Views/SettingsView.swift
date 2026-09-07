@@ -1537,6 +1537,12 @@ struct StrategyAuditView: View {
 
     @MainActor
     private func runAudit() async {
+        // The check itself is synchronous and instant, which meant the
+        // RUNNING AUDIT state flashed for a single frame and made a real run
+        // look identical to nothing happening at all. A short, deliberate
+        // minimum duration makes the run actually visible.
+        results = []
+        try? await Task.sleep(nanoseconds: 400_000_000)
         results = StrategyAuditor.run()
         lastRunAt = Date()
     }

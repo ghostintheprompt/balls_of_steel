@@ -9,6 +9,7 @@ import UIKit
 // Delivers the right analysis prompt for the active trading window.
 
 struct PromptCoachView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = PromptCoachViewModel()
     @StateObject private var notifications = SignalNotification.shared
 

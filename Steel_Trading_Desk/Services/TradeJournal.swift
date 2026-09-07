@@ -56,6 +56,17 @@ class TradeJournal: ObservableObject {
         save()
     }
 
+    /// The trade-close path only has the `Trade.id` used as the entry's
+    /// idempotency key at record time, not the journal entry's own id.
+    func close(idempotencyKey: String, exitPrice: Double, pnL: Double) {
+        guard let idx = entries.firstIndex(where: { $0.idempotencyKey == idempotencyKey }) else { return }
+        entries[idx].exitPrice = exitPrice
+        entries[idx].realizedPnL = pnL
+        entries[idx].outcome = pnL >= 0 ? "win" : "loss"
+        DailyRiskManager.shared.updateClosedTradePnL(pnL)
+        save()
+    }
+
     var recentEntries: [JournalEntry] { Array(entries.prefix(10)) }
 
     var lastEntry: JournalEntry? { entries.first }

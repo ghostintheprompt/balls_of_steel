@@ -1736,11 +1736,13 @@ private struct SPYSetupMetricCard: View {
 private enum MacTerminalSheet: Identifiable {
     case tape
     case prompt
+    case journal
 
     var id: String {
         switch self {
         case .tape: return "tape"
         case .prompt: return "prompt"
+        case .journal: return "journal"
         }
     }
 }
@@ -1786,6 +1788,14 @@ private struct MacTerminalView: View {
                     #if os(macOS)
                     .frame(minWidth: 640, minHeight: 720)
                     #endif
+            case .journal:
+                ZStack {
+                    DesignSystem.bg.ignoresSafeArea()
+                    TradeJournalView()
+                }
+                    #if os(macOS)
+                    .frame(minWidth: 560, minHeight: 640)
+                    #endif
             }
         }
     }
@@ -1829,7 +1839,8 @@ private struct MacTerminalView: View {
                         entry: entry,
                         signalMonitor: signalMonitor,
                         onEditTape: { activeSheet = .tape },
-                        onSecondRead: { activeSheet = .prompt }
+                        onSecondRead: { activeSheet = .prompt },
+                        onOpenJournal: { activeSheet = .journal }
                     )
                     .frame(width: metrics.rightRailWidth)
                     .frame(maxHeight: .infinity, alignment: .top)
@@ -1857,7 +1868,8 @@ private struct MacTerminalView: View {
                 entry: entry,
                 signalMonitor: signalMonitor,
                 onEditTape: { activeSheet = .tape },
-                onSecondRead: { activeSheet = .prompt }
+                onSecondRead: { activeSheet = .prompt },
+                onOpenJournal: { activeSheet = .journal }
             )
             .frame(maxWidth: .infinity)
             .frame(height: 250)
@@ -2358,6 +2370,20 @@ private struct LeftRailView: View {
 private struct ChartCenterView: View {
     let symbol: TradingInstrument
 
+    @State private var selectedTimeframe: String = "5m"
+    @State private var showVWAP = true
+    @State private var showSMA20 = true
+    @State private var showSMA50 = true
+    @State private var showVolume = true
+
+    // 1D deliberately excluded: LiveTapeService only carries today's 1-minute
+    // bars (LiveSnapshot.vxxCandles), never multi-day daily candles, so a
+    // real "1D" view has no data source yet. Shown disabled rather than
+    // silently bucketing one day's tape into a single fake bar.
+    private static let timeframeBuckets: [String: TimeInterval] = [
+        "1m": 60, "5m": 300, "15m": 900, "1H": 3600
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
             chartToolbar
@@ -2366,6 +2392,14 @@ private struct ChartCenterView: View {
                 placeholder
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if showVolume, let series = currentSeries, !series.candles.isEmpty {
+                PhoneVolumePanel(series: series)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .frame(height: 70)
+                    .background(DesignSystem.bg1)
+                    .overlay(Rectangle().fill(DesignSystem.hairline).frame(height: 1), alignment: .top)
+            }
             chartFooter
         }
         .background(DesignSystem.bg)
@@ -2374,33 +2408,19 @@ private struct ChartCenterView: View {
     private var chartToolbar: some View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < 560
-            let overlays = isCompact ? ["VWAP", "20", "50", "VOL"] : ["VWAP", "SMA20", "SMA50", "VOL"]
+            let timeframes = isCompact ? ["1m", "5m", "15m", "1H"] : ["1m", "5m", "15m", "1H", "1D"]
 
             HStack(spacing: isCompact ? 6 : 10) {
-                ForEach(isCompact ? ["1m", "5m", "15m", "1H"] : ["1m", "5m", "15m", "1H", "1D"], id: \.self) { tf in
-                    Text(tf)
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.0)
-                        .foregroundColor(tf == "5m" ? DesignSystem.amber : DesignSystem.muted)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .allowsTightening(true)
-                        .padding(.horizontal, isCompact ? 5 : 7)
-                        .padding(.vertical, 4)
-                        .background(tf == "5m" ? DesignSystem.amber.opacity(0.10) : Color.clear)
+                ForEach(timeframes, id: \.self) { tf in
+                    timeframeButton(tf, isCompact: isCompact)
                 }
 
                 Rectangle().fill(DesignSystem.hairline).frame(width: 1, height: 14)
 
-                ForEach(overlays, id: \.self) { overlay in
-                    Text(overlay)
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.0)
-                        .foregroundColor(DesignSystem.text2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                        .allowsTightening(true)
-                }
+                overlayToggle(isCompact ? "VWAP" : "VWAP", isOn: $showVWAP)
+                overlayToggle(isCompact ? "20" : "SMA20", isOn: $showSMA20)
+                overlayToggle(isCompact ? "50" : "SMA50", isOn: $showSMA50)
+                overlayToggle("VOL", isOn: $showVolume)
 
                 Spacer(minLength: 6)
 
@@ -2422,6 +2442,46 @@ private struct ChartCenterView: View {
         )
     }
 
+    private func timeframeButton(_ tf: String, isCompact: Bool) -> some View {
+        let isEnabled = Self.timeframeBuckets[tf] != nil
+        let isSelected = tf == selectedTimeframe
+        return Button {
+            selectedTimeframe = tf
+        } label: {
+            Text(tf)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(
+                    !isEnabled ? DesignSystem.faint.opacity(0.4)
+                    : isSelected ? DesignSystem.amber : DesignSystem.muted
+                )
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .allowsTightening(true)
+                .padding(.horizontal, isCompact ? 5 : 7)
+                .padding(.vertical, 4)
+                .background(isSelected ? DesignSystem.amber.opacity(0.10) : Color.clear)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .help(isEnabled ? "" : "Needs multi-day daily candles -- not wired up yet")
+    }
+
+    private func overlayToggle(_ label: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            isOn.wrappedValue.toggle()
+        } label: {
+            Text(label)
+                .font(DesignSystem.Typography.labelFont)
+                .tracking(1.0)
+                .foregroundColor(isOn.wrappedValue ? DesignSystem.text2 : DesignSystem.faint.opacity(0.5))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .allowsTightening(true)
+        }
+        .buttonStyle(.plain)
+    }
+
     @ObservedObject private var liveTape = LiveTapeService.shared
 
     @ViewBuilder
@@ -2431,7 +2491,10 @@ private struct ChartCenterView: View {
                 series: series,
                 showAxisLabels: true,
                 windowStripeOpacity: 0.10,
-                showPatternMarkers: true
+                showPatternMarkers: true,
+                showVWAP: showVWAP,
+                showSMA20: showSMA20,
+                showSMA50: showSMA50
             )
             .padding(12)
         } else {
@@ -2442,7 +2505,8 @@ private struct ChartCenterView: View {
     private var currentSeries: PhoneChartSeries? {
         let bars = liveTape.lastSnapshot?.vxxCandles ?? []
         guard AppConfig.Schwab.hasOAuthTokens, !bars.isEmpty else { return nil }
-        return PhoneChartSeries.build(from: bars, bucketSeconds: 5 * 60)
+        let bucket = Self.timeframeBuckets[selectedTimeframe] ?? 300
+        return PhoneChartSeries.build(from: bars, bucketSeconds: bucket)
     }
 
     private var chartFooter: some View {
@@ -2562,6 +2626,7 @@ private struct RightRailView: View {
     @ObservedObject var signalMonitor: SignalMonitor
     let onEditTape: () -> Void
     let onSecondRead: () -> Void
+    let onOpenJournal: () -> Void
 
     @ObservedObject private var liveTape = LiveTapeService.shared
 
@@ -2572,6 +2637,8 @@ private struct RightRailView: View {
             rawReadSection
             railDivider
             secondReadSection
+            railDivider
+            tradeJournalSection
             Spacer(minLength: 0)
         }
         .background(DesignSystem.bg1)
@@ -2763,6 +2830,35 @@ private struct RightRailView: View {
             }
 
             Text("Paste prompt with current tape into the model of your choice. Use the read as a sanity check, not a green light.")
+                .font(DesignSystem.Typography.captionFont)
+                .foregroundColor(DesignSystem.text2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+    }
+
+    // MARK: TRADE JOURNAL
+    private var tradeJournalSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("TRADE JOURNAL")
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.6)
+                    .foregroundColor(DesignSystem.amber)
+                Spacer()
+                Button(action: onOpenJournal) {
+                    Text("OPEN")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.4)
+                        .foregroundColor(DesignSystem.amber)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .overlay(Rectangle().stroke(DesignSystem.amber, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text("Every trade you take is logged automatically -- entry price, VWAP, ratio, VIX, and a screenshot of the desk at that moment.")
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(DesignSystem.text2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -3103,6 +3199,9 @@ private struct PhoneCandleChart: View {
     var windowStripeOpacity: Double = 0.06   // subtle on tile; raise on the sheet
     var showPatternMarkers: Bool = false
     var enableSelection: Bool = false
+    var showVWAP: Bool = true
+    var showSMA20: Bool = true
+    var showSMA50: Bool = true
     @Binding var selectedCandle: Candle?
 
     init(series: PhoneChartSeries,
@@ -3110,12 +3209,18 @@ private struct PhoneCandleChart: View {
          windowStripeOpacity: Double = 0.06,
          showPatternMarkers: Bool = false,
          enableSelection: Bool = false,
+         showVWAP: Bool = true,
+         showSMA20: Bool = true,
+         showSMA50: Bool = true,
          selectedCandle: Binding<Candle?> = .constant(nil)) {
         self.series = series
         self.showAxisLabels = showAxisLabels
         self.windowStripeOpacity = windowStripeOpacity
         self.showPatternMarkers = showPatternMarkers
         self.enableSelection = enableSelection
+        self.showVWAP = showVWAP
+        self.showSMA20 = showSMA20
+        self.showSMA50 = showSMA50
         self._selectedCandle = selectedCandle
     }
 
@@ -3171,36 +3276,42 @@ private struct PhoneCandleChart: View {
             }
 
             // VWAP (cyan) — primary institutional bias line
-            ForEach(Array(series.vwap.enumerated()), id: \.offset) { _, point in
-                LineMark(
-                    x: .value("Time", point.0),
-                    y: .value("VWAP", point.1),
-                    series: .value("Overlay", "VWAP")
-                )
-                .foregroundStyle(DesignSystem.vwap)
-                .lineStyle(StrokeStyle(lineWidth: 1.4))
+            if showVWAP {
+                ForEach(Array(series.vwap.enumerated()), id: \.offset) { _, point in
+                    LineMark(
+                        x: .value("Time", point.0),
+                        y: .value("VWAP", point.1),
+                        series: .value("Overlay", "VWAP")
+                    )
+                    .foregroundStyle(DesignSystem.vwap)
+                    .lineStyle(StrokeStyle(lineWidth: 1.4))
+                }
             }
 
             // 20 SMA (steel yellow-ish — short-term trend)
-            ForEach(Array(series.sma20.enumerated()), id: \.offset) { _, point in
-                LineMark(
-                    x: .value("Time", point.0),
-                    y: .value("20 SMA", point.1),
-                    series: .value("Overlay", "20SMA")
-                )
-                .foregroundStyle(DesignSystem.amber.opacity(0.6))
-                .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [3, 3]))
+            if showSMA20 {
+                ForEach(Array(series.sma20.enumerated()), id: \.offset) { _, point in
+                    LineMark(
+                        x: .value("Time", point.0),
+                        y: .value("20 SMA", point.1),
+                        series: .value("Overlay", "20SMA")
+                    )
+                    .foregroundStyle(DesignSystem.amber.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [3, 3]))
+                }
             }
 
             // 50 SMA (amber — medium-term, the resistance line)
-            ForEach(Array(series.sma50.enumerated()), id: \.offset) { _, point in
-                LineMark(
-                    x: .value("Time", point.0),
-                    y: .value("50 SMA", point.1),
-                    series: .value("Overlay", "50SMA")
-                )
-                .foregroundStyle(DesignSystem.amber)
-                .lineStyle(StrokeStyle(lineWidth: 1.2))
+            if showSMA50 {
+                ForEach(Array(series.sma50.enumerated()), id: \.offset) { _, point in
+                    LineMark(
+                        x: .value("Time", point.0),
+                        y: .value("50 SMA", point.1),
+                        series: .value("Overlay", "50SMA")
+                    )
+                    .foregroundStyle(DesignSystem.amber)
+                    .lineStyle(StrokeStyle(lineWidth: 1.2))
+                }
             }
 
             // Pattern markers — only on the sheet. Bearish triggers point down
