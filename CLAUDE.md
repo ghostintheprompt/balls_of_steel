@@ -52,6 +52,24 @@ written down:
   message and read it, don't guess again.
 - **One punch list.** Not a hierarchy of them scattered across docs — see
   below. Add to it, check items off it, don't spin up parallel tracking.
+- **Design preferences (Michael's calls, keep applying these):**
+  - Whole containers are the tap target, not a boxed pill/button floating
+    inside one. "SECOND READ" / "TRADE JOURNAL" style sections: the entire
+    row opens the thing on click; a trailing chevron is the only affordance
+    needed. Don't write "OPEN" as a bordered label — it reads as decoration,
+    not a control.
+  - Watch the `Color.clear` hit-testing trap: a `Button` label with a
+    transparent background does not reliably register taps in SwiftUI
+    without an explicit `.contentShape(Rectangle())`. Add it to every custom
+    button whose unselected/inactive state has no real background fill —
+    this bit the chart timeframe buttons on first pass.
+  - Settings (dense, text-heavy) gets bumped type size
+    (`settingsLabelFont`/`settingsValueFont` in `DesignSystem.swift`) for
+    readability. The main TradingDashboard's density is deliberate and
+    already praised as good — don't casually bump its base `labelFont`
+    globally; scope any dashboard-specific size bump narrowly (e.g. the
+    chart toolbar got bumped to `captionFont` on its own, not the whole
+    dashboard).
 
 ## Punch list
 
@@ -64,7 +82,10 @@ written down:
 - [ ] Verify chart interactivity actually works on screen: real timeframe
   switching (1m/5m/15m/1H), VWAP/SMA20/SMA50/VOL toggles, 1D correctly shown
   disabled (no daily-candle data source exists — would need
-  `fetchDailyCandles` wired into a shared snapshot to ever be real).
+  `fetchDailyCandles` wired into a shared snapshot to ever be real). First
+  pass had unselected timeframe buttons on `Color.clear` backgrounds, which
+  silently don't register taps in SwiftUI without `.contentShape` — fixed,
+  but re-verify live since this is money-affecting if it's wrong.
 - [ ] Verify Trade Journal end-to-end with a real trade: entering a trade
   should now record a `JournalEntry` (`TradeJournal.record`, previously dead
   code — nothing ever called it) and capture a real screenshot of the desk

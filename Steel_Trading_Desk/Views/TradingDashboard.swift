@@ -2449,7 +2449,7 @@ private struct ChartCenterView: View {
             selectedTimeframe = tf
         } label: {
             Text(tf)
-                .font(DesignSystem.Typography.labelFont)
+                .font(DesignSystem.Typography.captionFont)
                 .tracking(1.0)
                 .foregroundColor(
                     !isEnabled ? DesignSystem.faint.opacity(0.4)
@@ -2458,9 +2458,12 @@ private struct ChartCenterView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .allowsTightening(true)
-                .padding(.horizontal, isCompact ? 5 : 7)
-                .padding(.vertical, 4)
+                .padding(.horizontal, isCompact ? 6 : 8)
+                .padding(.vertical, 5)
                 .background(isSelected ? DesignSystem.amber.opacity(0.10) : Color.clear)
+                // Color.clear does not hit-test by default in SwiftUI -- without
+                // this, unselected buttons silently fail to register taps.
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -2472,12 +2475,15 @@ private struct ChartCenterView: View {
             isOn.wrappedValue.toggle()
         } label: {
             Text(label)
-                .font(DesignSystem.Typography.labelFont)
+                .font(DesignSystem.Typography.captionFont)
                 .tracking(1.0)
                 .foregroundColor(isOn.wrappedValue ? DesignSystem.text2 : DesignSystem.faint.opacity(0.5))
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 5)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -2810,60 +2816,56 @@ private struct RightRailView: View {
 
     // MARK: SECOND READ
     private var secondReadSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("SECOND READ")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.6)
-                    .foregroundColor(DesignSystem.amber)
-                Spacer()
-                Button(action: onSecondRead) {
-                    Text("OPEN")
+        Button(action: onSecondRead) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("SECOND READ")
                         .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.4)
+                        .tracking(1.6)
                         .foregroundColor(DesignSystem.amber)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .overlay(Rectangle().stroke(DesignSystem.amber, lineWidth: 1))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(DesignSystem.muted)
                 }
-                .buttonStyle(.plain)
-            }
 
-            Text("Paste prompt with current tape into the model of your choice. Use the read as a sanity check, not a green light.")
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(DesignSystem.text2)
-                .fixedSize(horizontal: false, vertical: true)
+                Text("Paste prompt with current tape into the model of your choice. Use the read as a sanity check, not a green light.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .padding(16)
+        .buttonStyle(.plain)
     }
 
     // MARK: TRADE JOURNAL
     private var tradeJournalSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("TRADE JOURNAL")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.6)
-                    .foregroundColor(DesignSystem.amber)
-                Spacer()
-                Button(action: onOpenJournal) {
-                    Text("OPEN")
+        Button(action: onOpenJournal) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("TRADE JOURNAL")
                         .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.4)
+                        .tracking(1.6)
                         .foregroundColor(DesignSystem.amber)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .overlay(Rectangle().stroke(DesignSystem.amber, lineWidth: 1))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(DesignSystem.muted)
                 }
-                .buttonStyle(.plain)
-            }
 
-            Text("Every trade you take is logged automatically -- entry price, VWAP, ratio, VIX, and a screenshot of the desk at that moment.")
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(DesignSystem.text2)
-                .fixedSize(horizontal: false, vertical: true)
+                Text("Every trade you take is logged automatically -- entry price, VWAP, ratio, VIX, and a screenshot of the desk at that moment.")
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .padding(16)
+        .buttonStyle(.plain)
     }
 
 }
