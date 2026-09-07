@@ -3786,6 +3786,12 @@ private struct PhoneVolumePanel: View {
                     RuleMark(y: .value("200% Avg", series.avgVolume * 2))
                         .foregroundStyle(DesignSystem.amber)
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        .annotation(position: .top, alignment: .trailing, spacing: 2) {
+                            Text("200%")
+                                .font(DesignSystem.Typography.labelFont)
+                                .tracking(1.0)
+                                .foregroundColor(DesignSystem.amber)
+                        }
                 }
             }
             .chartXAxis(.hidden)
