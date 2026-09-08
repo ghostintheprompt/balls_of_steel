@@ -100,10 +100,10 @@ CRITERIA WEIGHT & PURPOSE:
 ALL 5 REQUIRED - Like pilot checklist, one red light = abort
 
 ENTRY CRITERIA CHECK:
-[ ] Time window 3:10-3:25 PM (MANDATORY)
+[ ] Time window 3:10-3:25 PM 
 [ ] Volume >200% average (MANDATORY - most predictive)
 [ ] VXX/VIX Ratio >1.45 (MANDATORY - your edge)
-[ ] VXX at resistance OR breaking support (key level)
+[ ] VXX at resistance OR breaking support nice (key level)
 [ ] Clear pattern (rejection/breakdown)
 [ ] No escalating news last 30 min
 
@@ -236,12 +236,22 @@ GO/NO-GO: ______
 
 ### MANDATORY CHECKS (ALL required):
 1. ✅ VXX/VIX Ratio >1.45
-2. ✅ Volume >200% average
-3. ✅ Correct time window
+2. ✅ Volume >200% average (Morning/Power Hour) or >300% (anywhere else the market's open)
+3. ✅ Correct time window OR, outside the three anchors, the higher 300% volume bar above
 4. ✅ Technical setup (pattern + level)
 5. ✅ No contradicting news
 
 **ONE MISSING = NO TRADE**
+
+**REVISED 2026-09-08** (Michael's call, after a real live session --
+see `docs/trading docs/fails/fail-01-2026-09-08-afternoon-flex-block.md`):
+"Correct time window" no longer means only the three anchors below. The
+system can evaluate any time the market is open; Morning, Power Hour, and
+Institutional stay the proven, lower-bar windows, and everything else
+(open, lunch, afternoon flex, close) is real but needs the same 300%
+volume Institutional already demands to compensate for not having an
+anchor window's proven edge. Pre-market and after-hours are still
+excluded outright.
 
 ---
 

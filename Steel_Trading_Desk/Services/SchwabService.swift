@@ -51,7 +51,9 @@ class SchwabService: ObservableObject {
             vwap: vwap > 0 ? vwap : quotePayload.price,
             previousClose: quotePayload.previousClose > 0 ? quotePayload.previousClose : quotePayload.price,
             timestamp: quotePayload.timestamp,
-            recentCandles: candles
+            recentCandles: candles,
+            bid: quotePayload.bid,
+            ask: quotePayload.ask
         )
     }
 
@@ -168,20 +170,6 @@ class SchwabService: ObservableObject {
             throw SchwabError.invalidResponse("Schwab returned no intraday candles for \(symbol).")
         }
         return vwap
-    }
-
-    func volumeVsAvg(_ symbol: String, period: Int) async throws -> Double {
-        let candles = try await fetchDailyCandles(schwabSymbol: Self.schwabSymbol(for: symbol))
-        guard candles.count >= 2 else {
-            throw SchwabError.invalidResponse("Schwab returned too few daily candles for \(symbol).")
-        }
-        let history = Array(candles.dropLast())
-        let averageWindow = Array(history.suffix(period))
-        let averageVolume = Double(averageWindow.reduce(0) { $0 + $1.volume }) / Double(max(averageWindow.count, 1))
-        guard averageVolume > 0, let today = candles.last else {
-            throw SchwabError.invalidResponse("Schwab returned no usable volume history for \(symbol).")
-        }
-        return Double(today.volume) / averageVolume
     }
 
     /// Real Schwab options chain, scoped to roughly the DTE window
@@ -365,6 +353,8 @@ class SchwabService: ObservableObject {
         let volume: Int
         let previousClose: Double
         let timestamp: Date
+        let bid: Double
+        let ask: Double
     }
 
     private func requestTokens(grantItems: [String: String]) async throws -> TokenResponse {
@@ -444,50 +434,43 @@ class SchwabService: ObservableObject {
             in: dictionaries,
             keys: ["tradeTime", "quoteTime", "regularMarketTradeTime"]
         ) ?? Date()
+        let bid = Self.doubleValue(in: dictionaries, keys: ["bidPrice", "bid"]) ?? 0
+        let ask = Self.doubleValue(in: dictionaries, keys: ["askPrice", "ask"]) ?? 0
 
         return QuotePayload(
             price: price,
             volume: volume,
             previousClose: previousClose,
-            timestamp: timestamp
+            timestamp: timestamp,
+            bid: bid,
+            ask: ask
         )
     }
 
+    // Confirmed live 2026-09-08 via raw candle diagnostics: `periodType=day,
+    // period=1` returns the most recent COMPLETE trading day, not today's
+    // in-progress session -- on a day following a market holiday (Monday
+    // 9/7 was Labor Day) that resolved to last Friday 9/4's closing candle,
+    // frozen there for the rest of the session because there simply were no
+    // newer candles in the response, not because of any cache. Pinning
+    // startDate/endDate to today's actual ET calendar day (the documented
+    // TDA/Schwab pricehistory alternative to period/periodType) and then
+    // defensively filtering to today's date client-side, in case Schwab
+    // ever pads the response with a stray adjacent-day candle.
     private func fetchRecentCandles(schwabSymbol: String) async throws -> [Candle] {
-        try await fetchCandles(
-            schwabSymbol: schwabSymbol,
-            periodType: "day",
-            period: 1,
-            frequencyType: "minute",
-            frequency: 1
-        )
-    }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        let now = Date()
+        let startOfDay = calendar.startOfDay(for: now)
 
-    private func fetchDailyCandles(schwabSymbol: String) async throws -> [Candle] {
-        try await fetchCandles(
-            schwabSymbol: schwabSymbol,
-            periodType: "month",
-            period: 1,
-            frequencyType: "daily",
-            frequency: 1
-        )
-    }
-
-    private func fetchCandles(
-        schwabSymbol: String,
-        periodType: String,
-        period: Int,
-        frequencyType: String,
-        frequency: Int
-    ) async throws -> [Candle] {
         let data = try await authorizedMarketData(
             path: "pricehistory",
             queryItems: [
                 URLQueryItem(name: "symbol", value: schwabSymbol),
-                URLQueryItem(name: "periodType", value: periodType),
-                URLQueryItem(name: "period", value: "\(period)"),
-                URLQueryItem(name: "frequencyType", value: frequencyType),
-                URLQueryItem(name: "frequency", value: "\(frequency)"),
+                URLQueryItem(name: "frequencyType", value: "minute"),
+                URLQueryItem(name: "frequency", value: "1"),
+                URLQueryItem(name: "startDate", value: "\(Int(startOfDay.timeIntervalSince1970 * 1000))"),
+                URLQueryItem(name: "endDate", value: "\(Int(now.timeIntervalSince1970 * 1000))"),
                 URLQueryItem(name: "needExtendedHoursData", value: "false")
             ]
         )
@@ -497,7 +480,7 @@ class SchwabService: ObservableObject {
             return []
         }
 
-        return candleObjects.compactMap { raw in
+        let candles: [Candle] = candleObjects.compactMap { raw in
             guard let open = Self.doubleValue(raw["open"]),
                   let high = Self.doubleValue(raw["high"]),
                   let low = Self.doubleValue(raw["low"]),
@@ -515,6 +498,8 @@ class SchwabService: ObservableObject {
                 timestamp: timestamp
             )
         }
+
+        return candles.filter { calendar.isDate($0.timestamp, inSameDayAs: now) }
     }
 
     private func authorizedMarketData(path: String, queryItems: [URLQueryItem], retriedAfterRefresh: Bool = false) async throws -> Data {
@@ -530,6 +515,13 @@ class SchwabService: ObservableObject {
         let token = try await refreshAccessToken()
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Confirmed live 2026-09-08: pricehistory responses were coming back
+        // bit-identical across polls minutes apart while quotes visibly moved
+        // -- URLSession's default cache (.useProtocolCachePolicy against
+        // URLCache.shared) was serving Schwab's own cached response instead
+        // of hitting the network. Every call through here backs a "live"
+        // feed; none of it should ever be allowed to come from a local cache.
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let (data, response) = try await session.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode == 401, !retriedAfterRefresh {

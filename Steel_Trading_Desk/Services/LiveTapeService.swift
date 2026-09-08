@@ -33,8 +33,15 @@ final class LiveTapeService: ObservableObject {
         let vixPctChange: Double      // vs previous close, %
         let ratio: Double
         let vxxVwap: Double
+        let vxxBid: Double
+        let vxxAsk: Double
         let vxxCandles: [Candle]      // today's 1m bars from the provider
         let timestamp: Date
+
+        // Bid/ask moves on essentially every real quote tick, unlike the
+        // volume aggregate -- the clearest tell that the feed is genuinely
+        // live versus just re-showing the last print.
+        var vxxSpread: Double { max(vxxAsk - vxxBid, 0) }
 
         /// VXX moving more than VIX = divergence. Positive = VXX outpacing
         /// (fade-worthy on stretched ratio). Negative = VIX outpacing
@@ -51,6 +58,7 @@ final class LiveTapeService: ObservableObject {
     // One bad tick is noise (a dropped packet, a momentary Schwab hiccup);
     // two in a row (~60s) is a real outage worth waking someone up for.
     private static let disconnectFailureThreshold = 2
+
 
     private var pollTask: Task<Void, Never>?
     private var lastLiveAlertSignature: String?
@@ -117,16 +125,14 @@ final class LiveTapeService: ObservableObject {
         do {
             async let vxxQuote = provider.quote("VXX")
             async let vixQuote = provider.quote("^VIX")
-            async let volMultiple = provider.volumeVsAvg("VXX", period: 20)
 
             let vxx = try await vxxQuote
             let vix = try await vixQuote
-            let volMul = (try? await volMultiple) ?? 0
 
             MarketDataService.shared.updateQuoteCache(vxx)
             MarketDataService.shared.updateQuoteCache(vix)
 
-            let entry = composeEntry(vxx: vxx, vix: vix, volumeMultiple: volMul)
+            let entry = composeEntry(vxx: vxx, vix: vix)
             persist(entry)
             lastSnapshot = LiveSnapshot(
                 vxxPrice: vxx.price,
@@ -135,6 +141,8 @@ final class LiveTapeService: ObservableObject {
                 vixPctChange: pctChange(price: vix.price, prevClose: vix.previousClose),
                 ratio: vix.price > 0 ? vxx.price / vix.price : 0,
                 vxxVwap: vxx.vwap,
+                vxxBid: vxx.bid,
+                vxxAsk: vxx.ask,
                 vxxCandles: vxx.recentCandles,
                 timestamp: Date()
             )
@@ -163,9 +171,33 @@ final class LiveTapeService: ObservableObject {
         return ((price - prevClose) / prevClose) * 100
     }
 
-    private func composeEntry(vxx: Quote, vix: Quote, volumeMultiple: Double) -> MarketDataEntry {
-        // Preserve user-set fields (level, pattern, news, arrow) from the existing
-        // entry so live mode doesn't overwrite manual confirmations.
+    // Matches the audited ThinkOrSwim setup exactly (docs/trading docs/
+    // thinkorswim_complete_setup_2026.md): volPercent = (volume /
+    // Average(volume, 30)) * 100 on 5-minute bars. This app's whole reason
+    // to exist is to fire the same strategy without ThinkOrSwim open --
+    // the volume gate previously compared today's cumulative volume against
+    // a 20-DAY average, a different measurement that could clear or fail
+    // independently of what the real, documented strategy says. Rebuilt
+    // from the same live 1-minute candles already fetched for the chart,
+    // bucketed into 5-minute bars to match.
+    private static func volumePercent(from oneMinuteCandles: [Candle], lookback: Int = 30) -> Double {
+        let bars = oneMinuteCandles.aggregated(bucketSeconds: 300)
+        guard let current = bars.last else { return 0 }
+        let history = Array(bars.dropLast().suffix(lookback))
+        guard !history.isEmpty else { return 0 }
+        let averageVolume = Double(history.reduce(0) { $0 + $1.volume }) / Double(history.count)
+        guard averageVolume > 0 else { return 0 }
+        return (Double(current.volume) / averageVolume) * 100
+    }
+
+    private func composeEntry(vxx: Quote, vix: Quote) -> MarketDataEntry {
+        // Preserve only the fields there's no live source of truth for
+        // (news risk is judgment, not derivable from price/volume). Pattern,
+        // key level, and arrow signal used to silently carry forward
+        // whatever was last typed into the Manual Tape sheet, forever --
+        // three of the five real strategy gates were never actually computed
+        // live. All three now come from the same candles already driving
+        // the chart, matching what a real ThinkOrSwim chart shows.
         let previous: MarketDataEntry? = loadPrevious()
 
         let vwapPosition: VWAPPosition = {
@@ -176,7 +208,8 @@ final class LiveTapeService: ObservableObject {
         }()
 
         let timeWindow = currentTimeWindow()
-        let volumePercent = volumeMultiple > 0 ? volumeMultiple * 100 : 0
+        let volumePercent = Self.volumePercent(from: vxx.recentCandles)
+        let live = Self.liveGateReadout(candles: vxx.recentCandles, price: vxx.price)
 
         return MarketDataEntry(
             instrument: .vxx,
@@ -184,13 +217,69 @@ final class LiveTapeService: ObservableObject {
             vixLevel: vix.price,
             volumePercent: volumePercent,
             vwapPosition: vwapPosition,
-            arrowSignal: previous?.arrowSignal ?? .none,
-            keyLevelConfirmed: previous?.keyLevelConfirmed ?? false,
-            patternConfirmed: previous?.patternConfirmed ?? false,
+            vwapValue: vxx.vwap,
+            arrowSignal: live.arrowSignal,
+            keyLevelConfirmed: live.keyLevelConfirmed,
+            patternConfirmed: live.patternConfirmed,
             timeWindow: timeWindow,
             newsRisk: previous?.newsRisk ?? .none,
             timestamp: Date()
         )
+    }
+
+    private struct LiveGateReadout {
+        let patternConfirmed: Bool
+        let keyLevelConfirmed: Bool
+        let arrowSignal: ArrowSignalInput
+    }
+
+    // Real pattern/key-level/arrow detection off the same live candles
+    // already used for the chart -- no fabricated data, and no dependency
+    // on the options/earnings/SPY fields the old MarketData-based
+    // ArrowSignalDetector call would have needed to fake.
+    private static func liveGateReadout(candles: [Candle], price: Double) -> LiveGateReadout {
+        guard candles.count >= 20 else {
+            return LiveGateReadout(patternConfirmed: false, keyLevelConfirmed: false, arrowSignal: .none)
+        }
+
+        let supportResistance = SupportResistance.calculate(candles: candles)
+        let recognizer = PatternRecognizer()
+        let avgVolume = Int(IndicatorCalculator.calculateVolumeAverage(candles: candles, period: 30))
+        let patternHits = recognizer.detectPatternsAcrossSeries(candles: candles, averageVolume: avgVolume)
+        let lastCandle = candles.last
+        let hasPattern = patternHits.contains { $0.candle.timestamp == lastCandle?.timestamp }
+
+        guard let indicators = IndicatorCalculator.calculateAll(candles: candles) else {
+            // Not enough candles yet for the 50 SMA (first ~50 minutes of the
+            // session) -- pattern/key-level can still be real, arrow can't.
+            let keyLevel = supportResistance.isNearSupport(price) || supportResistance.isNearResistance(price)
+            return LiveGateReadout(patternConfirmed: hasPattern, keyLevelConfirmed: keyLevel, arrowSignal: .none)
+        }
+
+        let nearSMA50 = indicators.sma50 > 0 && abs(price - indicators.sma50) / indicators.sma50 < 0.003
+        let nearVWAP = indicators.vwap > 0 && abs(price - indicators.vwap) / indicators.vwap < 0.003
+        let keyLevel = supportResistance.isNearSupport(price)
+            || supportResistance.isNearResistance(price)
+            || nearSMA50
+            || nearVWAP
+
+        let previousCandle = candles.count >= 2 ? candles[candles.count - 2] : nil
+        let arrow = ArrowSignalDetector.detectArrowSignal(
+            technicalIndicators: indicators,
+            timestamp: Date(),
+            hasPattern: hasPattern,
+            previousCandle: previousCandle,
+            supportResistance: supportResistance
+        )
+
+        let arrowInput: ArrowSignalInput
+        switch arrow?.direction {
+        case .bullish: arrowInput = .bullish
+        case .bearish: arrowInput = .bearish
+        case nil: arrowInput = .none
+        }
+
+        return LiveGateReadout(patternConfirmed: hasPattern, keyLevelConfirmed: keyLevel, arrowSignal: arrowInput)
     }
 
     private func loadPrevious() -> MarketDataEntry? {

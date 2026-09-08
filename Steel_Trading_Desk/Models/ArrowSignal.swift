@@ -222,17 +222,22 @@ struct ArrowSignal {
 // MARK: - Arrow Signal Detector
 class ArrowSignalDetector {
 
-    /// Detect arrow signal from market data and technical indicators
+    /// Detect arrow signal purely from real, live-derivable inputs -- no
+    /// dependency on the heavyweight `MarketData` struct (options/earnings/SPY
+    /// fields that don't exist for a live VXX/VIX-only Schwab feed and would
+    /// have to be fabricated to call the old signature). Nothing else in the
+    /// app calls this function, so narrowing the signature is safe.
     static func detectArrowSignal(
-        marketData: MarketData,
         technicalIndicators: TechnicalIndicators,
+        timestamp: Date,
+        hasPattern: Bool,
         previousCandle: Candle?,
         supportResistance: SupportResistance
     ) -> ArrowSignal? {
 
         // Determine arrow direction based on price action and indicators
         guard let direction = determineDirection(
-            currentPrice: marketData.currentPrice,
+            currentPrice: technicalIndicators.currentPrice,
             indicators: technicalIndicators,
             previousCandle: previousCandle
         ) else {
@@ -241,19 +246,20 @@ class ArrowSignalDetector {
 
         // Calculate volume confirmation (GATE KEEPER)
         let volumeConfirmation = calculateVolumeConfirmation(
-            currentVolume: marketData.volume,
-            averageVolume: marketData.averageVolume
+            currentVolume: technicalIndicators.currentVolume,
+            averageVolume: Int(technicalIndicators.volumeAverage)
         )
 
         // Detect technical confluence
         let confluence = detectTechnicalConfluence(
-            marketData: marketData,
+            currentPrice: technicalIndicators.currentPrice,
+            hasPattern: hasPattern,
             indicators: technicalIndicators,
             supportResistance: supportResistance
         )
 
         // Determine time window
-        let timeWindow = determineTimeWindow(timestamp: marketData.timestamp)
+        let timeWindow = determineTimeWindow(timestamp: timestamp)
 
         // Calculate signal strength
         let strength = calculateSignalStrength(
@@ -264,7 +270,7 @@ class ArrowSignalDetector {
 
         return ArrowSignal(
             direction: direction,
-            timestamp: marketData.timestamp,
+            timestamp: timestamp,
             volumeConfirmation: volumeConfirmation,
             technicalConfluence: confluence,
             timeWindow: timeWindow,
@@ -326,7 +332,8 @@ class ArrowSignalDetector {
 
     // MARK: - Technical Confluence Detection
     private static func detectTechnicalConfluence(
-        marketData: MarketData,
+        currentPrice: Double,
+        hasPattern: Bool,
         indicators: TechnicalIndicators,
         supportResistance: SupportResistance
     ) -> [ArrowSignal.TechnicalConfluence] {
@@ -344,12 +351,12 @@ class ArrowSignalDetector {
         }
 
         // Candlestick Pattern
-        if marketData.hasPattern {
+        if hasPattern {
             confluence.append(.candlestickPattern)
         }
 
         // Support/Resistance Test
-        let price = marketData.currentPrice
+        let price = currentPrice
         if supportResistance.isNearSupport(price) || supportResistance.isNearResistance(price) {
             confluence.append(.supportResistance)
         }

@@ -60,6 +60,11 @@ struct TradingDashboard: View {
             .navigationBarTitleDisplayMode(usesCompactPhoneLayout ? .inline : .large)
             #endif
             .toolbar {
+                #if os(macOS)
+                ToolbarItem(placement: .primaryAction) {
+                    RecordingControlView()
+                }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         isSettingsSheetOpen = true
@@ -73,9 +78,12 @@ struct TradingDashboard: View {
             }
             .sheet(isPresented: $isSettingsSheetOpen) {
                 SettingsView()
-                    #if os(macOS)
-                    .frame(width: 1180, height: 780)
-                    #endif
+                // No fixed frame here -- SettingsView's own
+                // .frame(minWidth:idealWidth:minHeight:idealHeight:) was
+                // being silently overridden by a hard-fixed size that never
+                // grew when Settings' own content did (e.g. today's font
+                // bump), forcing an unnecessary scroll. Let SettingsView
+                // size itself.
             }
             #if DEBUG
             .onReceive(NotificationCenter.default.publisher(for: .debugOpenSettings)) { _ in
@@ -175,6 +183,79 @@ struct TradingDashboard: View {
         }
     }
 }
+
+#if os(macOS)
+// MARK: - Recording Control
+//
+// Native ProRes capture of this app's own window via ScreenCaptureKit +
+// AVAssetWriter -- no external binary (this app is sandboxed, which blocks
+// launching a subprocess like ffmpeg entirely). Added 2026-09-08 so Michael
+// can record real alerts/trades hitting to show his old boss and friends,
+// and to keep his own accountability record.
+private struct RecordingControlView: View {
+    @ObservedObject private var recorder = ScreenRecorder.shared
+    @State private var showError = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if recorder.isRecording {
+                Text(elapsedText)
+                    .font(DesignSystem.Typography.labelFont)
+                    .foregroundColor(DesignSystem.text)
+                Text(sizeText)
+                    .font(DesignSystem.Typography.labelFont)
+                    .foregroundColor(DesignSystem.muted)
+            } else if let saved = recorder.lastSavedURL {
+                Button {
+                    recorder.revealLastRecordingInFinder()
+                } label: {
+                    Image(systemName: "folder")
+                        .foregroundColor(DesignSystem.muted)
+                }
+                .buttonStyle(.plain)
+                .help("Reveal \(saved.lastPathComponent) in Finder")
+            }
+
+            Button {
+                recorder.toggle()
+            } label: {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(recorder.isRecording ? DesignSystem.short : DesignSystem.muted)
+                        .frame(width: 8, height: 8)
+                    Text(recorder.isRecording ? "STOP" : "REC")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                }
+                .foregroundColor(recorder.isRecording ? DesignSystem.short : DesignSystem.amber)
+            }
+            .buttonStyle(.plain)
+            .help(recorder.isRecording ? "Stop recording (ProRes, saved to ~/Movies/Steel Trading Desk Recordings)" : "Record this desk to ProRes")
+        }
+        .onChange(of: recorder.lastError) { _, newValue in
+            showError = newValue != nil
+        }
+        .alert("Recording Error", isPresented: $showError, presenting: recorder.lastError) { _ in
+            Button("OK") {}
+        } message: { error in
+            Text(error)
+        }
+    }
+
+    private var elapsedText: String {
+        let total = Int(recorder.elapsedSeconds)
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    private var sizeText: String {
+        let mb = Double(recorder.fileSizeBytes) / 1_048_576
+        if mb >= 1024 {
+            return String(format: "%.2f GB", mb / 1024)
+        }
+        return String(format: "%.0f MB", mb)
+    }
+}
+#endif
 
 private struct PhoneDeskHeader: View {
     let phase: MarketPhase
@@ -726,18 +807,22 @@ private struct VXXStrategyState {
         return windowPass ? .pass : .fail
     }
 
+    // Real check/X always, matching the detail text below each row (which
+    // already shows the real number regardless of whether an earlier gate
+    // passed). `.locked` now means only "no tape entered at all" -- it no
+    // longer means "we didn't bother evaluating this one."
     var ratioStatus: GateStatus {
-        guard baseConditionsPass else { return .locked }
+        guard entry != nil else { return .locked }
         return ratioPass ? .pass : .fail
     }
 
     var levelStatus: GateStatus {
-        guard baseConditionsPass && ratioPass else { return .locked }
+        guard entry != nil else { return .locked }
         return levelPass ? .pass : .fail
     }
 
     var patternStatus: GateStatus {
-        guard baseConditionsPass && ratioPass && levelPass else { return .locked }
+        guard entry != nil else { return .locked }
         return patternPass ? .pass : .fail
     }
 
@@ -758,36 +843,54 @@ private struct VXXStrategyState {
         return "\(entry.timeWindow.displayName) is a valid VXX entry window."
     }
 
+    // Sequential gating still short-circuits by design (the doc's own "check
+    // in priority order, don't care about #4/#5 once an earlier gate fails"
+    // workflow) -- but "Locked" used to hide numbers the app had already
+    // computed (proven by the RAW READ panel showing them regardless). Now
+    // every detail line always shows the real, live value, with a "moot"
+    // qualifier when an earlier gate hasn't cleared rather than pretending
+    // the value is unknown.
     var ratioDetail: String {
         guard let entry else { return "Locked until tape is entered." }
-        if !baseConditionsPass { return "Locked until volume and window pass." }
         if entry.instrument != .vxx { return "This desk is for VXX. Switch the tape to VXX." }
-        if entry.ratio < StrategySpec.minimumRatioForEntry {
-            return "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >\(String(format: "%.2f", StrategySpec.minimumRatioForEntry))."
+        let passes = entry.ratio >= StrategySpec.minimumRatioForEntry
+        let readout = passes
+            ? "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
+            : "Ratio \(String(format: "%.2f", entry.ratio)) fails. Need >\(String(format: "%.2f", StrategySpec.minimumRatioForEntry))."
+        if !baseConditionsPass {
+            return "\(readout) Doesn't matter yet — volume and window aren't there."
         }
-        if vixLeadingVxx, let snap = liveSnapshot {
+        if passes, vixLeadingVxx, let snap = liveSnapshot {
             // Soft warning — gate still passes per doc, but the direction
             // is worth knowing before sizing up.
             return "Ratio \(String(format: "%.2f", entry.ratio)) passes (\(entry.ratioTier)). HEADS UP: VIX is leading VXX (\(String(format: "%+.2f", snap.divergencePoints))pp). Wait for a cleaner read or size down."
         }
-        return "Ratio \(String(format: "%.2f", entry.ratio)) passes. \(entry.ratioTier)."
+        return readout
     }
 
     var levelDetail: String {
-        guard baseConditionsPass && ratioPass else { return "Locked until ratio passes." }
         guard let entry else { return "Locked until tape is entered." }
-        return levelPass
-            ? "Key level confirmed. VWAP read: \(entry.vwapPosition.displayName)."
-            : "No key level. Need VWAP, 50 SMA, round number, prior high, or support break."
+        let vwapReadout = entry.vwapValue > 0
+            ? "VWAP $\(String(format: "%.2f", entry.vwapValue)) (\(entry.vwapPosition.displayName))"
+            : "VWAP read: \(entry.vwapPosition.displayName)"
+        let readout = entry.keyLevelConfirmed
+            ? "Key level confirmed. \(vwapReadout)."
+            : "No key level. \(vwapReadout). Need VWAP, 50 SMA, round number, prior high, or support break."
+        guard baseConditionsPass && ratioPass else {
+            return "\(readout) Doesn't matter yet — volume, window, and ratio aren't there."
+        }
+        return readout
     }
 
     var patternDetail: String {
-        guard baseConditionsPass && ratioPass && levelPass else { return "Locked until level passes." }
         guard let entry else { return "Locked until tape is entered." }
-        if patternPass {
-            return entry.arrowSignal == .none ? "Rejection pattern confirmed." : "Pattern confirmed with \(entry.arrowSignal.displayName)."
+        let readout = entry.patternConfirmed
+            ? (entry.arrowSignal == .none ? "Rejection pattern confirmed." : "Pattern confirmed with \(entry.arrowSignal.displayName).")
+            : "No rejection pattern yet."
+        guard baseConditionsPass && ratioPass && levelPass else {
+            return "\(readout) Doesn't matter yet — volume, window, ratio, and level aren't there."
         }
-        return "Wait for rejection candle. No early entry."
+        return readout
     }
 
     var decisionDetail: String {
@@ -1170,564 +1273,6 @@ struct TradeRowView: View {
     }
 }
 
-struct SPYTradingDashboard: View {
-    @StateObject private var viewModel = SPYDashboardViewModel()
-    @ObservedObject var signalMonitor: SignalMonitor
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                TradingBackdrop()
-
-                ScrollView {
-                    VStack(spacing: 16) {
-                        TestSessionBanner()
-                            .padding(.horizontal)
-
-                        spyMarketSnapshotSection
-
-                        if let nextWindow = viewModel.nextWindow {
-                            SPYWindowAlertCard(window: nextWindow.window, minutesUntil: nextWindow.minutesUntil)
-                                .padding(.horizontal)
-                        }
-
-                        CloseManagementCard(
-                            title: "SPY Close Management",
-                            warningTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime),
-                            hardExitTime: AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime),
-                            note: "Warn first into the close. If you are still in it later, that should be a decision, not an accident."
-                        )
-                        .padding(.horizontal)
-
-                        if viewModel.hasManualData {
-                            SPYSetupBoardCard(viewModel: viewModel)
-                                .padding(.horizontal)
-                        }
-
-                        spyChecklistSection
-                        spySignalsSection
-                        spyTradesSection
-                    }
-                    .padding(.vertical)
-                }
-            }
-            .navigationTitle("SPY Desk")
-        }
-        .task {
-            await viewModel.startMonitoring()
-        }
-    }
-
-    private var spyMarketSnapshotSection: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("SPY TAPE")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.5)
-                    .foregroundColor(DesignSystem.primaryColor)
-
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("$\(viewModel.spyPrice, specifier: "%.2f")")
-                        .font(DesignSystem.Typography.heroFont)
-                        .foregroundColor(DesignSystem.primaryText)
-
-                    Text("\(viewModel.spyChangePercent, specifier: "%+.2f")%")
-                        .font(DesignSystem.Typography.monospacedFont)
-                        .foregroundColor(viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor : DesignSystem.bearishColor)
-                }
-
-                Text("Respect the tape, not the story.")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .deskPanel(glow: viewModel.spyChangePercent >= 0 ? DesignSystem.bullishColor.opacity(0.18) : DesignSystem.bearishColor.opacity(0.18), padding: 20)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("CONTEXT")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.5)
-                    .foregroundColor(DesignSystem.primaryColor)
-
-                Text(viewModel.contextLabel)
-                    .font(DesignSystem.Typography.headlineFont)
-                    .foregroundColor(DesignSystem.primaryText)
-
-                Text(viewModel.lastUpdateLabel)
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .deskPanel(glow: DesignSystem.primaryColor.opacity(0.15), padding: 20)
-        }
-        .padding(.horizontal)
-    }
-
-    private var spyChecklistSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            DeskSectionHeader(title: "SPY Discipline", systemImage: "scope", accent: DesignSystem.primaryColor)
-            .padding(.horizontal)
-
-            VStack(spacing: 12) {
-                spyFocusRow(title: "Open Drive", detail: "9:35-10:05. Arrow first. VWAP agreement. Volume there. No begging.")
-                spyFocusRow(
-                    title: "Close Drive",
-                    detail: "3:30-\(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Warning at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalWarningTime)). Alert session closes at \(AppConfig.CloseManagement.displayTime(AppConfig.CloseManagement.generalHardExitTime)) if you are still managing."
-                )
-                spyFocusRow(title: "News Filter", detail: "Heavy news can pay. It still has to prove it on volume before it graduates from watch to entry.")
-            }
-            .padding(.horizontal)
-        }
-    }
-
-    private func spyFocusRow(title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(DesignSystem.Typography.labelFont)
-                .tracking(1.5)
-                .foregroundColor(DesignSystem.primaryText)
-            Text(detail)
-                .font(DesignSystem.Typography.bodyFont)
-                .foregroundColor(DesignSystem.mutedText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.10), padding: 16)
-    }
-
-    private var spySignalsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                DeskSectionHeader(title: "SPY Signals", systemImage: "bolt.fill", accent: DesignSystem.warningColor)
-                Spacer()
-                DeskCountBadge(value: "\(spySignals.count)", accent: DesignSystem.warningColor)
-            }
-            .padding(.horizontal)
-
-            if spySignals.isEmpty {
-                InfoCard {
-                    Text("Nothing live. If Manual is quiet, this tab should be quiet.")
-                        .font(DesignSystem.Typography.bodyFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal)
-            } else {
-                ForEach(spySignals) { signal in
-                    SharedSignalRowView(signal: signal)
-                        .padding(.horizontal)
-                        .swipeActions {
-                            Button("Trade") {
-                                signalMonitor.startTrade(signal)
-                            }
-                            .tint(DesignSystem.long)
-                        }
-                }
-            }
-        }
-    }
-
-    private var spyTradesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                DeskSectionHeader(title: "SPY Risk", systemImage: "flame.fill", accent: DesignSystem.dangerColor)
-                Spacer()
-                DeskCountBadge(value: "\(spyTrades.count)", accent: DesignSystem.dangerColor)
-            }
-            .padding(.horizontal)
-
-            if spyTrades.isEmpty {
-                InfoCard {
-                    Text("No SPY risk on. That is a position too.")
-                        .font(DesignSystem.Typography.bodyFont)
-                        .foregroundColor(DesignSystem.mutedText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal)
-            } else {
-                ForEach(spyTrades) { trade in
-                    TradeDetailCard(trade: trade)
-                }
-            }
-        }
-    }
-
-    private var spySignals: [Signal] {
-        signalMonitor.activeSignals.filter { $0.symbol == "SPY" }
-    }
-
-    private var spyTrades: [Trade] {
-        signalMonitor.activeTrades.filter { $0.symbol == "SPY" }
-    }
-}
-
-private struct SPYWindowAlertCard: View {
-    let window: SPYFocusWindow
-    let minutesUntil: Int
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("NEXT SPY WINDOW")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1)
-                    .foregroundColor(DesignSystem.mutedText)
-                Text(window.displayName)
-                    .font(DesignSystem.Typography.headlineFont)
-                    .foregroundColor(DesignSystem.primaryText)
-                Text(window.timeRange)
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(minutesUntil)m")
-                    .font(DesignSystem.Typography.titleFont)
-                    .foregroundColor(DesignSystem.warningColor)
-                Text(minutesUntil > 0 ? "until it matters" : "window live")
-                    .font(DesignSystem.Typography.captionFont)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-        }
-        .deskPanel(glow: DesignSystem.warningColor.opacity(0.14))
-    }
-}
-
-enum SPYFocusWindow {
-    case open
-    case close
-
-    var displayName: String {
-        switch self {
-        case .open: return "Open Drive"
-        case .close: return "Close Drive"
-        }
-    }
-
-    var timeRange: String {
-        switch self {
-        case .open: return "9:35-10:05 AM"
-        case .close: return "3:30-4:15 PM"
-        }
-    }
-}
-
-@MainActor
-final class SPYDashboardViewModel: ObservableObject {
-    @Published var spyPrice: Double = 0
-    @Published var spyChangePercent: Double = 0
-    @Published var nextWindow: (window: SPYFocusWindow, minutesUntil: Int)?
-    @Published var hasManualData = false
-    @Published private(set) var latestData: MarketData?
-
-    private let marketData = MarketDataService.shared
-    private var cancellables = Set<AnyCancellable>()
-
-    var contextLabel: String {
-        guard let data = latestData else { return "Waiting for SPY manual entry" }
-        return "\(currentWindowLabel(for: data.timestamp)) - \(suggestedAction)"
-    }
-
-    var lastUpdateLabel: String {
-        guard let data = latestData else { return "Enter SPY in Manual Data Entry" }
-        return "Volume \(formattedVolumeMultiple(data.volumeMultiple)) - \(data.newsRisk.displayName) news risk"
-    }
-
-    var setupHeadline: String {
-        guard let data = latestData else { return "Waiting for manual SPY feed" }
-
-        if isVolumeReady(data) && isVWAPAligned(data) && data.hasArrowSignal {
-            return "\(biasLabel(for: data)) ready when you are"
-        }
-
-        if data.hasArrowSignal && isVWAPAligned(data) {
-            return "\(biasLabel(for: data)) watch only until volume firms up"
-        }
-
-        if data.hasArrowSignal {
-            return "Arrow is live, but VWAP still needs to agree"
-        }
-
-        return "Watching for the next clean arrow into your focus window"
-    }
-
-    var setupSubheadline: String {
-        guard let data = latestData else { return "The SPY tab will fill itself as soon as you post a manual entry." }
-        return "\(focusWindowDescription(for: data.timestamp)) - Need \(formattedVolumeMultiple(requiredSPYVolumeMultiple(for: data))) for entry quality."
-    }
-
-    var setupMetrics: [SPYSetupMetric] {
-        guard let data = latestData else { return [] }
-
-        return [
-            SPYSetupMetric(
-                title: "Window",
-                value: currentWindowLabel(for: data.timestamp),
-                detail: focusWindowDescription(for: data.timestamp),
-                color: .blue,
-                systemImage: "clock"
-            ),
-            SPYSetupMetric(
-                title: "Bias",
-                value: biasLabel(for: data),
-                detail: biasDetail(for: data),
-                color: biasColor(for: data),
-                systemImage: biasSystemImage(for: data)
-            ),
-            SPYSetupMetric(
-                title: "VWAP",
-                value: data.isAboveVWAP ? "Above VWAP" : "Below VWAP",
-                detail: isVWAPAligned(data) ? "Aligned with arrow" : "Conflicts with arrow",
-                color: isVWAPAligned(data) ? DesignSystem.long : DesignSystem.amber,
-                systemImage: "waveform.path.ecg"
-            ),
-            SPYSetupMetric(
-                title: "Volume",
-                value: formattedVolumeMultiple(data.volumeMultiple),
-                detail: "Need \(formattedVolumeMultiple(requiredSPYVolumeMultiple(for: data)))",
-                color: isVolumeReady(data) ? DesignSystem.long : DesignSystem.amber,
-                systemImage: "chart.bar.fill"
-            ),
-            SPYSetupMetric(
-                title: "News",
-                value: data.newsRisk.displayName,
-                detail: data.isHighVolatility ? "VIX \(String(format: "%.1f", data.vix))" : "Volatility contained",
-                color: newsColor(for: data),
-                systemImage: "newspaper.fill"
-            ),
-            SPYSetupMetric(
-                title: "Daily Move",
-                value: String(format: "%+.2f%%", data.gapPercent),
-                detail: "Price $\(String(format: "%.2f", data.currentPrice))",
-                color: data.gapPercent >= 0 ? DesignSystem.long : DesignSystem.short,
-                systemImage: "point.topleft.down.curvedto.point.bottomright.up"
-            )
-        ]
-    }
-
-    func startMonitoring() async {
-        subscribe()
-        updateNextWindow()
-    }
-
-    private func subscribe() {
-        marketData.subscribeToMarketData(symbol: "SPY")
-            .compactMap { $0 }
-            .receive(on: RunLoop.main)
-            .sink { [weak self] data in
-                guard let self else { return }
-                self.spyPrice = data.currentPrice
-                self.spyChangePercent = data.gapPercent
-                self.hasManualData = true
-                self.latestData = data
-                self.updateNextWindow()
-            }
-            .store(in: &cancellables)
-    }
-
-    private func updateNextWindow() {
-        let now = Date()
-        let calendar = Calendar.current
-        let easternTimeZone = TimeZone(identifier: "America/New_York")!
-        let components = calendar.dateComponents(in: easternTimeZone, from: now)
-        guard let hour = components.hour, let minute = components.minute else { return }
-
-        let currentMinutes = hour * 60 + minute
-        let windows: [(SPYFocusWindow, Int)] = [
-            (.open, 9 * 60 + 35),
-            (.close, 15 * 60 + 30)
-        ]
-
-        for (window, startMinutes) in windows where currentMinutes < startMinutes {
-            nextWindow = (window, startMinutes - currentMinutes)
-            return
-        }
-
-        nextWindow = nil
-    }
-
-    private func currentWindowLabel(for date: Date) -> String {
-        switch date {
-        case _ where date.isSPYOpenWindow:
-            return "Open Drive Active"
-        case _ where date.isSPYCloseWindow:
-            return "Close Drive Active"
-        case _ where date.isAfternoonFlexWindow:
-            return "Afternoon Flex Active"
-        default:
-            return "Between Windows"
-        }
-    }
-
-    private func focusWindowDescription(for date: Date) -> String {
-        if date.isSPYOpenWindow {
-            return "Open flow is active right now."
-        }
-        if date.isAfternoonFlexWindow && !date.isSPYCloseWindow {
-            return "Afternoon tape is tradable now. Good setups can build before the close if volume earns it."
-        }
-        if date.isSPYCloseWindow {
-            return "Close flow is active right now."
-        }
-        if let nextWindow {
-            return "\(nextWindow.window.displayName) in \(nextWindow.minutesUntil)m."
-        }
-        return "Outside the main windows now. Stay selective or manage what is already on."
-    }
-
-    private var suggestedAction: String {
-        guard let data = latestData else { return "manual feed offline" }
-
-        if isVolumeReady(data) && isVWAPAligned(data) && data.hasArrowSignal {
-            return "entry-grade setup"
-        }
-        if data.hasArrowSignal && isVWAPAligned(data) {
-            return "watch-grade setup"
-        }
-        if data.hasArrowSignal {
-            return "mixed setup"
-        }
-        return "waiting for arrow"
-    }
-
-    private func biasLabel(for data: MarketData) -> String {
-        guard let direction = data.arrowDirection else {
-            return "No Arrow Yet"
-        }
-
-        return direction == .bullish ? "Calls Bias" : "Puts Bias"
-    }
-
-    private func biasDetail(for data: MarketData) -> String {
-        guard let direction = data.arrowDirection else {
-            return "Need a fresh arrow to pick direction."
-        }
-
-        if direction == .bullish {
-            return data.isAboveVWAP ? "Bullish arrow with VWAP support" : "Bullish arrow, but VWAP still overhead"
-        }
-
-        return data.isAboveVWAP ? "Bearish arrow, but price is still above VWAP" : "Bearish arrow with VWAP pressure"
-    }
-
-    private func biasColor(for data: MarketData) -> Color {
-        guard let direction = data.arrowDirection else { return DesignSystem.steel }
-        return direction == .bullish ? DesignSystem.long : DesignSystem.short
-    }
-
-    private func biasSystemImage(for data: MarketData) -> String {
-        guard let direction = data.arrowDirection else { return "scope" }
-        return direction == .bullish ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill"
-    }
-
-    private func isVWAPAligned(_ data: MarketData) -> Bool {
-        guard let direction = data.arrowDirection else { return false }
-        return direction == .bullish ? data.isAboveVWAP : !data.isAboveVWAP
-    }
-
-    private func requiredSPYVolumeMultiple(for data: MarketData) -> Double {
-        var required = 1.5
-        if data.newsRisk != .none {
-            required *= data.newsRisk.volumeMultiplier
-        }
-        if data.isHighVolatility {
-            required = max(required, 2.0)
-        }
-        return required
-    }
-
-    private func isVolumeReady(_ data: MarketData) -> Bool {
-        data.volumeMultiple >= requiredSPYVolumeMultiple(for: data)
-    }
-
-    private func formattedVolumeMultiple(_ value: Double) -> String {
-        String(format: "%.1fx avg", value)
-    }
-
-    private func newsColor(for data: MarketData) -> Color {
-        switch data.newsRisk {
-        case .none:
-            return data.isHighVolatility ? DesignSystem.amber : DesignSystem.long
-        case .moderate:
-            return DesignSystem.amber
-        case .high:
-            return DesignSystem.short
-        }
-    }
-}
-
-struct SPYSetupMetric: Identifiable {
-    let id = UUID()
-    let title: String
-    let value: String
-    let detail: String
-    let color: Color
-    let systemImage: String
-}
-
-private struct SPYSetupBoardCard: View {
-    let viewModel: SPYDashboardViewModel
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "scope")
-                    .foregroundColor(DesignSystem.primaryColor)
-                Text("SPY Bias Board")
-                    .font(DesignSystem.Typography.headlineFont)
-                    .foregroundColor(DesignSystem.primaryText)
-                Spacer()
-            }
-
-            Text(viewModel.setupHeadline)
-                .font(DesignSystem.Typography.titleFont)
-                .foregroundColor(DesignSystem.primaryText)
-
-            Text(viewModel.setupSubheadline)
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(DesignSystem.mutedText)
-
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(viewModel.setupMetrics) { metric in
-                    SPYSetupMetricCard(metric: metric)
-                }
-            }
-        }
-        .deskPanel(glow: DesignSystem.primaryColor.opacity(0.12))
-    }
-}
-
-private struct SPYSetupMetricCard: View {
-    let metric: SPYSetupMetric
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Image(systemName: metric.systemImage)
-                    .foregroundColor(metric.color)
-                Text(metric.title)
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(0.8)
-                    .foregroundColor(DesignSystem.mutedText)
-            }
-
-            Text(metric.value)
-                .font(DesignSystem.Typography.headlineFont)
-                .foregroundColor(DesignSystem.primaryText)
-
-            Text(metric.detail)
-                .font(DesignSystem.Typography.captionFont)
-                .foregroundColor(DesignSystem.mutedText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .deskPanel(glow: metric.color.opacity(0.12), padding: 14)
-    }
-}
-
 // MARK: - Mac Single-Window Terminal (Phase 3)
 //
 // Three-column boiler-room layout: ticker strip / left rail / chart / right rail / status.
@@ -1912,14 +1457,20 @@ private struct MacDeskMetrics {
 private struct TickerStripView: View {
     let entry: MarketDataEntry?
     @ObservedObject var marketPulse: MarketPulse
+    @ObservedObject private var liveTape = LiveTapeService.shared
+    @State private var schwabCredentialRevision = 0
 
     var body: some View {
         HStack(spacing: 0) {
+            connectivityCell
+            divider
             tickerCell("VXX", value: priceText, accent: DesignSystem.text)
+            divider
+            tickerCell("BID/ASK", value: bidAskText, accent: DesignSystem.text)
             divider
             tickerCell("VIX", value: vixText, accent: DesignSystem.text)
             divider
-            tickerCell("R", value: ratioText, accent: ratioAccent)
+            tickerCell("VXX/VIX", value: ratioText, accent: ratioAccent)
             divider
             tickerCell("VWAP", value: vwapText, accent: DesignSystem.vwap)
             divider
@@ -1928,22 +1479,83 @@ private struct TickerStripView: View {
             tickerCell("PHASE", value: marketPulse.currentPhase.displayName.uppercased(), accent: DesignSystem.amber)
             Spacer(minLength: 0)
         }
-        .frame(height: 34)
-        .background(DesignSystem.bg1)
+        .frame(height: 40)
+        .background(isDisconnected ? DesignSystem.short.opacity(0.16) : DesignSystem.bg1)
         .overlay(
             Rectangle()
                 .fill(DesignSystem.hairline)
                 .frame(height: 1),
             alignment: .bottom
         )
+        .onReceive(NotificationCenter.default.publisher(for: .schwabCredentialsChanged)) { _ in
+            schwabCredentialRevision += 1
+        }
+    }
+
+    // The one thing this whole app exists to catch (a dropped live feed) was
+    // previously only visible in a 24px bottom footer or inside Settings.
+    // This is the first thing rendered on the desk, so it's the first cell,
+    // not an afterthought.
+    private var connectivityCell: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(connectivityAccent)
+                .frame(width: 7, height: 7)
+            Text(connectivityText)
+                .font(DesignSystem.Typography.settingsValueFont)
+                .foregroundColor(connectivityAccent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .padding(.horizontal, 12)
+        .help(connectivityDetail)
+    }
+
+    private var isDisconnected: Bool {
+        _ = schwabCredentialRevision
+        return liveTape.isEnabled && liveTape.lastError != nil
+    }
+
+    private var connectivityText: String {
+        _ = schwabCredentialRevision
+        if liveTape.isLive {
+            if let last = liveTape.lastTickAt {
+                return "LIVE · \(Int(Date().timeIntervalSince(last)))s"
+            }
+            return "LIVE"
+        }
+        if isDisconnected { return "DISCONNECTED" }
+        if AppConfig.Schwab.oauthTokensStored { return "WAITING" }
+        if AppConfig.Schwab.developerCredentialsStored { return "OAUTH REQ" }
+        return "FEED OFF"
+    }
+
+    private var connectivityAccent: Color {
+        if liveTape.isLive { return DesignSystem.long }
+        if isDisconnected { return DesignSystem.short }
+        if AppConfig.Schwab.oauthTokensStored || AppConfig.Schwab.developerCredentialsStored { return DesignSystem.amber }
+        return DesignSystem.muted
+    }
+
+    private var connectivityDetail: String {
+        if let error = liveTape.lastError, isDisconnected {
+            return "Schwab feed error: \(error)"
+        }
+        if liveTape.isLive { return "Live Schwab feed connected." }
+        return "Live feed is not connected. Open Settings → SCHWAB to sign in."
     }
 
     private var divider: some View {
         Rectangle()
             .fill(DesignSystem.hairline)
-            .frame(width: 1, height: 18)
+            .frame(width: 1, height: 22)
     }
 
+    // Values bumped to settingsValueFont (14pt) -- this strip is the first
+    // thing on the desk and now carries real diagnostic weight (bid/ask,
+    // connectivity), so it needs to read at a glance, not just look tidy.
+    // Scoped to this strip only, per the app's own rule against bumping the
+    // dashboard's base type size globally.
     private func tickerCell(_ label: String, value: String, accent: Color) -> some View {
         HStack(spacing: 8) {
             Text(label)
@@ -1953,7 +1565,7 @@ private struct TickerStripView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
             Text(value)
-                .font(DesignSystem.Typography.captionFont)
+                .font(DesignSystem.Typography.settingsValueFont)
                 .foregroundColor(accent)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -1964,6 +1576,14 @@ private struct TickerStripView: View {
     private var priceText: String {
         guard let entry, entry.price > 0 else { return "—" }
         return String(format: "%.2f", entry.price)
+    }
+
+    // Bid/ask ticks on essentially every real quote, unlike the volume
+    // aggregate -- the fastest way to eyeball whether the feed is genuinely
+    // live right now versus re-showing a stale print.
+    private var bidAskText: String {
+        guard let snap = liveTape.lastSnapshot, snap.vxxBid > 0, snap.vxxAsk > 0 else { return "—" }
+        return String(format: "%.2f/%.2f", snap.vxxBid, snap.vxxAsk)
     }
 
     private var vixText: String {
@@ -1984,8 +1604,8 @@ private struct TickerStripView: View {
     }
 
     private var vwapText: String {
-        guard let entry else { return "—" }
-        return entry.vwapPosition.shortName
+        guard let entry, entry.vwapValue > 0 else { return "—" }
+        return "\(String(format: "%.2f", entry.vwapValue)) \(entry.vwapPosition.shortName)"
     }
 
     private var volText: String {
@@ -2012,7 +1632,7 @@ private struct CompactGateStripView: View {
             divider
             gateCell("02", "WIN", state.windowStatus)
             divider
-            gateCell("03", "RATIO", state.ratioStatus)
+            gateCell("03", "VXX/VIX", state.ratioStatus)
             divider
             gateCell("04", "LEVEL", state.levelStatus)
             divider
@@ -2116,11 +1736,11 @@ private struct LeftRailView: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 14)
 
-            railSection("ORDER OF ATTACK")
+            railSection("ORDER OF ATTACK", trailing: orderOfAttackUpdatedText)
             VStack(spacing: 1) {
                 gateRow(1, "VOLUME", state.volumeDetail, status: state.volumeStatus)
                 gateRow(2, "WINDOW", state.windowDetail, status: state.windowStatus)
-                gateRow(3, "RATIO", state.ratioDetail, status: state.ratioStatus)
+                gateRow(3, "VXX/VIX", state.ratioDetail, status: state.ratioStatus)
                 gateRow(4, "VWAP / LEVEL", state.levelDetail, status: state.levelStatus)
                 gateRow(5, "PATTERN", state.patternDetail, status: state.patternStatus)
             }
@@ -2132,13 +1752,14 @@ private struct LeftRailView: View {
                 .padding(.bottom, 14)
 
             railSection("TODAY · WINDOWS")
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(Self.railWindows) { window in
                     windowRow(window, status: status(for: window))
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.bottom, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 16)
 
             railSection("RISK BUDGET")
             VStack(alignment: .leading, spacing: 6) {
@@ -2155,14 +1776,16 @@ private struct LeftRailView: View {
                 DeskMeterBar(value: 0, accent: DesignSystem.amber)
             }
             .padding(.horizontal, 12)
-            .padding(.bottom, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 16)
 
             railSection("ORDERS")
             Text("MANUAL ONLY")
                 .font(DesignSystem.Typography.captionFont)
                 .foregroundColor(DesignSystem.text2)
                 .padding(.horizontal, 12)
-                .padding(.bottom, 14)
+                .padding(.top, 4)
+                .padding(.bottom, 16)
 
             Spacer(minLength: 0)
         }
@@ -2178,13 +1801,29 @@ private struct LeftRailView: View {
             .foregroundColor(DesignSystem.amber)
     }
 
-    private func railSection(_ text: String) -> some View {
+    // Ticks every second off the same `now` clock the session block already
+    // uses -- a live "how stale is this" readout right where you're reading
+    // the gates, not something you have to go dig for.
+    private var orderOfAttackUpdatedText: String {
+        guard let timestamp = state.entry?.timestamp else { return "no data" }
+        let age = Int(now.timeIntervalSince(timestamp))
+        if age < 0 { return "just now" }
+        if age < 60 { return "\(age)s ago" }
+        return "\(age / 60)m \(age % 60)s ago"
+    }
+
+    private func railSection(_ text: String, trailing: String? = nil) -> some View {
         HStack {
             Text(text)
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.4)
                 .foregroundColor(DesignSystem.muted)
             Spacer()
+            if let trailing {
+                Text(trailing)
+                    .font(DesignSystem.Typography.labelFont)
+                    .foregroundColor(DesignSystem.faint)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -2359,7 +1998,9 @@ private struct LeftRailView: View {
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(0.8)
                     .foregroundColor(status.accent)
-                    .frame(width: 34, alignment: .trailing)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .frame(minWidth: 46, alignment: .trailing)
             }
         }
     }
@@ -2395,8 +2036,8 @@ private struct ChartCenterView: View {
             if showVolume, let series = currentSeries, !series.candles.isEmpty {
                 PhoneVolumePanel(series: series)
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .frame(height: 70)
+                    .padding(.vertical, 8)
+                    .frame(height: 120)
                     .background(DesignSystem.bg1)
                     .overlay(Rectangle().fill(DesignSystem.hairline).frame(height: 1), alignment: .top)
             }
@@ -2638,6 +2279,8 @@ private struct RightRailView: View {
     @State private var suggestion: ContractSuggestion?
     @State private var suggestionError: String?
     @State private var isFetchingSuggestion = false
+    @State private var now = Date()
+    private let clockTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2651,6 +2294,19 @@ private struct RightRailView: View {
             Spacer(minLength: 0)
         }
         .background(DesignSystem.bg1)
+        .onReceive(clockTimer) { now = $0 }
+    }
+
+    // Same clock, same source (`entry.timestamp`) as Order of Attack's
+    // stamp -- if these two ever show different ages, that's proof
+    // something is out of sync, not just a coincidence of two separate
+    // timers drifting.
+    private var updatedText: String {
+        guard let timestamp = entry?.timestamp else { return "no data" }
+        let age = Int(now.timeIntervalSince(timestamp))
+        if age < 0 { return "just now" }
+        if age < 60 { return "\(age)s ago" }
+        return "\(age / 60)m \(age % 60)s ago"
     }
 
     private var railDivider: some View {
@@ -2666,6 +2322,9 @@ private struct RightRailView: View {
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
                 Spacer()
+                Text(updatedText)
+                    .font(DesignSystem.Typography.labelFont)
+                    .foregroundColor(DesignSystem.faint)
             }
 
             Text(state.commandTitle)
@@ -2853,7 +2512,7 @@ private struct RightRailView: View {
             rawReadRow("PRICE", String(format: "$%.2f", entry.price))
             rawReadRow("VIX", String(format: "%.2f", entry.vixLevel))
             if entry.instrument == .vxx {
-                rawReadRow("RATIO", String(format: "%.3f", entry.ratio), accent: ratioAccent(entry))
+                rawReadRow("VXX/VIX", String(format: "%.3f", entry.ratio), accent: ratioAccent(entry))
                 rawReadRow("TIER", entry.ratioTier.uppercased())
             }
             if let snap = liveTape.lastSnapshot {
@@ -3091,7 +2750,7 @@ enum PhoneGate: Int, Identifiable, CaseIterable {
         switch self {
         case .volume:       return "VOLUME"
         case .window:       return "WINDOW"
-        case .ratio:        return "RATIO"
+        case .ratio:        return "VXX/VIX"
         case .level:        return "VWAP / LEVEL"
         case .pattern:      return "PATTERN"
         }
@@ -3181,8 +2840,8 @@ private struct PhoneTickerStrip: View {
     }
 
     private var vwapText: String {
-        guard let entry else { return "—" }
-        return entry.vwapPosition.shortName
+        guard let entry, entry.vwapValue > 0 else { return "—" }
+        return "\(String(format: "%.2f", entry.vwapValue)) \(entry.vwapPosition.shortName)"
     }
 }
 
@@ -3222,12 +2881,20 @@ private struct PhoneChartSeries {
         // 4% headroom either side so candles don't kiss the chart edges
         let pad = max((high - low) * 0.04, 0.05)
 
-        // Trading-window stripes — keep only the windows that overlap visible candles.
+        // Trading-window stripes — keep only the windows that overlap visible
+        // candles, AND clamp each stripe's start/end to the candle range.
+        // An unclamped stripe (e.g. Institutional's 3:45-4:10 window when
+        // "now" is only 3:50) extends past the last real candle, which
+        // silently widens this chart's auto-inferred x-domain past the
+        // volume panel's (bars only, no stripes) -- the actual root cause
+        // of the two charts drifting out of alignment. Clamping here fixes
+        // that without needing an explicit .chartXScale, which broke
+        // BarMark's ratio-width sizing when tried (2026-09-08).
         let firstTime = candles.first?.timestamp ?? Date()
         let lastTime = candles.last?.timestamp ?? Date()
-        let windows = tradingWindowsForToday(reference: lastTime).filter { w in
-            w.end >= firstTime && w.start <= lastTime
-        }
+        let windows = tradingWindowsForToday(reference: lastTime)
+            .filter { w in w.end >= firstTime && w.start <= lastTime }
+            .map { w in (start: max(w.start, firstTime), end: min(w.end, lastTime), label: w.label) }
 
         // 30-period rolling volume average for the 200% threshold on the volume panel.
         let recent = Array(candles.suffix(30))
@@ -3439,6 +3106,12 @@ private struct PhoneCandleChart: View {
             }
         }
         .chartYScale(domain: series.priceLow...series.priceHigh)
+        // No explicit chartXScale -- forcing a continuous domain broke
+        // BarMark's ratio-width sizing on the volume panel (2026-09-08);
+        // RectangleMark's own .ratio()/.fixed() widths for the candle
+        // wicks/bodies are exactly the same kind of mark, so removing this
+        // rather than risk the same failure here. The window-stripe clamp
+        // above fixes the alignment drift this was trying to solve.
         .chartXAxis {
             if showAxisLabels {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
@@ -3634,7 +3307,7 @@ private struct PhoneCandleStrip: View {
             Text(ratioText)
                 .font(DesignSystem.Typography.monospacedFont)
                 .foregroundColor(ratioAccent)
-            Text("RATIO")
+            Text("VXX/VIX")
                 .font(DesignSystem.Typography.labelFont)
                 .tracking(1.2)
                 .foregroundColor(DesignSystem.faint)
@@ -3865,47 +3538,41 @@ private struct PhoneChartSheet: View {
 private struct PhoneVolumePanel: View {
     let series: PhoneChartSeries
 
+    private var lastPercent: Double {
+        guard let last = series.candles.last, series.avgVolume > 0 else { return 0 }
+        return Double(last.volume) / series.avgVolume * 100
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Text("VOLUME")
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)
-                Text("· 30 AVG · 200% LINE")
-                    .font(DesignSystem.Typography.labelFont)
-                    .tracking(1.2)
-                    .foregroundColor(DesignSystem.muted)
                 Spacer()
-                if let last = series.candles.last {
-                    let pct = series.avgVolume > 0 ? Double(last.volume) / series.avgVolume * 100 : 0
-                    Text(String(format: "LAST %.0f%%", pct))
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.2)
-                        .foregroundColor(pct >= 200 ? DesignSystem.long : DesignSystem.muted)
-                }
+                Text(String(format: "%.0f%%", lastPercent))
+                    .font(DesignSystem.Typography.settingsValueFont)
+                    .foregroundColor(lastPercent >= 200 ? DesignSystem.amber : DesignSystem.muted)
             }
 
+            // Bold, uncluttered: no dashed reference line or small-print
+            // label to decode -- a bar at or past 2x average simply lights
+            // up amber instead of its normal bullish/bearish tint, so a
+            // real spike reads at a glance. Kept the axis block and full-
+            // strength colors identical to the last known-working version;
+            // only the RuleMark/label and the color function actually
+            // changed, since a wider guess (hidden Y axis, opacity, an
+            // explicit chartXScale) broke bar rendering entirely twice in a
+            // row rather than just changing how it looked.
             Chart {
                 ForEach(series.candles) { c in
                     BarMark(
                         x: .value("Time", c.timestamp),
                         y: .value("Volume", c.volume),
-                        width: .ratio(0.65)
+                        width: .ratio(0.8)
                     )
-                    .foregroundStyle(c.isBullish ? DesignSystem.long : DesignSystem.short)
-                }
-
-                if series.avgVolume > 0 {
-                    RuleMark(y: .value("200% Avg", series.avgVolume * 2))
-                        .foregroundStyle(DesignSystem.amber)
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                        .annotation(position: .top, alignment: .trailing, spacing: 2) {
-                            Text("200%")
-                                .font(DesignSystem.Typography.labelFont)
-                                .tracking(1.0)
-                                .foregroundColor(DesignSystem.amber)
-                        }
+                    .foregroundStyle(barColor(for: c))
                 }
             }
             .chartXAxis(.hidden)
@@ -3921,6 +3588,13 @@ private struct PhoneVolumePanel: View {
                 plot.background(DesignSystem.bg)
             }
         }
+    }
+
+    private func barColor(for candle: Candle) -> Color {
+        if series.avgVolume > 0, Double(candle.volume) >= series.avgVolume * 2 {
+            return DesignSystem.amber
+        }
+        return candle.isBullish ? DesignSystem.long : DesignSystem.short
     }
 }
 

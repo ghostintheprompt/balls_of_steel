@@ -88,7 +88,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .frame(minWidth: 1120, idealWidth: 1240, minHeight: 720, idealHeight: 800)
+        .frame(minWidth: 1120, idealWidth: 1240, minHeight: 780, idealHeight: 940)
         .task {
             await notifications.refreshAuthorizationStatus()
         }
@@ -617,21 +617,30 @@ struct SettingsView: View {
 
             DatePicker("", selection: binding, displayedComponents: .hourAndMinute)
                 .labelsHidden()
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                .fixedSize()
+
+            Spacer(minLength: 0)
         }
     }
 
     private var compactAuditCard: some View {
-        SystemsPanel(title: "AUDIT") {
-            HStack(spacing: 10) {
-                SystemsReadoutRow(label: "Strategy", value: "Ready", accent: DesignSystem.long)
+        SystemsPanel(title: "ANGELA") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Same question Wall Street compliance asks: is the code actually doing what the strategy doc says, or has it drifted? Angela checks StrategySpec's real thresholds against the audited doc, deterministically, on demand.")
+                    .font(DesignSystem.Typography.bodyFont)
+                    .foregroundColor(DesignSystem.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Button {
-                    isAuditSheetOpen = true
-                } label: {
-                    Label("Run", systemImage: "checkmark.shield")
+                HStack(spacing: 10) {
+                    SystemsReadoutRow(label: "Strategy", value: "Ready", accent: DesignSystem.long)
+
+                    Button {
+                        isAuditSheetOpen = true
+                    } label: {
+                        Label("Run", systemImage: "checkmark.shield")
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -1400,7 +1409,7 @@ struct StrategyAuditView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("STRATEGY AUDIT")
+                Text("ANGELA")
                     .font(DesignSystem.Typography.labelFont)
                     .tracking(1.6)
                     .foregroundColor(DesignSystem.amber)

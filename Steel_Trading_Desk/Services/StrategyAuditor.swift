@@ -7,6 +7,12 @@ import Foundation
 // the results.
 //
 // What this catches:
+//   - LIVE PROOF (added 2026-09-08): is the feed actually ticking right now,
+//     is "today's" candle actually today, are VWAP/bid/ask real numbers —
+//     runtime checks against the running pipeline, not just static config.
+//     This is the category that would have caught the 2026-09-08 bugs
+//     (stale-day Schwab candles; pattern/key-level/arrow never wired live) —
+//     every other check below had matching constants the whole time.
 //   - Threshold drift (ratio, volume, body %, etc.) when somebody edits a
 //     literal in code instead of `StrategySpec`.
 //   - Time-window boundary errors (e.g. the Morning-window-unreachable bug
@@ -19,6 +25,10 @@ import Foundation
 //     is the canonical source; if a doc changes, update spec first).
 //   - Logic bugs in code that happen to match the spec. Boundary checks help
 //     here but they're not exhaustive — they're spot checks.
+//   - A gate that's wired to compute live but is fed the WRONG live source
+//     (e.g. right shape, wrong day) unless a live-proof check specifically
+//     targets that failure mode, the way the "today's candle is actually
+//     today" check now does.
 //
 // Rule from [[feedback-catch-drift-always]]: any new strategy constant goes
 // in StrategySpec, and a corresponding audit case goes here.
@@ -41,6 +51,7 @@ struct AuditResult: Identifiable {
 }
 
 enum AuditCategory: String, CaseIterable {
+    case liveProof      = "LIVE PROOF"
     case ratio          = "RATIO"
     case volume         = "VOLUME"
     case windows        = "WINDOWS"
@@ -57,6 +68,7 @@ struct StrategyAuditor {
     @MainActor
     static func run() -> [AuditResult] {
         var out: [AuditResult] = []
+        out.append(contentsOf: liveProofChecks())
         out.append(contentsOf: ratioChecks())
         out.append(contentsOf: volumeChecks())
         out.append(contentsOf: windowChecks())
@@ -65,6 +77,113 @@ struct StrategyAuditor {
         out.append(contentsOf: sizingChecks())
         out.append(contentsOf: optionSelectorChecks())
         return out
+    }
+
+    // MARK: - Live Proof
+    //
+    // Everything below this checks CODE against the DOC -- deterministic,
+    // synthetic, doesn't touch real data. None of it would have caught the
+    // real 2026-09-08 bugs (Schwab returning last Friday's candles instead
+    // of today's; pattern/key-level/arrow silently never computed live) --
+    // the code's constants matched the doc exactly the whole time. This
+    // section checks the RUNNING PIPELINE against reality instead: is the
+    // feed actually ticking right now, is "today's" candle actually today,
+    // are the numbers a trader would check against ThinkOrSwim actually
+    // present. Warns (not fails) when Live Tape is simply off, since that's
+    // a setting, not a bug.
+
+    @MainActor
+    private static func liveProofChecks() -> [AuditResult] {
+        var r: [AuditResult] = []
+        let live = LiveTapeService.shared
+        let source = "runtime / LiveTapeService.shared"
+
+        guard live.isEnabled else {
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Live Tape enabled",
+                expected: "on",
+                actual: "off",
+                status: .warning,
+                docSource: source
+            ))
+            return r
+        }
+
+        if let lastTick = live.lastTickAt {
+            let age = Date().timeIntervalSince(lastTick)
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Last successful tick age",
+                expected: "< 90s (30s poll interval)",
+                actual: "\(Int(age))s ago",
+                status: age < 90 ? .pass : .fail,
+                docSource: source
+            ))
+        } else {
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Last successful tick age",
+                expected: "a real tick has landed",
+                actual: "none yet",
+                status: .warning,
+                docSource: source
+            ))
+        }
+
+        if let error = live.lastError, !live.isLive {
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Feed error",
+                expected: "none",
+                actual: error,
+                status: .fail,
+                docSource: source
+            ))
+        }
+
+        if let snapshot = live.lastSnapshot {
+            let candles = snapshot.vxxCandles
+            let cal = Calendar(identifier: .gregorian)
+            let lastCandleIsToday = candles.last.map { cal.isDateInToday($0.timestamp) } ?? false
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Today's candle is actually today",
+                expected: "true",
+                actual: "\(lastCandleIsToday) (\(candles.count) candles)",
+                status: candles.isEmpty ? .warning : (lastCandleIsToday ? .pass : .fail),
+                docSource: "the exact 2026-09-08 bug: Schwab returned last Friday's session"
+            ))
+
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "VWAP has a real number, not just a category",
+                expected: "> 0",
+                actual: String(format: "%.2f", snapshot.vxxVwap),
+                status: snapshot.vxxVwap > 0 ? .pass : .fail,
+                docSource: "MarketDataEntry.vwapValue"
+            ))
+
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Bid/Ask present",
+                expected: "both > 0",
+                actual: String(format: "%.2f / %.2f", snapshot.vxxBid, snapshot.vxxAsk),
+                status: (snapshot.vxxBid > 0 && snapshot.vxxAsk > 0) ? .pass : .fail,
+                docSource: "Quote.bid / Quote.ask"
+            ))
+        } else {
+            r.append(AuditResult(
+                category: .liveProof,
+                title: "Live snapshot present",
+                expected: "a tick has landed",
+                actual: "none yet",
+                status: .warning,
+                docSource: source
+            ))
+        }
+
+        return r
     }
 
     // MARK: - Ratio
@@ -203,6 +322,49 @@ struct StrategyAuditor {
                 actual: actual,
                 status: actual == expected ? .pass : .fail,
                 docSource: "thinkorswim_complete_setup_2026.md / Daily Usage"
+            ))
+        }
+
+        // Revised 2026-09-08: the market being open now makes a window
+        // alertable, not just the three anchors -- but only pre-market and
+        // after-hours stay excluded, and every off-anchor window has to
+        // clear the same 300% bar Institutional already requires. Real
+        // case this fixes: docs/trading docs/fails/
+        // fail-01-2026-09-08-afternoon-flex-block.md.
+        let entryWindowCases: [(TimeWindowInput, Bool, String)] = [
+            (.preMarket, false, "Pre-market"),
+            (.afterHours, false, "After hours"),
+            (.open, true, "Open"),
+            (.morning, true, "Morning"),
+            (.lunch, true, "Lunch"),
+            (.afternoonFlex, true, "Afternoon Flex"),
+            (.powerHour, true, "Power Hour"),
+            (.close, true, "Close"),
+            (.institutional, true, "Institutional")
+        ]
+        for (window, expected, label) in entryWindowCases {
+            let actual = window.isVXXEntryWindow
+            r.append(AuditResult(
+                category: .windows,
+                title: "\(label) is alertable when market is open",
+                expected: expected ? "yes" : "no",
+                actual: actual ? "yes" : "no",
+                status: actual == expected ? .pass : .fail,
+                docSource: "Michael's call 2026-09-08, see fail-01 case study"
+            ))
+        }
+
+        let offAnchorVolumeCases: [(TimeWindowInput, String)] = [
+            (.open, "Open"), (.lunch, "Lunch"), (.afternoonFlex, "Afternoon Flex"), (.close, "Close")
+        ]
+        for (window, label) in offAnchorVolumeCases {
+            r.append(AuditResult(
+                category: .windows,
+                title: "\(label) volume bar matches Institutional's (no free pass)",
+                expected: "300%",
+                actual: "\(Int(window.requiredVolumePercent))%",
+                status: window.requiredVolumePercent == 300 ? .pass : .fail,
+                docSource: "Michael's call 2026-09-08, see fail-01 case study"
             ))
         }
 

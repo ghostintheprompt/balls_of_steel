@@ -9,6 +9,8 @@ struct Quote: Codable, Identifiable {
     let previousClose: Double
     let timestamp: Date
     let recentCandles: [Candle]
+    var bid: Double = 0
+    var ask: Double = 0
     
     // Properties needed by strategies
     var lastSize: Int { volume }
@@ -50,6 +52,7 @@ struct Quote: Codable, Identifiable {
         case symbol, price, volume, vwap
         case previousClose = "previous_close"
         case timestamp, recentCandles
+        case bid, ask
     }
 }
 

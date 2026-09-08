@@ -19,6 +19,13 @@ struct ManualDataEntryView: View {
             }
             #endif
         }
+        // The "EDIT" button on RAW READ implies editing the current values --
+        // it was actually opening a blank form every time. quickFillLastEntry()
+        // already existed to load the persisted entry into the form fields,
+        // it just wasn't being called automatically on open.
+        .onAppear {
+            viewModel.quickFillLastEntry()
+        }
         .alert("Data Saved", isPresented: $showingSaved) {
             Button("OK") { }
         } message: {
@@ -1180,6 +1187,7 @@ struct MarketDataEntry: Codable {
     let vixLevel: Double
     let volumePercent: Double
     let vwapPosition: VWAPPosition
+    let vwapValue: Double
     let arrowSignal: ArrowSignalInput
     let keyLevelConfirmed: Bool
     let patternConfirmed: Bool
@@ -1194,6 +1202,7 @@ struct MarketDataEntry: Codable {
         case vixLevel
         case volumePercent
         case vwapPosition
+        case vwapValue
         case arrowSignal
         case keyLevelConfirmed
         case patternConfirmed
@@ -1208,6 +1217,7 @@ struct MarketDataEntry: Codable {
         vixLevel: Double,
         volumePercent: Double,
         vwapPosition: VWAPPosition,
+        vwapValue: Double = 0,
         arrowSignal: ArrowSignalInput,
         keyLevelConfirmed: Bool,
         patternConfirmed: Bool,
@@ -1220,6 +1230,7 @@ struct MarketDataEntry: Codable {
         self.vixLevel = vixLevel
         self.volumePercent = volumePercent
         self.vwapPosition = vwapPosition
+        self.vwapValue = vwapValue
         self.arrowSignal = arrowSignal
         self.keyLevelConfirmed = keyLevelConfirmed
         self.patternConfirmed = patternConfirmed
@@ -1241,6 +1252,7 @@ struct MarketDataEntry: Codable {
         vixLevel = try container.decodeIfPresent(Double.self, forKey: .vixLevel) ?? 0
         volumePercent = try container.decodeIfPresent(Double.self, forKey: .volumePercent) ?? 0
         vwapPosition = try container.decodeIfPresent(VWAPPosition.self, forKey: .vwapPosition) ?? .above
+        vwapValue = try container.decodeIfPresent(Double.self, forKey: .vwapValue) ?? 0
         arrowSignal = try container.decodeIfPresent(ArrowSignalInput.self, forKey: .arrowSignal) ?? .none
         keyLevelConfirmed = try container.decodeIfPresent(Bool.self, forKey: .keyLevelConfirmed) ?? false
         patternConfirmed = try container.decodeIfPresent(Bool.self, forKey: .patternConfirmed) ?? false
@@ -1256,6 +1268,7 @@ struct MarketDataEntry: Codable {
         try container.encode(vixLevel, forKey: .vixLevel)
         try container.encode(volumePercent, forKey: .volumePercent)
         try container.encode(vwapPosition, forKey: .vwapPosition)
+        try container.encode(vwapValue, forKey: .vwapValue)
         try container.encode(arrowSignal, forKey: .arrowSignal)
         try container.encode(keyLevelConfirmed, forKey: .keyLevelConfirmed)
         try container.encode(patternConfirmed, forKey: .patternConfirmed)
@@ -1350,17 +1363,25 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         }
     }
 
-    /// Per the strategy doc, only three windows are valid VXX entry windows:
-    /// Morning Fade (9:50-10:15), Power Hour (3:10-3:25), Institutional Flow
-    /// (3:45-4:10). Lunch is explicitly NOT a trading window — the doc lists
-    /// it as a "skip trade" example. Open and Close are bookends, not entry
-    /// windows. Drift fix 2026-05-14 (previous code accepted `.lunch`).
+    /// Revised 2026-09-08, Michael's explicit call after a real live session:
+    /// the three anchor windows (Morning 9:50-10:15, Power Hour 3:10-3:25,
+    /// Institutional Flow 3:45-4:10) stay the proven, lower-bar setups --
+    /// but the system can evaluate any time the market is actually open,
+    /// weighted differently rather than hard-blocked. A real ~2% VXX move on
+    /// 889% volume got blocked outright on 2026-09-08 purely for being 20
+    /// minutes before Power Hour (see docs/trading docs/fails/
+    /// fail-01-2026-09-08-afternoon-flex-block.md) -- too rigid in the other
+    /// direction from the 2026-05-14 drift fix this replaces. Off-anchor
+    /// windows aren't free passes: `requiredVolumePercent` below raises the
+    /// bar to the same 300% Institutional already requires, so a trade
+    /// outside the anchors needs more proof, not less. Only pre-market and
+    /// after-hours stay hard-excluded -- that's not the market being open.
     var isVXXEntryWindow: Bool {
         switch self {
-        case .morning, .powerHour, .institutional:
-            return true
-        case .open, .preMarket, .lunch, .afternoonFlex, .close, .afterHours:
+        case .preMarket, .afterHours:
             return false
+        case .open, .morning, .lunch, .afternoonFlex, .powerHour, .close, .institutional:
+            return true
         }
     }
 
@@ -1379,15 +1400,19 @@ enum TimeWindowInput: String, Codable, CaseIterable {
     }
 
     /// Volume requirement for criteria-1 (volume) gate, percent of 30-period
-    /// average. Window-dependent per `StrategySpec`: Morning + Power = 200,
-    /// Institutional = 300. Returns the gate-1 default 200 for non-entry
-    /// windows so the read-out remains sensible, but those don't pass anyway
-    /// via `isVXXEntryWindow`.
+    /// average. The three proven anchor windows keep their doc thresholds
+    /// (Morning + Power = 200%, Institutional = 300%). Revised 2026-09-08:
+    /// every other window is now a real, alertable window too (see
+    /// `isVXXEntryWindow`) but isn't a free pass -- it has to clear the same
+    /// 300% bar Institutional already requires, since it doesn't have an
+    /// anchor window's proven time-based edge to lean on.
     var requiredVolumePercent: Double {
         switch self {
         case .morning:       return StrategySpec.morningWindow.volumeThresholdPercent
         case .powerHour:     return StrategySpec.powerHourWindow.volumeThresholdPercent
         case .institutional: return StrategySpec.institutionalWindow.volumeThresholdPercent
+        case .open, .lunch, .afternoonFlex, .close:
+            return StrategySpec.institutionalWindow.volumeThresholdPercent
         default:             return StrategySpec.morningWindow.volumeThresholdPercent
         }
     }

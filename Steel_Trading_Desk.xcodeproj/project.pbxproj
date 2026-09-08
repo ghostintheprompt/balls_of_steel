@@ -74,6 +74,7 @@
 		1AOR0002000000000000001A /* Order.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AOR0001000000000000001A /* Order.swift */; };
 		1ASA01000000000000000001 /* StrategyAuditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASA01000000000000000002 /* StrategyAuditor.swift */; };
 		1ASS01000000000000000001 /* StrategySpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ASS01000000000000000002 /* StrategySpec.swift */; };
+		2D467902BFF8134C09ED945D /* ScreenRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F74F3BF4961130FE8AA472 /* ScreenRecorder.swift */; };
 		69C75E4A6759E329143F4244 /* TradeEvidenceCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B95D30D61295D1F8035A3677 /* TradeEvidenceCapture.swift */; };
 		B000000000000001A000002 /* DailyRiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000001 /* DailyRiskManager.swift */; };
 		B000000000000001A000004 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B000000000000001A000003 /* KeychainService.swift */; };
@@ -153,6 +154,7 @@
 		1AOR0001000000000000001A /* Order.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Order.swift; sourceTree = "<group>"; };
 		1ASA01000000000000000002 /* StrategyAuditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyAuditor.swift; sourceTree = "<group>"; };
 		1ASS01000000000000000002 /* StrategySpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategySpec.swift; sourceTree = "<group>"; };
+		82F74F3BF4961130FE8AA472 /* ScreenRecorder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenRecorder.swift; sourceTree = "<group>"; };
 		8768192E3A4D80EFE6226B0D /* TradeJournalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TradeJournalView.swift; sourceTree = "<group>"; };
 		B000000000000001A000001 /* DailyRiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRiskManager.swift; sourceTree = "<group>"; };
 		B000000000000001A000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
@@ -292,6 +294,7 @@
 				1ALT01000000000000000002 /* LiveTapeService.swift */,
 				1AEN01000000000000000002 /* EnvSeeder.swift */,
 				B95D30D61295D1F8035A3677 /* TradeEvidenceCapture.swift */,
+				82F74F3BF4961130FE8AA472 /* ScreenRecorder.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -501,6 +504,7 @@
 				1AEN01000000000000000001 /* EnvSeeder.swift in Sources */,
 				69C75E4A6759E329143F4244 /* TradeEvidenceCapture.swift in Sources */,
 				BCDB3472769C592DDECC8F66 /* TradeJournalView.swift in Sources */,
+				2D467902BFF8134C09ED945D /* ScreenRecorder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

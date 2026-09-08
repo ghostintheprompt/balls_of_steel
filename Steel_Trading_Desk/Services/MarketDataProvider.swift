@@ -15,7 +15,6 @@ protocol MarketDataProvider {
 
     func quote(_ symbol: String) async throws -> Quote
     func vwap(_ symbol: String) async throws -> Double
-    func volumeVsAvg(_ symbol: String, period: Int) async throws -> Double
     func subscribe(_ symbols: [String]) -> AsyncStream<Quote>
 }
 
@@ -86,13 +85,6 @@ struct SchwabProviderAdapter: MarketDataProvider {
             throw MarketDataProviderError.notConfigured("Connect Schwab OAuth first.")
         }
         return try await SchwabService.shared.vwap(symbol)
-    }
-
-    func volumeVsAvg(_ symbol: String, period: Int) async throws -> Double {
-        guard AppConfig.Schwab.hasOAuthTokens else {
-            throw MarketDataProviderError.notConfigured("Connect Schwab OAuth first.")
-        }
-        return try await SchwabService.shared.volumeVsAvg(symbol, period: period)
     }
 
     func subscribe(_ symbols: [String]) -> AsyncStream<Quote> {

@@ -1099,12 +1099,21 @@ ZERO TOLERANCE (Never Break):
 │ 1. VOLUME >200%                 │
 │    └─ No exceptions, ever       │
 │    └─ This is your proof        │
-│                                 │
-│ 2. TIME WINDOW                  │
-│    └─ No exceptions, ever       │
-│    └─ This is when probability  │
-│       shifts                    │
 └─────────────────────────────────┘
+
+**REVISED 2026-09-08** (Michael's call, after a real live session --
+see `docs/trading docs/fails/fail-01-2026-09-08-afternoon-flex-block.md`):
+Time window is no longer a hard in/out gate. The three anchor windows
+(Morning, Power Hour, Institutional) are still the proven, lower-bar
+setups -- but the system can evaluate any time the market is actually
+open, weighted differently instead of blocked outright. A real ~2% VXX
+move on 889% volume got blocked purely for being 20 minutes before Power
+Hour, which was too rigid in the other direction. The tradeoff: outside
+the three anchors, the volume bar rises to the same 300% Institutional
+already requires -- an off-anchor setup needs *more* proof, not less,
+since it doesn't have an anchor window's proven time-based edge to lean
+on. Pre-market and after-hours are still excluded -- that's not the
+market being open.
 
 MINIMAL FLEXIBILITY (Rarely):
 ┌─────────────────────────────────┐

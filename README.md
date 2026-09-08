@@ -4,10 +4,22 @@
 
 # Steel Trading Desk
 
-Native multiplatform discipline desk for discretionary VXX / SPY options traders. — v1.0
+Native multiplatform discipline desk for discretionary VXX / SPY options traders.
 
 ![License](https://img.shields.io/github/license/ghostintheprompt/balls_of_steel)
 ![Platform](https://img.shields.io/badge/platform-iOS%20|%20iPadOS%20|%20macOS-blue)
+
+**v1 — 2026-09-08.** First build run and verified live, against real Schwab
+market data, during actual trading hours — not just compiled and assumed
+correct. This is a personal tool, not a product: running it requires your
+own Schwab Developer Portal registration (app key/secret entered locally,
+stored in Keychain), since Schwab doesn't allow a shared credential to ship
+inside an app. That's a real limitation on distributing this as something
+other than source code — and it's not really a gap worth closing. A
+modifiable shell that does nothing more than what building your own already
+proves doesn't add anything; the point was building a real alert system for
+one specific setup, disciplined enough to stop second-guessing a trade in
+the moment, not shipping a product.
 
 Steel Trading Desk is a local-first, accuracy-first desk for a personal VXX/VIX/VWAP playbook. The whole app is one screen: a single command verb (NO TRADE / WAIT / CLEARED) on top of a five-condition setup check. Its value is attention management plus data honesty: let the app watch the setup while you multitask, then alert only when the feed is live, fresh, sourced, complete, and worth a human look. The intended workflow is phone alert plus Thinkorswim/Schwab chart templates side by side, then manual execution after a fast human check. No brokerage automation, no autopilot, no fantasy fills.
 
@@ -29,19 +41,34 @@ Steel Trading Desk is a local-first, accuracy-first desk for a personal VXX/VIX/
 
 ## Installation
 
-### App Store (Recommended)
-1. Download **Steel Trading Desk** from the iOS or Mac App Store.
-2. The desk is free. No paywall.
-
-### Build from Source
+There's no App Store listing — this only runs built from source, on your
+own machine, with your own Schwab developer credentials.
 
 ```bash
 git clone https://github.com/ghostintheprompt/balls_of_steel.git
 cd balls_of_steel
-open Steel_Trading_Desk.xcodeproj
+cp .env.example .env   # then fill in your Schwab app key/secret
 ```
 
-In Xcode, select the **Steel_Trading_Desk** scheme, target **Any iOS Device** or **My Mac**, and press `Cmd + R`. See `docs/BUILD.md` for full dev setup including IBM Plex font bundling and optional `.env` for API key seeding.
+### Launching (macOS)
+
+```bash
+./scripts/run_local.sh
+```
+
+This builds, kills any already-running instance, and launches the built
+binary directly — **not** `open Steel_Trading_Desk.app` and not Xcode's own
+`Cmd + R`. Neither of those forwards this shell's `.env` variables to the
+launched process (a real macOS quirk, not a bug here), so a Cmd+R launch
+starts the app with no Schwab credentials seeded and live mode silently
+never connects. `run_local.sh` is the only launch path that actually seeds
+`SCHWAB_APP_KEY` / `SCHWAB_APP_SECRET` on first run.
+
+Xcode itself is still where you'd open the project to browse or edit code
+(`open Steel_Trading_Desk.xcodeproj`), and iOS/iPadOS builds do go through
+Xcode's own Run button as normal — this launch-script requirement is
+specific to getting live Schwab data working on macOS. See `docs/BUILD.md`
+for full dev setup including IBM Plex font bundling.
 
 ## Usage
 

@@ -50,6 +50,39 @@ written down:
   originally (`$VIX.X` was never valid; `$VIX` is). When something looks
   like a Schwab data-shape problem, get the raw response body into an error
   message and read it, don't guess again.
+- **Matching threshold NUMBERS is not the same as matching the STRATEGY.**
+  Found 2026-09-08: `StrategySpec`'s ratio/volume-threshold/time-window
+  numbers matched `docs/trading docs/thinkorswim_complete_setup_2026.md`
+  exactly, but the actual live CALCULATIONS didn't — the volume gate
+  compared today's cumulative volume to a 20-day daily average instead of
+  the doc's real formula (current 5-min bar / 30-bar average), and pattern
+  confirmation, key-level confirmation, and the arrow signal were never
+  computed in live mode at all: they silently carried forward whatever was
+  last typed into the Manual Tape sheet, forever, defaulting to none/false
+  when nothing had ever been typed. A fully-built `ArrowSignalDetector` sat
+  dead in the codebase, called from nowhere. This is worth a standing
+  check: when touching any gate, ask "does this actually run against live
+  data every poll, or does it silently no-op and inherit a stale/default
+  value?" — a gate that only ever reads `previous?.field ?? default` is
+  not live, no matter how correct its threshold number is.
+- **If the UI can't independently verify a number, it isn't proof.**
+  Found same day: the VWAP gate only ever stored/showed a category
+  (ABOVE/BELOW/AT), never the actual dollar VWAP value, so there was no way
+  to check it against ThinkOrSwim's own VWAP line — "trust me" instead of
+  "here's the number, check it yourself." Same root habit as the
+  `Locked until X passes` checklist text, which hid gate values the app
+  had already computed (proven by the RAW READ panel showing them) behind
+  vague copy instead of just showing them with a "moot for now" qualifier.
+  Michael's framing: traders want cockpit instruments, not a verdict — show
+  the real number and let it speak, don't just assert a conclusion.
+- **Verify live-data fixes with real multi-minute evidence before saying
+  "fixed."** Three separate "should be fixed now, go check" claims turned
+  out false in a row on 2026-09-08 before the actual root cause (Schwab's
+  `pricehistory` endpoint returning the last *complete* trading day instead
+  of today's, resolving to the previous Friday right after the Labor Day
+  holiday) was found via raw diagnostic logging, not guessing. Sample the
+  actual persisted value 3+ times across a window long enough to guarantee
+  it should have changed before calling anything fixed.
 - **One punch list.** Not a hierarchy of them scattered across docs — see
   below. Add to it, check items off it, don't spin up parallel tracking.
 - **Design preferences (Michael's calls, keep applying these):**
@@ -136,6 +169,57 @@ suggestion and the alerting system under real conditions.
   the next week or so.
 - [x] Schwab OAuth actually connects and live quotes parse correctly
   (2026-09-07) — see `docs/SCHWAB_API_READINESS.md` for the full writeup.
+- [x] **2026-09-08 first live-market session — real bugs found and fixed
+  while watching real trading hours, not in the abstract:**
+  - Volume gate was frozen (Schwab `pricehistory` with `periodType=day,
+    period=1` returns the last *complete* day, not today — resolved to the
+    prior Friday right after Labor Day) and used the wrong formula (20-day
+    daily average instead of the doc's 5-min-bar/30-bar-average). Both
+    fixed: `fetchRecentCandles` now pins explicit `startDate`/`endDate` to
+    today's real ET date plus a defensive same-day filter; volume is
+    computed from the same live candles as the chart, matching the doc's
+    formula exactly.
+  - Pattern confirmation, key-level confirmation, and the arrow signal were
+    never computed live — `LiveTapeService` silently carried forward
+    whatever was last typed into Manual Tape, forever. A complete,
+    well-built `ArrowSignalDetector` sat wired to nothing. All three now
+    compute for real off live candles every poll.
+  - VWAP only ever showed ABOVE/BELOW/AT with no underlying number to check
+    against ThinkOrSwim — `MarketDataEntry.vwapValue` now carries the real
+    dollar figure everywhere VWAP is shown.
+  - "Locked until X passes" checklist copy hid gate values the app had
+    already computed — now always shows the real number with a "moot for
+    now" qualifier when an earlier gate hasn't cleared, keeping the
+    priority-order discipline the doc itself recommends without hiding data.
+  - Renamed the bare "R"/"RATIO" label to "VXX/VIX" everywhere (ticker
+    strip, Order of Attack, RAW READ) — was ambiguous.
+  - Added a real connectivity indicator + BID/ASK to the main ticker strip
+    (previously buried in a tiny footer or Settings) and disabled
+    `URLCache` on every Schwab market-data request (was serving stale
+    cached history responses).
+  - Found, not yet fixed: a real `SIGSEGV` crash in
+    `MarketDataService.handleQuoteUpdate` (called from the older
+    `SchwabService.subscribeToQuotes`/`subscribeToMarketData` path used by
+    `SignalScanner`/`ExitSignalService`) — looks like a thread-safety bug
+    from a Dictionary mutated concurrently by two independent Schwab-polling
+    loops (that legacy one plus `LiveTapeService`'s own). Crashed once
+    during the session at 3:02 PM; relaunched immediately, not
+    investigated further under time pressure. Needs real attention before
+    trusting the app to stay up unattended for a full session.
+  - [x] Resolved (Michael's explicit call, later the same day):
+    `TimeWindowInput.isVXXEntryWindow` no longer hard-blocks everything
+    except the three anchor windows. "The time frames aren't mandatory but
+    optimal... this can run as long as the market is open... but certain
+    time frames are weighted differently" — now every window except
+    pre-market/after-hours is alertable, and every off-anchor window
+    (open/lunch/afternoonFlex/close) requires the same 300% volume bar
+    Institutional already does, instead of a fabricated confidence score.
+    Updated together: `TimeWindowInput` in `ManualDataEntryView.swift`,
+    Angela's `windowChecks()`, and both source docs
+    (`thinkorswim_complete_setup_2026.md`, `vxx_trading_prompts_2026.md`)
+    with an explicit dated revision note rather than a silent rewrite.
+    Real case that prompted it: `docs/trading docs/fails/
+    fail-01-2026-09-08-afternoon-flex-block.md`.
 - [x] Hardened live-feed alerting: debounced disconnect/reconnect
   notifications (2 consecutive failed polls before alerting, not 1) +
   `ProcessInfo.beginActivity` to stop the Mac sleeping while Live Tape is on.

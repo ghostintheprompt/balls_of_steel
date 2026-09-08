@@ -96,25 +96,28 @@ struct DesignSystem {
             return Font.custom(isHeavy(weight) ? "IBMPlexMono-SemiBold" : "IBMPlexMono-Regular", size: size)
         }
 
+        // Scaled up across the board 2026-09-08 -- explicit ask, eye strain
+        // during real live-market use overrides the earlier "keep density
+        // tight" default. Relative hierarchy preserved, just larger overall.
         // Hero command verb ("NO TRADE.", "CLOSE IT.")
-        static let heroFont = display(36, weight: .heavy)
+        static let heroFont = display(40, weight: .heavy)
         // Section titles
-        static let titleFont = display(22, weight: .bold)
+        static let titleFont = display(25, weight: .bold)
         // Card headers
-        static let headlineFont = sans(16, weight: .semibold)
+        static let headlineFont = sans(18, weight: .semibold)
         // Body copy
-        static let bodyFont = sans(13, weight: .regular)
+        static let bodyFont = sans(15, weight: .regular)
         // Inline numeric / dense readouts
-        static let captionFont = mono(12, weight: .semibold)
+        static let captionFont = mono(14, weight: .semibold)
         // Tiny uppercase labels — apply .tracking(1.4) at the call site
-        static let labelFont = mono(10, weight: .semibold)
+        static let labelFont = mono(12, weight: .semibold)
         // Settings screen only: labelFont/captionFont read too small on a
         // dense, text-heavy settings page (especially on a high-res external
         // display). A couple points larger, same family/weight.
-        static let settingsLabelFont = mono(12, weight: .semibold)
-        static let settingsValueFont = mono(14, weight: .semibold)
+        static let settingsLabelFont = mono(14, weight: .semibold)
+        static let settingsValueFont = mono(16, weight: .semibold)
         // Primary number readouts (price, ratio)
-        static let monospacedFont = mono(15, weight: .semibold)
+        static let monospacedFont = mono(17, weight: .semibold)
     }
 
     // MARK: - Shadows
