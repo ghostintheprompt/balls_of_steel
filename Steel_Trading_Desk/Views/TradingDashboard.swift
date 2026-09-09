@@ -1734,6 +1734,7 @@ private struct CompactGateStripView: View {
 private struct LeftRailView: View {
     let state: VXXStrategyState
     @ObservedObject var marketPulse: MarketPulse
+    @ObservedObject private var riskManager = DailyRiskManager.shared
     @State private var now = Date()
 
     private let clockTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -1821,22 +1822,10 @@ private struct LeftRailView: View {
             .padding(.bottom, 16)
 
             railSection("RISK BUDGET")
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("DAILY")
-                        .font(DesignSystem.Typography.labelFont)
-                        .tracking(1.2)
-                        .foregroundColor(DesignSystem.muted)
-                    Spacer()
-                    Text("0 / 1R")
-                        .font(DesignSystem.Typography.captionFont)
-                        .foregroundColor(DesignSystem.text)
-                }
-                DeskMeterBar(value: 0, accent: DesignSystem.amber)
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 4)
-            .padding(.bottom, 16)
+            riskBudgetSection
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+                .padding(.bottom, 16)
 
             railSection("ORDERS")
             Text("MANUAL ONLY")
@@ -1851,6 +1840,65 @@ private struct LeftRailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(DesignSystem.bg1)
         .onReceive(clockTimer) { now = $0 }
+    }
+
+    // Was hardcoded to `Text("0 / 1R")` + `DeskMeterBar(value: 0, ...)` --
+    // always zero, regardless of what actually traded that day, and "1R"
+    // didn't even match DailyRiskManager's real units (a trade count and a
+    // dollar drawdown, not an R-multiple). DailyRiskManager itself was
+    // already real (persisted, updated for real by TradeJournal on every
+    // close, already gating OrderService) -- this rail widget just never
+    // asked it for anything. Wired up for real 2026-09-09.
+    @ViewBuilder
+    private var riskBudgetSection: some View {
+        if riskManager.isTradingLocked {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 5) {
+                    Circle().fill(DesignSystem.short).frame(width: 6, height: 6)
+                    Text("LOCKED")
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(1.2)
+                        .foregroundColor(DesignSystem.short)
+                }
+                Text(riskManager.lockReason ?? "Daily risk limit reached.")
+                    .font(.system(size: 10, weight: .regular, design: .default))
+                    .foregroundColor(DesignSystem.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                riskMeterRow(
+                    label: "TRADES",
+                    valueText: "\(riskManager.tradesExecutedToday) / \(riskManager.maxTradesPerDay)",
+                    fraction: Double(riskManager.tradesExecutedToday) / Double(max(riskManager.maxTradesPerDay, 1)),
+                    accent: DesignSystem.amber
+                )
+                riskMeterRow(
+                    label: "DAILY P&L",
+                    valueText: riskManager.dailyPnL < 0
+                        ? "-$\(String(format: "%.0f", abs(riskManager.dailyPnL))) / -$\(Int(riskManager.maxDailyDrawdown))"
+                        : "+$\(String(format: "%.0f", riskManager.dailyPnL))",
+                    fraction: riskManager.dailyPnL < 0 ? abs(riskManager.dailyPnL) / riskManager.maxDailyDrawdown : 0,
+                    accent: riskManager.dailyPnL < 0 ? DesignSystem.short : DesignSystem.long
+                )
+            }
+        }
+    }
+
+    private func riskMeterRow(label: String, valueText: String, fraction: Double, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(label)
+                    .font(DesignSystem.Typography.labelFont)
+                    .tracking(1.2)
+                    .foregroundColor(DesignSystem.muted)
+                Spacer()
+                Text(valueText)
+                    .font(DesignSystem.Typography.captionFont)
+                    .foregroundColor(DesignSystem.text)
+            }
+            DeskMeterBar(value: fraction, accent: accent)
+        }
     }
 
     private func railHeader(_ text: String) -> some View {

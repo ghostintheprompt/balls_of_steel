@@ -44,18 +44,34 @@ class TimeManager: ObservableObject {
         return calendar.date(from: components) ?? Date()
     }
     
+    /// Rewritten 2026-09-09 -- this used raw "HH:mm" string-range comparisons
+    /// with its own hardcoded window (`"15:00"..."16:00"` = .powerHour) that
+    /// had nothing to do with `StrategySpec`. It predated `StrategySpec`
+    /// having an Institutional window at all, so 3:45-4:10 PM (the real
+    /// Institutional Flow window) AND the 20-minute dead zone between Power
+    /// Hour and Institutional (3:25-3:45) both silently read "Power Hour" on
+    /// the top bar -- found live at 3:51 PM ET while the left rail (which
+    /// already read `StrategySpec.institutionalWindow` via
+    /// `LiveTapeService.currentTimeWindow()`) correctly said Institutional.
+    /// Now shares the same StrategySpec boundaries as `currentTradingWindowStatus()`
+    /// below, instead of a second, independently-drifting definition.
     func calculateCurrentPhase() -> MarketPhase {
-        let now = Date()
-        let timeStr = formatter.string(from: now)
+        let eastern = TimeZone(identifier: "America/New_York")!
+        let comps = Calendar.current.dateComponents(in: eastern, from: Date())
+        guard let h = comps.hour, let m = comps.minute else { return .regular }
+        let t = h * 60 + m
 
-        switch timeStr {
-        case ..<"09:30": return .preMarket
-        case "09:30"..."10:00": return .opening
-        case "11:30"..."13:30": return .midday
-        case "15:00"..."16:00": return .powerHour
-        case "16:15"...: return .afterHours
-        default: return .regular
+        if t < StrategySpec.preMarketCutoffMinutes { return .preMarket }
+        if t >= StrategySpec.afterHoursMinutes { return .afterHours }
+        if t < 10 * 60 { return .opening }                                  // 9:30-10:00
+        if t >= 11 * 60 + 30 && t < 13 * 60 + 30 { return .midday }         // 11:30-1:30
+        if t >= StrategySpec.powerHourWindow.startMinutes && t < StrategySpec.powerHourWindow.endMinutes {
+            return .powerHour
         }
+        if t >= StrategySpec.institutionalWindow.startMinutes && t < StrategySpec.institutionalWindow.endMinutes {
+            return .institutional
+        }
+        return .regular
     }
 
     // Missing method for MarketData validation

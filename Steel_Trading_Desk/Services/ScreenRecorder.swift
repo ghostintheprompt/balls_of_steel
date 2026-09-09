@@ -74,8 +74,19 @@ final class ScreenRecorder: NSObject, ObservableObject {
 
             let filter = SCContentFilter(desktopIndependentWindow: window)
             let scale = Int(NSScreen.main?.backingScaleFactor ?? 2)
-            let width = max(Int(window.frame.width) * scale, 2)
-            let height = max(Int(window.frame.height) * scale, 2)
+            // H.264 (YUV 4:2:0) requires even pixel dimensions. `scale` is
+            // usually 2 (Retina), which keeps this even automatically, but a
+            // non-Retina display (scale 1) or an odd-point window frame can
+            // produce an odd width/height -- AVAssetWriter then fails
+            // silently mid-capture and only surfaces it as a generic
+            // "operation could not be completed" error when finishWriting()
+            // is called at stop(). Found 2026-09-09, first real recording
+            // after the ProRes -> H.264 switch (ProRes's software encoder
+            // didn't enforce this). Force even, don't just hope for it.
+            var width = max(Int(window.frame.width) * scale, 2)
+            var height = max(Int(window.frame.height) * scale, 2)
+            width -= width % 2
+            height -= height % 2
 
             let config = SCStreamConfiguration()
             config.width = width
@@ -106,7 +117,7 @@ final class ScreenRecorder: NSObject, ObservableObject {
             let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
             input.expectsMediaDataInRealTime = true
             guard writer.canAdd(input) else {
-                lastError = "Could not configure ProRes video output."
+                lastError = "Could not configure H.264 video output."
                 return
             }
             writer.add(input)
@@ -141,16 +152,35 @@ final class ScreenRecorder: NSObject, ObservableObject {
         }
         stream = nil
 
+        // If STOP lands before ScreenCaptureKit delivered a single sample
+        // buffer, `sessionStarted` is still false: writer.startWriting() was
+        // never called, so finishWriting() has nothing to finish and only
+        // ever fails with the same generic error, regardless of the real
+        // cause. Treat that as its own case with an honest message instead
+        // of relying on AVAssetWriter's error text.
         videoInput?.markAsFinished()
         if let writer = assetWriter {
-            await writer.finishWriting()
-            if writer.status == .failed, let error = writer.error {
-                lastError = "Recording file failed to finalize: \(error.localizedDescription)"
+            if sessionStarted {
+                await writer.finishWriting()
+                if writer.status == .failed, let error = writer.error {
+                    let nsError = error as NSError
+                    var detail = "\(nsError.domain) \(nsError.code)"
+                    if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+                        detail += " — \(underlying.localizedDescription)"
+                    }
+                    lastError = "Recording file failed to finalize: \(error.localizedDescription) [\(detail)]"
+                    lastSavedURL = nil
+                } else {
+                    lastSavedURL = outputURL
+                }
+            } else {
+                lastError = "Stopped before any frame was captured — try again and wait a beat before hitting STOP."
+                try? FileManager.default.removeItem(at: writer.outputURL)
+                lastSavedURL = nil
             }
         }
 
         isRecording = false
-        lastSavedURL = outputURL
         assetWriter = nil
         videoInput = nil
         sessionStarted = false

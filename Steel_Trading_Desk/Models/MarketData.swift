@@ -145,6 +145,7 @@ struct MarketData {
         case .opening: AppConfig.Thresholds.gapAndGo.minVolume
         case .midday: AppConfig.Thresholds.vwapReversal.minVolume
         case .powerHour: AppConfig.Thresholds.powerHour.minVolume
+        case .institutional: AppConfig.Thresholds.powerHour.minVolume // no dedicated institutional threshold in this legacy scanner; Power Hour's is a safe floor since the doc rates Institutional as the higher-volume window of the two
         case .regular: AppConfig.Thresholds.gapAndGo.minVolume // Default to gap threshold
         case .preMarket, .afterHours: Int.max // Prevent trading outside hours
         }
