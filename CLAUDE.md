@@ -21,12 +21,33 @@ written down:
   AUDIT → Run checks code against them for real, deterministically. Last run
   by Michael: all pass.
 
+## Not a public release
+
+This is deliberately staying personal-use + portfolio piece, not a product
+for others to install. The Schwab integration is quirky enough (masked
+errors, symbol drift, date-range gotchas — see `SCHWAB_API_READINESS.md`)
+that other people would hit the same walls and give up rather than push
+through them the way this session-by-session debugging has. That changes
+what "polish" means going forward:
+- Onboarding docs, setup friction-reduction, and defensive handling of
+  Schwab quirks for *unknown* users are explicitly not the goal — this only
+  ever has to work for Michael's own Schwab account, on his own machine.
+- "Good developer / institutional-grade" here means correctness,
+  reliability, and evolvability — not distributability. Test coverage, the
+  tiered punch list, and the offline-fixture rule below are still worth
+  doing because they make the tool trustworthy and the portfolio story
+  stronger, not because strangers will run this.
+
 ## Rules for working in this repo
 
 - **Don't ask permission repeatedly. Execute.** Michael is the director; make
   the call, build it, and let him redirect if it's wrong. Re-asking "do you
   want A or B" after he's already told you to build something is a tangent,
   not caution.
+  - **This covers building, not claiming fixed.** Move without asking
+    permission on implementation calls. Never extend that to skipping the
+    multi-minute live-evidence rule below — "I built it and it should work"
+    and "I watched it work" are different sentences, say the one that's true.
 - **This project is a plain, manually-maintained `.xcodeproj`, not
   XcodeGen.** There is no `project.yml` here (that pattern is from a
   different, unrelated project). Any new Swift file must be explicitly
@@ -83,6 +104,12 @@ written down:
   holiday) was found via raw diagnostic logging, not guessing. Sample the
   actual persisted value 3+ times across a window long enough to guarantee
   it should have changed before calling anything fixed.
+  - **Every real gate bug gets a fixture, not just a fix.** When a live-data
+    bug is found and fixed (wrong volume formula, dead detector, etc.),
+    capture the raw data that exposed it and add it as a replay case run
+    offline via Settings → AUDIT (or a CLI equivalent) — so a future change
+    that reintroduces the same bug gets caught before market hours, not
+    during them.
 - **One punch list.** Not a hierarchy of them scattered across docs — see
   below. Add to it, check items off it, don't spin up parallel tracking.
 - **Design preferences (Michael's calls, keep applying these):**
@@ -116,6 +143,16 @@ suggestion and the alerting system under real conditions.
 
 ## Punch list
 
+Tiered by what breaks if ignored — apply this to new items going forward;
+existing items below are tagged where it matters, nothing removed or
+reordered:
+- **P0 — safety/correctness, blocks trusting a live signal:** crashes,
+  unverified live paths anything close to the contract suggestion or gate
+  math touches.
+- **P1 — real but not trade-blocking:** UX, display bugs, dead code,
+  unconfirmed-but-non-urgent behavior.
+- **P2 — polish/scope, do when P0/P1 are clear.**
+
 - [x] **Second Read / Prompt Desk redesign** — raised 3x by Michael. Fixed
   in two passes: (1) visual rebuild to match SystemsPanel's flat
   hairline-bordered look instead of the old generic-iOS styling, plus a
@@ -142,31 +179,33 @@ suggestion and the alerting system under real conditions.
   Fixed all four to match what Trade Journal shows for the same trade.
 - [x] Volume panel's 200% threshold line had no direct label (only small
   header text) — added a "200%" annotation right on the dashed line.
-- [ ] Verify Trade Journal end-to-end with a real trade: entering a trade
-  should now record a `JournalEntry` (`TradeJournal.record`, previously dead
-  code — nothing ever called it) and capture a real screenshot of the desk
-  (`TradeEvidenceCapture`, paired by `idempotencyKey`). Closing a trade
-  should mark win/loss + P&L (`TradeJournal.close(idempotencyKey:)`, also
-  previously dead). Settings → rail → TRADE JOURNAL → OPEN to review.
-- [ ] Add a general-purpose screenshot command (top menu bar item, not tied
-  to trade entry) — Michael asked for this separately from the trade-journal
-  auto-capture; not yet built.
-- [ ] macOS widget next to Weather — scoped in `docs/WIDGET_SCOPE.md`, needs
-  an App Group + new Widget Extension target, not started.
+- [ ] **[P1]** Verify Trade Journal end-to-end with a real trade: entering a
+  trade should now record a `JournalEntry` (`TradeJournal.record`,
+  previously dead code — nothing ever called it) and capture a real
+  screenshot of the desk (`TradeEvidenceCapture`, paired by
+  `idempotencyKey`). Closing a trade should mark win/loss + P&L
+  (`TradeJournal.close(idempotencyKey:)`, also previously dead). Settings →
+  rail → TRADE JOURNAL → OPEN to review.
+- [ ] **[P2]** Add a general-purpose screenshot command (top menu bar item,
+  not tied to trade entry) — Michael asked for this separately from the
+  trade-journal auto-capture; not yet built.
+- [ ] **[P2]** macOS widget next to Weather — scoped in
+  `docs/WIDGET_SCOPE.md`, needs an App Group + new Widget Extension target,
+  not started.
 - [x] Real options-chain fetch + contract suggestion wired into NEXT MOVE.
   The instant all five gates clear, the desk fetches a real Schwab chain and
   shows the actual contract (strike/expiration/delta/ask/count/cost) using
   `OptionSelector.suggest(side: .put, ...)` (fade-only, always puts) sized
-  off `StrategySpec`'s own audited tier table. **Still unverified against
-  live Schwab traffic as of writing** — first real "CLEARED" moment during
-  market hours is the actual test. If the chain JSON doesn't match the
-  assumed shape, it'll show the raw Schwab response as the error text
+  off `StrategySpec`'s own audited tier table. **[P0] Still unverified
+  against live Schwab traffic as of writing** — first real "CLEARED" moment
+  during market hours is the actual test. If the chain JSON doesn't match
+  the assumed shape, it'll show the raw Schwab response as the error text
   (same pattern as every other Schwab error here) rather than a wrong
   contract — watch for that the first time this actually fires live.
-- [ ] Confirm whether Schwab actually rotates the refresh token with a fresh
-  7-day window on each silent refresh, or hard-expires 7 days after original
-  auth regardless. Unconfirmed — only observable by watching real usage over
-  the next week or so.
+- [ ] **[P1]** Confirm whether Schwab actually rotates the refresh token
+  with a fresh 7-day window on each silent refresh, or hard-expires 7 days
+  after original auth regardless. Unconfirmed — only observable by watching
+  real usage over the next week or so.
 - [x] Schwab OAuth actually connects and live quotes parse correctly
   (2026-09-07) — see `docs/SCHWAB_API_READINESS.md` for the full writeup.
 - [x] **2026-09-08 first live-market session — real bugs found and fixed
@@ -197,7 +236,7 @@ suggestion and the alerting system under real conditions.
     (previously buried in a tiny footer or Settings) and disabled
     `URLCache` on every Schwab market-data request (was serving stale
     cached history responses).
-  - Found, not yet fixed: a real `SIGSEGV` crash in
+  - **[P0] Found, not yet fixed:** a real `SIGSEGV` crash in
     `MarketDataService.handleQuoteUpdate` (called from the older
     `SchwabService.subscribeToQuotes`/`subscribeToMarketData` path used by
     `SignalScanner`/`ExitSignalService`) — looks like a thread-safety bug
