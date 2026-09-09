@@ -193,13 +193,25 @@ struct TradingDashboard: View {
 // can record real alerts/trades hitting to show his old boss and friends,
 // and to keep his own accountability record.
 //
-// The whole control is one tap target with the destination spelled out in
-// text, not an icon-only affordance -- found 2026-09-09 that a bare folder
-// glyph after STOP was too easy to miss ("did it record, I don't know where
-// it went") even though the file was sitting in Movies the whole time.
+// Two things stay true at all times, not just right after a save:
+//   1. There's always a way back to the recordings folder (a small, constant
+//      icon -- same weight as the Settings gear elsewhere in this toolbar).
+//   2. Stopping a recording gets a confirmation, but a temporary one: a
+//      "Saved" toast that fades on its own after a few seconds instead of
+//      permanently occupying toolbar space next to REC.
+//
+// Revision history: the first pass (2026-09-09) made the SAVED confirmation
+// an icon-only glyph, which Michael couldn't find ("did it record, I don't
+// know where it went"). The fix after that made it a permanent text label --
+// which then never went away, crowding REC for the rest of the session every
+// time after the first recording. This version keeps the permanent folder
+// icon (always findable) separate from the save confirmation (transient, so
+// it reads as an event, not a permanent fixture).
 private struct RecordingControlView: View {
     @ObservedObject private var recorder = ScreenRecorder.shared
     @State private var showError = false
+    @State private var showSavedToast = false
+    @State private var toastTask: Task<Void, Never>?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -210,14 +222,14 @@ private struct RecordingControlView: View {
                 Text(sizeText)
                     .font(DesignSystem.Typography.labelFont)
                     .foregroundColor(DesignSystem.muted)
-            } else if let saved = recorder.lastSavedURL {
+            } else if showSavedToast, let saved = recorder.lastSavedURL {
                 Button {
                     recorder.revealLastRecordingInFinder()
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(DesignSystem.long)
-                        Text("SAVED — SHOW IN FINDER")
+                        Text("SAVED")
                             .font(DesignSystem.Typography.labelFont)
                             .tracking(0.6)
                             .foregroundColor(DesignSystem.text)
@@ -226,7 +238,21 @@ private struct RecordingControlView: View {
                 }
                 .buttonStyle(.plain)
                 .help("\(saved.lastPathComponent) — saved to ~/Movies/Steel Trading Desk Recordings")
+                .transition(.opacity)
             }
+
+            // Constant, low-weight affordance back to the recordings folder --
+            // works even before anything's been recorded this session (falls
+            // back to opening the folder itself; see revealLastRecordingInFinder).
+            Button {
+                recorder.revealLastRecordingInFinder()
+            } label: {
+                Image(systemName: "folder")
+                    .foregroundColor(DesignSystem.muted)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open Steel Trading Desk Recordings in Finder")
 
             Button {
                 recorder.toggle()
@@ -244,6 +270,17 @@ private struct RecordingControlView: View {
             }
             .buttonStyle(.plain)
             .help(recorder.isRecording ? "Stop recording — saves to ~/Movies/Steel Trading Desk Recordings" : "Record this desk to ~/Movies/Steel Trading Desk Recordings")
+        }
+        .animation(.easeInOut(duration: 0.2), value: showSavedToast)
+        .onChange(of: recorder.isRecording) { wasRecording, isRecording in
+            guard wasRecording, !isRecording else { return }
+            toastTask?.cancel()
+            showSavedToast = true
+            toastTask = Task {
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                guard !Task.isCancelled else { return }
+                showSavedToast = false
+            }
         }
         .onChange(of: recorder.lastError) { _, newValue in
             showError = newValue != nil
