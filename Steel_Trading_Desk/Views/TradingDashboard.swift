@@ -187,11 +187,16 @@ struct TradingDashboard: View {
 #if os(macOS)
 // MARK: - Recording Control
 //
-// Native ProRes capture of this app's own window via ScreenCaptureKit +
+// Native H.264 capture of this app's own window via ScreenCaptureKit +
 // AVAssetWriter -- no external binary (this app is sandboxed, which blocks
 // launching a subprocess like ffmpeg entirely). Added 2026-09-08 so Michael
 // can record real alerts/trades hitting to show his old boss and friends,
 // and to keep his own accountability record.
+//
+// The whole control is one tap target with the destination spelled out in
+// text, not an icon-only affordance -- found 2026-09-09 that a bare folder
+// glyph after STOP was too easy to miss ("did it record, I don't know where
+// it went") even though the file was sitting in Movies the whole time.
 private struct RecordingControlView: View {
     @ObservedObject private var recorder = ScreenRecorder.shared
     @State private var showError = false
@@ -209,11 +214,18 @@ private struct RecordingControlView: View {
                 Button {
                     recorder.revealLastRecordingInFinder()
                 } label: {
-                    Image(systemName: "folder")
-                        .foregroundColor(DesignSystem.muted)
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(DesignSystem.long)
+                        Text("SAVED — SHOW IN FINDER")
+                            .font(DesignSystem.Typography.labelFont)
+                            .tracking(0.6)
+                            .foregroundColor(DesignSystem.text)
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Reveal \(saved.lastPathComponent) in Finder")
+                .help("\(saved.lastPathComponent) — saved to ~/Movies/Steel Trading Desk Recordings")
             }
 
             Button {
@@ -228,9 +240,10 @@ private struct RecordingControlView: View {
                         .tracking(1.2)
                 }
                 .foregroundColor(recorder.isRecording ? DesignSystem.short : DesignSystem.amber)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(recorder.isRecording ? "Stop recording (ProRes, saved to ~/Movies/Steel Trading Desk Recordings)" : "Record this desk to ProRes")
+            .help(recorder.isRecording ? "Stop recording — saves to ~/Movies/Steel Trading Desk Recordings" : "Record this desk to ~/Movies/Steel Trading Desk Recordings")
         }
         .onChange(of: recorder.lastError) { _, newValue in
             showError = newValue != nil
@@ -840,7 +853,12 @@ private struct VXXStrategyState {
         if !windowPass {
             return "\(entry.timeWindow.displayName) is outside this setup. No alert."
         }
-        return "\(entry.timeWindow.displayName) is a valid VXX entry window."
+        let reliabilityNote = entry.timeWindow.reliability.map { " (\($0) reliability)" } ?? ""
+        if entry.timeWindow.isAnchorWindow {
+            return "\(entry.timeWindow.displayName) is a valid VXX entry window\(reliabilityNote). Full size eligible."
+        }
+        let pct = Int(entry.timeWindow.positionSizeMultiplier * 100)
+        return "\(entry.timeWindow.displayName) is a valid VXX entry window\(reliabilityNote), but not an anchor window — capped at \(pct)% size."
     }
 
     // Sequential gating still short-circuits by design (the doc's own "check
@@ -896,7 +914,11 @@ private struct VXXStrategyState {
     var decisionDetail: String {
         guard let entry else { return "No tape entered. Start with Tape." }
         if ready {
-            return "All five conditions are live. Size by ratio: \(entry.ratioTier). Review, then execute manually on broker. 4:15 ET session close still rules."
+            if entry.timeWindow.isAnchorWindow {
+                return "All five conditions are live. Size by ratio: \(entry.ratioTier). Review, then execute manually on broker. 4:15 ET session close still rules."
+            }
+            let pct = Int(entry.timeWindow.positionSizeMultiplier * 100)
+            return "All five conditions are live, but \(entry.timeWindow.displayName) isn't an anchor window — size by ratio (\(entry.ratioTier)) capped to \(pct)%. Review, then execute manually on broker. 4:15 ET session close still rules."
         }
         return "One failed gate means skip or wait. Do not average your way into a trade."
     }
@@ -2407,6 +2429,13 @@ private struct RightRailView: View {
                 contractRow("DELTA", String(format: "%.2f", suggestion.contract.delta))
                 contractRow("ASK", "$\(String(format: "%.2f", suggestion.contract.ask)) × \(suggestion.contractCount)")
                 contractRow("COST", "$\(String(format: "%.0f", suggestion.estimatedCost))", accent: DesignSystem.amber)
+                if let windowSizeCapNote {
+                    Text(windowSizeCapNote)
+                        .font(DesignSystem.Typography.labelFont)
+                        .tracking(0.6)
+                        .foregroundColor(DesignSystem.amber)
+                        .padding(.top, 2)
+                }
             } else if let suggestionError {
                 Text(suggestionError)
                     .font(DesignSystem.Typography.captionFont)
@@ -2449,7 +2478,8 @@ private struct RightRailView: View {
             do {
                 let chain = try await SchwabService.shared.fetchOptionsChain("VXX")
                 let tier = StrategySpec.tier(forRatio: entry.ratio)
-                let budget = Double(tier.maxPositionDollars)
+                let windowMultiplier = entry.timeWindow.positionSizeMultiplier
+                let budget = Double(tier.maxPositionDollars) * windowMultiplier
                 guard budget > 0 else {
                     suggestionError = "No position size configured for the \(tier.label) tier."
                     isFetchingSuggestion = false
@@ -2457,6 +2487,9 @@ private struct RightRailView: View {
                 }
                 if let result = OptionSelector.suggest(side: .put, chain: chain, budget: budget) {
                     suggestion = result
+                } else if windowMultiplier < 1.0 {
+                    let pct = Int(windowMultiplier * 100)
+                    suggestionError = "No contract fits the \(pct)% off-anchor-window budget ($\(String(format: "%.0f", budget))). Check the chain manually or wait for an anchor window."
                 } else {
                     suggestionError = "No contract in the delta/DTE band right now. Check the chain manually."
                 }
@@ -2465,6 +2498,15 @@ private struct RightRailView: View {
             }
             isFetchingSuggestion = false
         }
+    }
+
+    /// Non-nil only outside the three anchor windows -- the NEXT MOVE card
+    /// shows this next to COST so a reduced size reads as a deliberate cap,
+    /// not a stingier version of the same math. Added 2026-09-09.
+    private var windowSizeCapNote: String? {
+        guard let entry = state.entry, !entry.timeWindow.isAnchorWindow else { return nil }
+        let pct = Int(entry.timeWindow.positionSizeMultiplier * 100)
+        return "\(pct)% SIZE — \(entry.timeWindow.shortName), NOT AN ANCHOR WINDOW"
     }
 
     private var netPnL: Double {
@@ -4248,12 +4290,20 @@ private struct PhoneGateDetailSheet: View {
                 Tier(label: "BELOW",         range: "<200%",   color: DesignSystem.short, active: pct < 200)
             ]
         case .window:
+            // Revised 2026-09-09 alongside TimeWindowInput.positionSizeMultiplier
+            // -- this used to lump every non-anchor minute into one red
+            // "OUTSIDE / no alert" row, which went stale the moment the
+            // 2026-09-08 change made those windows alertable. Now mirrors the
+            // real three-tier outcome: full size, capped size, or genuinely
+            // closed (pre/after hours).
             let window = entry?.timeWindow
             return [
-                Tier(label: "MORNING",       range: "9:50-10:15", color: DesignSystem.long,  active: window == .morning),
-                Tier(label: "POWER",         range: "3:10-3:25",  color: DesignSystem.long,  active: window == .powerHour),
-                Tier(label: "INSTITUTIONAL", range: "3:45-4:10",  color: DesignSystem.long,  active: window == .institutional),
-                Tier(label: "OUTSIDE",       range: "no alert",   color: DesignSystem.short, active: window != nil && !(window?.isVXXEntryWindow ?? false))
+                Tier(label: "MORNING",       range: "9:50-10:15 · 100% size", color: DesignSystem.long,  active: window == .morning),
+                Tier(label: "POWER",         range: "3:10-3:25 · 100% size",  color: DesignSystem.long,  active: window == .powerHour),
+                Tier(label: "INSTITUTIONAL", range: "3:45-4:10 · 100% size",  color: DesignSystem.long,  active: window == .institutional),
+                Tier(label: "LUNCH",         range: "12:20-12:40 · 50% size", color: DesignSystem.amber, active: window == .lunch),
+                Tier(label: "OFF-ANCHOR",    range: "other open hours · 35% size", color: DesignSystem.amber, active: window == .open || window == .afternoonFlex || window == .close),
+                Tier(label: "CLOSED",        range: "pre/after hours · no alert", color: DesignSystem.short, active: window == .preMarket || window == .afterHours)
             ]
         case .ratio:
             let r = entry?.ratio ?? 0

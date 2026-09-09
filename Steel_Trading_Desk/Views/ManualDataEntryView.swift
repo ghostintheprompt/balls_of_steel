@@ -1385,17 +1385,37 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         }
     }
 
-    /// Only the doc-published reliability numbers (Morning 85, Power 80,
-    /// Institutional 90). Returning fabricated numbers for the other windows
-    /// violated [[feedback-tone-rules]] ("no win-rate % in primary UI") and
-    /// was strategy drift — the doc doesn't quantify reliability for `.open`,
-    /// `.close`, `.lunch`, etc. Drift fix 2026-05-14.
+    /// Doc-published reliability numbers only. Originally just the three
+    /// anchors (Morning 85, Power 80, Institutional 90) from
+    /// `thinkorswim_complete_setup_2026.md` -- returning fabricated numbers
+    /// for the other windows violated [[feedback-tone-rules]] ("no win-rate %
+    /// in primary UI"). Extended 2026-09-09 with Lunch (70%) and the
+    /// off-anchor bucket (50%), both real published numbers from
+    /// `vxx_trading_philosophy_discipline.md` (lines 282-320, "TIME WINDOWS:
+    /// WHY THEY EXIST") that just weren't mirrored into code yet -- not new
+    /// fabrication, closing the drift gap the 2026-05-14 fix didn't know
+    /// about. `.preMarket`/`.afterHours` stay nil -- not tradeable at all.
     var reliability: String? {
         switch self {
-        case .institutional: return "90%"
-        case .morning:       return "85%"
-        case .powerHour:     return "80%"
-        default:             return nil
+        case .institutional: return "\(StrategySpec.institutionalWindow.publishedReliabilityPercent ?? 90)%"
+        case .morning:       return "\(StrategySpec.morningWindow.publishedReliabilityPercent ?? 85)%"
+        case .powerHour:     return "\(StrategySpec.powerHourWindow.publishedReliabilityPercent ?? 80)%"
+        case .lunch:         return "\(StrategySpec.lunchWindow.publishedReliabilityPercent ?? 70)%"
+        case .open, .afternoonFlex, .close:
+            return "\(StrategySpec.offAnchorWindow.publishedReliabilityPercent ?? 50)%"
+        case .preMarket, .afterHours:
+            return nil
+        }
+    }
+
+    /// True for the three proven, lower-bar setups the doc originally built
+    /// around. Everything else is real and alertable (2026-09-08) but rides
+    /// on the off-anchor volume bar and a capped position size, not the
+    /// anchor windows' proven time-based edge.
+    var isAnchorWindow: Bool {
+        switch self {
+        case .morning, .powerHour, .institutional: return true
+        default: return false
         }
     }
 
@@ -1411,9 +1431,31 @@ enum TimeWindowInput: String, Codable, CaseIterable {
         case .morning:       return StrategySpec.morningWindow.volumeThresholdPercent
         case .powerHour:     return StrategySpec.powerHourWindow.volumeThresholdPercent
         case .institutional: return StrategySpec.institutionalWindow.volumeThresholdPercent
-        case .open, .lunch, .afternoonFlex, .close:
-            return StrategySpec.institutionalWindow.volumeThresholdPercent
+        case .lunch:          return StrategySpec.lunchWindow.volumeThresholdPercent
+        case .open, .afternoonFlex, .close:
+            return StrategySpec.offAnchorWindow.volumeThresholdPercent
         default:             return StrategySpec.morningWindow.volumeThresholdPercent
+        }
+    }
+
+    /// Fraction of the ratio tier's max position dollars this window is
+    /// capped to. 1.0 for the three anchor windows (full doc-table size).
+    /// Added 2026-09-09 -- previously every window sized identically off the
+    /// ratio tier alone; `10:30 AM` (off-anchor) could size a "PREMIUM FADE"
+    /// exactly like 3:50 PM Institutional Flow, even though the doc's own
+    /// reliability table rates them 50% vs 90%. Hardens the 2026-09-08 call
+    /// ("alertable outside anchors, not blocked") so alertable doesn't
+    /// silently mean full-size.
+    var positionSizeMultiplier: Double {
+        switch self {
+        case .morning, .powerHour, .institutional:
+            return StrategySpec.morningWindow.positionSizeMultiplier // 1.0, same for all three anchors
+        case .lunch:
+            return StrategySpec.lunchWindow.positionSizeMultiplier
+        case .open, .afternoonFlex, .close:
+            return StrategySpec.offAnchorWindow.positionSizeMultiplier
+        case .preMarket, .afterHours:
+            return 0
         }
     }
 }

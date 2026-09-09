@@ -94,6 +94,12 @@ enum StrategySpec {
         /// Latest minute (since midnight ET) for the quote/alert session close
         /// tied to this window. Nil = no special session extension.
         let hardExitMinutes: Int?
+
+        /// Fraction of the ratio tier's `maxPositionDollars` this window is
+        /// allowed to size up to. 1.0 = full size (the three proven anchor
+        /// windows). Anything less than 1.0 is a real cap, not a suggestion --
+        /// see the 2026-09-09 hardening note below.
+        let positionSizeMultiplier: Double
     }
 
     static let morningWindow = TradingWindow(
@@ -105,7 +111,8 @@ enum StrategySpec {
         volumeThresholdPercent: 200,
         publishedReliabilityPercent: 85,
         isEntryWindow: true,
-        hardExitMinutes: 16 * 60 + 15  // 4:15 PM ET extended-session close
+        hardExitMinutes: 16 * 60 + 15, // 4:15 PM ET extended-session close
+        positionSizeMultiplier: 1.0
     )
 
     static let powerHourWindow = TradingWindow(
@@ -117,7 +124,8 @@ enum StrategySpec {
         volumeThresholdPercent: 200,
         publishedReliabilityPercent: 80,
         isEntryWindow: true,
-        hardExitMinutes: 16 * 60 + 15  // 4:15 PM ET extended-session close
+        hardExitMinutes: 16 * 60 + 15, // 4:15 PM ET extended-session close
+        positionSizeMultiplier: 1.0
     )
 
     static let institutionalWindow = TradingWindow(
@@ -129,13 +137,57 @@ enum StrategySpec {
         volumeThresholdPercent: 300,   // doc: ≥300% for Institutional
         publishedReliabilityPercent: 90,
         isEntryWindow: true,
-        hardExitMinutes: 16 * 60 + 15  // 4:15 PM ET extended-session close
+        hardExitMinutes: 16 * 60 + 15, // 4:15 PM ET extended-session close
+        positionSizeMultiplier: 1.0
+    )
+
+    /// Added 2026-09-09 alongside `offAnchorWindow` (below) -- these two are
+    /// what makes the 2026-09-08 "off-anchor windows are alertable, not
+    /// blocked" call actually hold a real position-sizing line, not just a
+    /// harder volume bar. Reliability numbers are `vxx_trading_philosophy_
+    /// discipline.md`'s own published table (lines 282-320) -- Lunch Drift
+    /// 70%, previously not mirrored in code at all. Multiplier is Michael's
+    /// call, not a doc number: half size for a documented-but-choppy window.
+    static let lunchWindow = TradingWindow(
+        id: "lunch",
+        label: "Lunch Drift (12:20-12:40)",
+        shortLabel: "LUNCH",
+        startMinutes: 12 * 60 + 20,    // 12:20 PM ET
+        endMinutes: 12 * 60 + 40,      // 12:40 PM ET
+        volumeThresholdPercent: 300,   // off-anchor bar, same as Institutional
+        publishedReliabilityPercent: 70,
+        isEntryWindow: true,
+        hardExitMinutes: 16 * 60 + 15,
+        positionSizeMultiplier: 0.5
+    )
+
+    /// Catch-all for every other open-market minute (`.open`, `.afternoonFlex`,
+    /// `.close` in `TimeWindowInput`) -- the doc's own "All Other Times: 50%
+    /// reliability, don't trade" bucket. The 2026-09-08 call made this
+    /// alertable instead of hard-blocked (a real ~2% move got missed for
+    /// being 20 minutes outside Power Hour); this multiplier is the other
+    /// half of that tradeoff -- alertable, but capped well under full size.
+    /// Sanity-check 0.35 against how it actually trades; it's a judgment
+    /// call, not a doc number.
+    static let offAnchorWindow = TradingWindow(
+        id: "offAnchor",
+        label: "Outside Optimal Window",
+        shortLabel: "OFF-PEAK",
+        startMinutes: 0,
+        endMinutes: 0,                 // not a contiguous range -- see LiveTapeService.currentTimeWindow()
+        volumeThresholdPercent: 300,
+        publishedReliabilityPercent: 50,
+        isEntryWindow: true,
+        hardExitMinutes: 16 * 60 + 15,
+        positionSizeMultiplier: 0.35
     )
 
     static let allEntryWindows: [TradingWindow] = [
         morningWindow,
         powerHourWindow,
-        institutionalWindow
+        institutionalWindow,
+        lunchWindow,
+        offAnchorWindow
     ]
 
     /// Volume bar required to clear the criteria-1 (volume) gate, expressed as

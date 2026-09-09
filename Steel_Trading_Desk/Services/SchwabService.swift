@@ -78,7 +78,19 @@ class SchwabService: ObservableObject {
         Task { [weak self] in
             while !Task.isCancelled {
                 if let quote = try? await self?.fetchQuote(symbol) {
-                    subject.send(quote)
+                    // Deliver on the main actor: downstream subscribers
+                    // (MarketDataService, SignalScanner, ExitSignalService)
+                    // are all @MainActor and mutate shared dictionaries in
+                    // their .sink closures. Combine delivers .send()
+                    // synchronously on whatever thread calls it, so without
+                    // this hop those closures ran on this background Task's
+                    // thread, racing concurrent polling loops for the same
+                    // symbol and corrupting the shared dictionaries (the
+                    // 2026-09-08 SIGSEGV / uncaught-NSException crash in
+                    // MarketDataService.handleQuoteUpdate).
+                    await MainActor.run {
+                        subject.send(quote)
+                    }
                 }
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
             }

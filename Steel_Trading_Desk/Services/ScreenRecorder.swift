@@ -6,7 +6,7 @@ import Combine
 
 // MARK: - ScreenRecorder
 //
-// Records this app's own window to a ProRes .mov, natively -- ScreenCaptureKit
+// Records this app's own window to an H.264 .mp4, natively -- ScreenCaptureKit
 // for capture, AVAssetWriter for encoding. No external binary: this app is
 // sandboxed (`com.apple.security.app-sandbox`), which blocks launching an
 // arbitrary subprocess like ffmpeg entirely. ScreenCaptureKit works fine
@@ -15,6 +15,10 @@ import Combine
 //
 // Purpose per Michael 2026-09-08: record real alerts/trades hitting to show
 // his old boss and friends, and to build his own accountability record.
+// H.264 at a bounded bitrate, not ProRes: this is for sharing a clip, not
+// editing a master -- ProRes422 at retina scale ran ~84 Mbps (511MB for a
+// 49-second clip, found 2026-09-09). 8 Mbps H.264 is still sharp for mostly
+// static UI/text content and is ~10x smaller.
 
 @MainActor
 final class ScreenRecorder: NSObject, ObservableObject {
@@ -84,15 +88,20 @@ final class ScreenRecorder: NSObject, ObservableObject {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
             let url = Self.recordingsDirectory.appendingPathComponent(
-                "Steel Trading Desk \(formatter.string(from: Date())).mov"
+                "Steel Trading Desk \(formatter.string(from: Date())).mp4"
             )
             outputURL = url
 
-            let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
+            let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
             let videoSettings: [String: Any] = [
-                AVVideoCodecKey: AVVideoCodecType.proRes422,
+                AVVideoCodecKey: AVVideoCodecType.h264,
                 AVVideoWidthKey: width,
-                AVVideoHeightKey: height
+                AVVideoHeightKey: height,
+                AVVideoCompressionPropertiesKey: [
+                    AVVideoAverageBitRateKey: 8_000_000,
+                    AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+                    AVVideoMaxKeyFrameIntervalKey: 60
+                ]
             ]
             let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
             input.expectsMediaDataInRealTime = true
