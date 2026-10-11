@@ -27,7 +27,7 @@ Made public on GitHub and shared on LinkedIn, deliberately and transparently: Mi
 
 The reasoning that kept this private through September still matters, just doesn't block release anymore: the Schwab integration is quirky enough (masked errors, symbol drift, date-range gotchas — see `SCHWAB_API_READINESS.md`) that someone else running this will hit the same walls this session-by-session debugging worked through, and won't get hand-held through them. That's now stated plainly in the public README instead of being a reason to stay private.
 
-**Known open bug, disclosed on purpose, not hidden:** a real `SIGSEGV` crash in `MarketDataService.handleQuoteUpdate` (thread-safety issue, two Schwab-polling loops mutating a dictionary concurrently) — crashed once during a live session, relaunched immediately, never root-caused. Still open as of this writing. If you're building on this, know that going in.
+**SIGSEGV crash bug — audited 2026-10-11, likely fixed, not re-proven live.** Crashed once during a live session (2026-09-08), thread-safety issue from concurrent Schwab-polling loops mutating a shared dictionary, never root-caused at the time. Code audit found every caller touching `MarketDataService`'s state is `@MainActor`-isolated (`SchwabService`, `LiveTapeService`, `SignalScanner`, `ExitSignalService`, `SignalMonitor`), and `SchwabService.subscribeToQuotes` already explicitly hops via `MainActor.run` before delivering quotes, with a comment in the code naming this exact crash. The race condition this needed shouldn't be reachable anymore. Per this file's own live-evidence rule, not marked fully closed until re-confirmed against real multi-hour live-session use - a one-time race isn't something to force-reproduce on demand.
 
 - "Good developer / institutional-grade" here still means correctness, reliability, and evolvability, not hand-holding onboarding for strangers — that hasn't changed. What changed is willingness to let people see the rough edges along with the real parts, instead of waiting for it to be finished.
 
@@ -229,15 +229,18 @@ reordered:
     (previously buried in a tiny footer or Settings) and disabled
     `URLCache` on every Schwab market-data request (was serving stale
     cached history responses).
-  - **[P0] Found, not yet fixed:** a real `SIGSEGV` crash in
+  - **[P0, 2026-09-08] Found; [audited 2026-10-11, likely fixed, see top of file]:** a real `SIGSEGV` crash in
     `MarketDataService.handleQuoteUpdate` (called from the older
     `SchwabService.subscribeToQuotes`/`subscribeToMarketData` path used by
-    `SignalScanner`/`ExitSignalService`) — looks like a thread-safety bug
-    from a Dictionary mutated concurrently by two independent Schwab-polling
+    `SignalScanner`/`ExitSignalService`) — a thread-safety bug from a
+    Dictionary mutated concurrently by two independent Schwab-polling
     loops (that legacy one plus `LiveTapeService`'s own). Crashed once
     during the session at 3:02 PM; relaunched immediately, not
-    investigated further under time pressure. Needs real attention before
-    trusting the app to stay up unattended for a full session.
+    investigated further at the time under time pressure. Full code audit
+    a month later found every caller actor-isolated and the known race
+    already closed by an explicit `MainActor.run` hop - see the
+    "SIGSEGV crash bug" note near the top of this file for the real
+    detail. Not re-verified against a live multi-hour session yet.
   - [x] Resolved (Michael's explicit call, later the same day):
     `TimeWindowInput.isVXXEntryWindow` no longer hard-blocks everything
     except the three anchor windows. "The time frames aren't mandatory but
