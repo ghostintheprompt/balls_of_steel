@@ -9,9 +9,11 @@ Native multiplatform discipline desk for discretionary VXX / SPY options traders
 ![License](https://img.shields.io/github/license/ghostintheprompt/balls_of_steel)
 ![Platform](https://img.shields.io/badge/platform-iOS%20|%20iPadOS%20|%20macOS-blue)
 
-**v1 — 2026-09-08.** First build run and verified live, against real Schwab
-market data, during actual trading hours — not just compiled and assumed
-correct. This is a personal tool, not a product: running it requires your
+**Public release — 2026-10-11.** First built and verified live against real Schwab
+market data, during actual trading hours, on 2026-09-08 — not just compiled and assumed
+correct. Made public a month later, after a real security/accuracy pass (no committed
+secrets, no account-balance screenshots, docs checked against what the code actually
+does). This is a personal tool, not a product: running it requires your
 own Schwab Developer Portal registration (app key/secret entered locally,
 stored in Keychain), since Schwab doesn't allow a shared credential to ship
 inside an app. That's a real limitation on distributing this as something
@@ -95,4 +97,4 @@ Steel Trading Desk does not collect, store, or transmit any of your personal inf
 
 ---
 
-Built by MDRN Corp — [mdrn.app](https://mdrn.app/steel)
+Built by Michael Subrizi — [github.com/ghostintheprompt](https://github.com/ghostintheprompt)
