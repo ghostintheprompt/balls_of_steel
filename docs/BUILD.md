@@ -14,7 +14,7 @@ cd balls_of_steel
 open Steel_Trading_Desk.xcodeproj
 ```
 
-The repo is private. Internal codename is "balls of steel"; the public-facing app is **Steel Trading Desk**.
+The repo is public as of 2026-10-11. Internal codename is "balls of steel"; the public-facing app is **Steel Trading Desk**.
 
 ## First-time setup
 

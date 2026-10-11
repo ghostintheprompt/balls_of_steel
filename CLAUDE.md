@@ -14,7 +14,7 @@ written down:
 - `docs/SCHWAB_API_READINESS.md` — the full Schwab integration story,
   including the 2026-09-07 root-cause writeup (routing, masked errors, wrong
   VIX symbol) for the first real live connection since the ~2025 prototype.
-- `docs/HANDOFF.md`, `docs/SETUP.md`, `docs/BUILD.md` — project setup.
+- `docs/HANDOFF.md`, `docs/BUILD.md` — project setup. (`docs/SETUP.md` removed 2026-10-11 - it was a near-exact duplicate of `docs/trading docs/thinkorswim_complete_setup_2026.md`, the canonical ThinkOrSwim indicator setup doc; its filename misleadingly suggested app setup, which `BUILD.md` already covers.)
 - `docs/WIDGET_SCOPE.md` — macOS widget, scoped, not started.
 - The trading strategy itself lives in `StrategySpec.swift` /
   `StrategyAuditor.swift` — the audited canonical thresholds. Settings →

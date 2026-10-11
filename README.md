@@ -35,9 +35,17 @@ Steel Trading Desk is a local-first, accuracy-first desk for a personal VXX/VIX/
 | **Schwab-gated chart** | Native chart surface uses verified Schwab live candles only. Without Schwab OAuth it shows a locked source state, not public delayed data. |
 | **Session-close takeover** | From 16:10 to the 16:15 ET extended close, the phone prioritizes close-management rules, open risk, and the alert-session countdown. |
 | **Second Read** | A structured prompt for outside-model sanity checks, always available from live tape data — not just during scheduled windows. Never the green light. |
-| **Trade Journal** | Every trade you take is logged automatically the moment you take it: entry price, VWAP, ratio, VIX, trading window, and a screenshot of the desk at that exact moment — a real record to check against later, not a memory of what you thought you saw. |
+| **Trade Journal** | Every trade you take is logged automatically the moment you take it: entry price, VWAP, ratio, VIX, trading window, and a screenshot of the desk at that exact moment — a real record to check against later, not a memory of what you thought you saw. Wired and real in code (`SignalMonitor` calls it directly); not yet confirmed end-to-end against a live trade, so watch your first real entry/close to make sure it behaves as described. |
 | **Boiler-room visual system** | CRT amber on near-black, IBM Plex everything, hairline borders, sharp corners. |
 | **Local-first privacy** | Zero telemetry. Zero analytics. All data stays on your hardware. |
+
+## Known issues
+
+Disclosed on purpose, not hidden — this is a real personal tool, traded with for real, not a finished product:
+
+- **Open crash bug:** a `SIGSEGV` in `MarketDataService.handleQuoteUpdate` — a thread-safety issue from two independent Schwab-polling loops mutating a shared dictionary concurrently. Hit once during a live session; the app relaunched immediately and kept working, but the root cause hasn't been fixed yet. If you hit this, same recovery: relaunch.
+- **Schwab quirks you'll likely hit yourself:** masked error responses, symbol drift (`$VIX` not `$VIX.X`), and date-range gotchas around incomplete trading days — see `docs/SCHWAB_API_READINESS.md` for the real debugging history. Building this out meant pushing through each one by hand; running your own fork means you may have to do the same.
+- **Refresh-token rotation unconfirmed:** whether Schwab actually rotates the refresh token with a fresh 7-day window on each silent refresh, or hard-expires 7 days after original auth regardless, hasn't been confirmed — only observable by watching real usage over time.
 
 ## Installation
 
