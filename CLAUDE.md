@@ -21,22 +21,15 @@ written down:
   AUDIT → Run checks code against them for real, deterministically. Last run
   by Michael: all pass.
 
-## Not a public release
+## Public release (reversed 2026-10-11)
 
-This is deliberately staying personal-use + portfolio piece, not a product
-for others to install. The Schwab integration is quirky enough (masked
-errors, symbol drift, date-range gotchas — see `SCHWAB_API_READINESS.md`)
-that other people would hit the same walls and give up rather than push
-through them the way this session-by-session debugging has. That changes
-what "polish" means going forward:
-- Onboarding docs, setup friction-reduction, and defensive handling of
-  Schwab quirks for *unknown* users are explicitly not the goal — this only
-  ever has to work for Michael's own Schwab account, on his own machine.
-- "Good developer / institutional-grade" here means correctness,
-  reliability, and evolvability — not distributability. Test coverage, the
-  tiered punch list, and the offline-fixture rule below are still worth
-  doing because they make the tool trustworthy and the portfolio story
-  stronger, not because strangers will run this.
+Made public on GitHub and shared on LinkedIn, deliberately and transparently: Michael trades with this for real, and is sharing it as-is for anyone who wants to fork/modify it for their own setup - not as a polished product.
+
+The reasoning that kept this private through September still matters, just doesn't block release anymore: the Schwab integration is quirky enough (masked errors, symbol drift, date-range gotchas — see `SCHWAB_API_READINESS.md`) that someone else running this will hit the same walls this session-by-session debugging worked through, and won't get hand-held through them. That's now stated plainly in the public README instead of being a reason to stay private.
+
+**Known open bug, disclosed on purpose, not hidden:** a real `SIGSEGV` crash in `MarketDataService.handleQuoteUpdate` (thread-safety issue, two Schwab-polling loops mutating a dictionary concurrently) — crashed once during a live session, relaunched immediately, never root-caused. Still open as of this writing. If you're building on this, know that going in.
+
+- "Good developer / institutional-grade" here still means correctness, reliability, and evolvability, not hand-holding onboarding for strangers — that hasn't changed. What changed is willingness to let people see the rough edges along with the real parts, instead of waiting for it to be finished.
 
 ## Rules for working in this repo
 
